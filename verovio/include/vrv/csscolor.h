@@ -24,7 +24,7 @@ namespace vrv {
  * "black" fill/stroke rather than silently inheriting.
  *
  * Shared by the scene exporter (resolving @color/SetCustomGraphicColor at write time) and
- * LottieDeviceContext::DrawSvgShape (resolving an embedded <svg> path's own fill/stroke
+ * BridgeDeviceContext::DrawSvgShape (resolving an embedded <svg> path's own fill/stroke
  * attributes at draw time).
  */
 int ResolveColor(const std::string &colorCss, int inheritedColor);

@@ -1,12 +1,12 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        lottiegeometry.h
+// Name:        bridgegeometry.h
 // Author:      Verovio Team
 // Created:     2026
 // Copyright (c) Authors and others. All rights reserved.
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef __VRV_LOTTIE_GEOMETRY_H__
-#define __VRV_LOTTIE_GEOMETRY_H__
+#ifndef __VRV_BRIDGE_GEOMETRY_H__
+#define __VRV_BRIDGE_GEOMETRY_H__
 
 #include <memory>
 #include <optional>
@@ -20,30 +20,30 @@
 namespace vrv {
 
 //----------------------------------------------------------------------------
-// LottieVec, LottieBezier, LottieShape
+// BridgeVec, BridgeBezier, BridgeShape
 //----------------------------------------------------------------------------
 
-struct LottieVec {
+struct BridgeVec {
     double x = 0.0;
     double y = 0.0;
 };
 
 /**
- * A subpath in Lottie format: tangents are relative to their vertex.
+ * A subpath in the Bridge scene IR: tangents are relative to their vertex.
  */
-struct LottieBezier {
-    std::vector<LottieVec> v; // vertices (page coordinates)
-    std::vector<LottieVec> i; // in-tangent of each vertex
-    std::vector<LottieVec> o; // out-tangent of each vertex
+struct BridgeBezier {
+    std::vector<BridgeVec> v; // vertices (page coordinates)
+    std::vector<BridgeVec> i; // in-tangent of each vertex
+    std::vector<BridgeVec> o; // out-tangent of each vertex
     bool closed = false;
 };
 
-enum class LottieShapeKind { Path, Rect, Ellipse };
+enum class BridgeShapeKind { Path, Rect, Ellipse };
 
-struct LottieShape {
-    LottieShapeKind kind = LottieShapeKind::Path;
-    std::vector<LottieBezier> paths; // Path: subpaths share the same fill
-    LottieVec center, size; // Rect / Ellipse
+struct BridgeShape {
+    BridgeShapeKind kind = BridgeShapeKind::Path;
+    std::vector<BridgeBezier> paths; // Path: subpaths share the same fill
+    BridgeVec center, size; // Rect / Ellipse
     double radius = 0.0; // rounded Rect
     bool hasFill = false;
     int fillColor = COLOR_NONE; // COLOR_NONE = inherit the group color
@@ -60,10 +60,10 @@ struct LottieShape {
 
 /**
  * A run of non-SMuFL ("common") text, e.g. a title, tempo mark or fingering, built by
- * LottieDeviceContext::DrawText (D01, docs/plano/D01-texto-comum.md) and carried as a native
- * text run ("ty":5) instead of glyph shapes.
+ * BridgeDeviceContext::DrawText (D01, docs/plano/D01-texto-comum.md) and carried as a native
+ * text run in the Bridge scene IR instead of glyph shapes.
  */
-struct LottieTextRun {
+struct BridgeTextRun {
     std::u32string text;
     Point origin; // anchor (page px), before any alignment offset
     data_HORIZONTALALIGNMENT alignment = HORIZONTALALIGNMENT_left;
@@ -71,22 +71,22 @@ struct LottieTextRun {
     double letterSpacing = 0.0;
     data_FONTSTYLE style = FONTSTYLE_NONE;
     data_FONTWEIGHT weight = FONTWEIGHT_NONE;
-    int color = COLOR_NONE; // COLOR_NONE = inherit, same convention as LottieShape::fillColor
+    int color = COLOR_NONE; // COLOR_NONE = inherit, same convention as BridgeShape::fillColor
 };
 
 //----------------------------------------------------------------------------
-// LottieNode, LottieChild, LottiePage
+// BridgeNode, BridgeChild, BridgePage
 //----------------------------------------------------------------------------
 
-struct LottieNode;
+struct BridgeNode;
 
-struct LottieChild {
-    std::unique_ptr<LottieNode> group; // non-null = subgroup
-    std::optional<LottieTextRun> text; // set = common text run; otherwise a shape
-    LottieShape shape; // used when group == nullptr and text == nullopt
+struct BridgeChild {
+    std::unique_ptr<BridgeNode> group; // non-null = subgroup
+    std::optional<BridgeTextRun> text; // set = common text run; otherwise a shape
+    BridgeShape shape; // used when group == nullptr and text == nullopt
 };
 
-struct LottieNode {
+struct BridgeNode {
     std::string id; // xml:id (empty if not PRIMARY)
     std::string className; // Object::GetClassName() (+ extra classes) or the custom graphic name
     std::string colorCss; // @color or SetCustomGraphicColor; empty = inherit
@@ -94,11 +94,11 @@ struct LottieNode {
     bool hasRotation = false;
     double rotation = 0.0;
     Point rotationOrigin;
-    std::vector<LottieChild> children; // document order: later entries paint on top
+    std::vector<BridgeChild> children; // document order: later entries paint on top
 };
 
-struct LottiePage {
-    std::unique_ptr<LottieNode> root;
+struct BridgePage {
+    std::unique_ptr<BridgeNode> root;
     int width = 0, height = 0, contentHeight = 0;
     int baseWidth = 0, baseHeight = 0;
     double userScaleX = 1.0, userScaleY = 1.0;
@@ -108,4 +108,4 @@ struct LottiePage {
 
 } // namespace vrv
 
-#endif // __VRV_LOTTIE_GEOMETRY_H__
+#endif // __VRV_BRIDGE_GEOMETRY_H__

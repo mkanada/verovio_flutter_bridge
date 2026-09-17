@@ -13,7 +13,7 @@
 
 //----------------------------------------------------------------------------
 
-#include "lottiegeometry.h"
+#include "bridgegeometry.h"
 
 namespace vrv {
 
@@ -22,11 +22,11 @@ namespace vrv {
 //----------------------------------------------------------------------------
 
 /**
- * Parses the "d" attribute of an SVG <path> (without any transform applied) into Lottie
+ * Parses the "d" attribute of an SVG <path> (without any transform applied) into Bridge scene
  * subpaths, in the coordinate system of the path data itself. Returns false (after logging a
  * warning) if the data contains a command this parser cannot handle.
  */
-bool ParseSvgPathData(const std::string &d, std::vector<LottieBezier> &paths);
+bool ParseSvgPathData(const std::string &d, std::vector<BridgeBezier> &paths);
 
 /**
  * Parses the XML of a Verovio SMuFL glyph (Glyph::GetXML(): one or more
@@ -34,7 +34,7 @@ bool ParseSvgPathData(const std::string &d, std::vector<LottieBezier> &paths);
  * transform to both its vertices and its tangents. Subpaths are appended to `paths` in
  * document order.
  */
-bool ParseGlyphXml(const std::string &xml, std::vector<LottieBezier> &paths);
+bool ParseGlyphXml(const std::string &xml, std::vector<BridgeBezier> &paths);
 
 } // namespace vrv
 

@@ -1,12 +1,12 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        lottiedevicecontext.h
+// Name:        bridgedevicecontext.h
 // Author:      Verovio Team
 // Created:     2026
 // Copyright (c) Authors and others. All rights reserved.
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef __VRV_LOTTIE_DC_H__
-#define __VRV_LOTTIE_DC_H__
+#ifndef __VRV_BRIDGE_DC_H__
+#define __VRV_BRIDGE_DC_H__
 
 #include <map>
 #include <vector>
@@ -14,12 +14,12 @@
 //----------------------------------------------------------------------------
 
 #include "devicecontext.h"
-#include "lottiegeometry.h"
+#include "bridgegeometry.h"
 
 namespace vrv {
 
 //----------------------------------------------------------------------------
-// LottieDeviceContext
+// BridgeDeviceContext
 //----------------------------------------------------------------------------
 
 /**
@@ -27,14 +27,14 @@ namespace vrv {
  * It is fed by the same View used for drawing SVG in order to guarantee
  * visual parity with the SVG output.
  */
-class LottieDeviceContext : public DeviceContext {
+class BridgeDeviceContext : public DeviceContext {
 public:
     /**
      * @name Constructors, destructors, and other standard methods
      */
     ///@{
-    LottieDeviceContext();
-    virtual ~LottieDeviceContext();
+    BridgeDeviceContext();
+    virtual ~BridgeDeviceContext();
     ///@}
 
     /**
@@ -150,7 +150,7 @@ public:
     /**
      * Accessor to the pages built during drawing
      */
-    const std::vector<LottiePage> &GetPages() const { return m_pages; }
+    const std::vector<BridgePage> &GetPages() const { return m_pages; }
 
 public:
     //
@@ -160,21 +160,21 @@ private:
      * before the first child that is a subgroup, otherwise at the front (m_pushBack)
      * or at the back.
      */
-    void AddShape(LottieShape &&shape);
+    void AddShape(BridgeShape &&shape);
 
     /**
      * Insert a common text run into the current node, mirroring AddShape (D01, see
      * docs/plano/D01-texto-comum.md) - simple append, since text runs are serialized as
-     * independent Lottie layers and do not participate in the shapes paint-order search.
+     * independent Bridge scene children and do not participate in the shapes paint-order search.
      */
-    void AddTextRun(LottieTextRun &&run);
+    void AddTextRun(BridgeTextRun &&run);
 
     /**
      * Build a filled/stroked Path shape for one glyph, positioned at (x, y) and scaled per
      * the current font, exactly as SvgDeviceContext::DrawMusicText positions its <use>
      * elements. Shared by DrawMusicText and the SMuFL-font branch of DrawText.
      */
-    LottieShape MakeGlyphShape(const Glyph *glyph, const FontInfo *font, int x, int y);
+    BridgeShape MakeGlyphShape(const Glyph *glyph, const FontInfo *font, int x, int y);
 
     /**
      * Horizontal advance for one glyph, replicating the exact integer arithmetic of
@@ -192,15 +192,15 @@ private:
     int m_originX = 0;
     int m_originY = 0;
 
-    std::vector<LottiePage> m_pages;
-    std::vector<LottieNode *> m_nodeStack;
-    std::map<std::string, LottieNode *> m_idMap;
+    std::vector<BridgePage> m_pages;
+    std::vector<BridgeNode *> m_nodeStack;
+    std::map<std::string, BridgeNode *> m_idMap;
 
     /**
      * Cache of parsed glyph outlines (in glyph units), keyed by Glyph pointer since glyphs
      * live for the lifetime of the Resources object and are never mutated after loading.
      */
-    std::map<const Glyph *, std::vector<LottieBezier>> m_glyphCache;
+    std::map<const Glyph *, std::vector<BridgeBezier>> m_glyphCache;
 
     /**
      * State for the text chunk model described in docs/plano/A10-texto-smufl.md: the pen
@@ -211,9 +211,9 @@ private:
     int m_textPenY = 0;
     data_HORIZONTALALIGNMENT m_textAlignment = HORIZONTALALIGNMENT_left;
     double m_textChunkWidth = 0.0;
-    std::vector<LottieShape> m_textChunkShapes;
+    std::vector<BridgeShape> m_textChunkShapes;
 };
 
 } // namespace vrv
 
-#endif // __VRV_LOTTIE_DC_H__
+#endif // __VRV_BRIDGE_DC_H__

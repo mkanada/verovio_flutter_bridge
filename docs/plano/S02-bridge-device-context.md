@@ -78,4 +78,18 @@ que ela é mecânica.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-17: renomeados `lottiedevicecontext.{h,cpp}` → `bridgedevicecontext.{h,cpp}`,
+  `lottiegeometry.h` → `bridgegeometry.h`, todos os símbolos da IR/device context e os guardas
+  `__VRV_LOTTIE_*__`; atualizados `BRIDGE_DEVICE_CONTEXT` em `vrvdef.h`, o include de
+  `toolkit.cpp` e as referências de `svgpathparser`/comentários históricos.
+- Nenhuma campo ou comportamento exclusivo do Lottie foi encontrado para remover; a IR de texto,
+  páginas, grupos, formas, rotação e cache de glifos permanece necessária pelo formato Bridge.
+- Compilação: `cmake ../cmake && make -j4` concluída com sucesso (a primeira tentativa atingiu o
+  timeout de 120 s durante a compilação; a repetição completou em 100%).
+- Resíduos: `grep -rni "lottie" verovio/src verovio/include` sem saída.
+- Paridade substituta: SVG gerado para as 10 peças do corpus, 34 páginas no total, sem falha.
+  `RenderToDeviceContext` com `BridgeDeviceContext` executou todas as 34 páginas sem crash/assert;
+  o teste temporário em `verovio/tools/` foi removido.
+- Comparação normalizada (nomes/comentários substituídos) dos três arquivos renomeados: idêntica
+  ao código anterior, sem mudança de lógica geométrica. `git diff --check` limpo.
+- Bloqueios: nenhum.

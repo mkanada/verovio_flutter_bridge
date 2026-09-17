@@ -89,33 +89,33 @@ namespace {
     // Vector arithmetic
     //------------------------------------------------------------------
 
-    LottieVec MakeVec(double x, double y) { return LottieVec{ x, y }; }
+    BridgeVec MakeVec(double x, double y) { return BridgeVec{ x, y }; }
 
-    LottieVec AddVec(const LottieVec &a, const LottieVec &b) { return LottieVec{ a.x + b.x, a.y + b.y }; }
+    BridgeVec AddVec(const BridgeVec &a, const BridgeVec &b) { return BridgeVec{ a.x + b.x, a.y + b.y }; }
 
-    LottieVec SubVec(const LottieVec &a, const LottieVec &b) { return LottieVec{ a.x - b.x, a.y - b.y }; }
+    BridgeVec SubVec(const BridgeVec &a, const BridgeVec &b) { return BridgeVec{ a.x - b.x, a.y - b.y }; }
 
-    LottieVec ScaleVec(const LottieVec &v, double factor) { return LottieVec{ v.x * factor, v.y * factor }; }
+    BridgeVec ScaleVec(const BridgeVec &v, double factor) { return BridgeVec{ v.x * factor, v.y * factor }; }
 
     // Reflection of `point` through `pivot` (used for S/T's implicit control point).
-    LottieVec Reflect(const LottieVec &pivot, const LottieVec &point)
+    BridgeVec Reflect(const BridgeVec &pivot, const BridgeVec &point)
     {
-        return LottieVec{ 2 * pivot.x - point.x, 2 * pivot.y - point.y };
+        return BridgeVec{ 2 * pivot.x - point.x, 2 * pivot.y - point.y };
     }
 
-    bool NearlyEqual(const LottieVec &a, const LottieVec &b)
+    bool NearlyEqual(const BridgeVec &a, const BridgeVec &b)
     {
         static const double epsilon = 1e-6;
         return (std::abs(a.x - b.x) < epsilon) && (std::abs(a.y - b.y) < epsilon);
     }
 
     //------------------------------------------------------------------
-    // PathBuilder: turns one "d" attribute into vrv::LottieBezier subpaths
+    // PathBuilder: turns one "d" attribute into vrv::BridgeBezier subpaths
     //------------------------------------------------------------------
 
     class PathBuilder {
     public:
-        PathBuilder(std::vector<LottieBezier> &paths) : m_paths(paths) {}
+        PathBuilder(std::vector<BridgeBezier> &paths) : m_paths(paths) {}
 
         bool Parse(const std::string &d)
         {
@@ -160,21 +160,21 @@ namespace {
             // S/T reflect the control point of an *immediately preceding* C/S or Q/T; read that
             // state before resetting it below (every other command breaks the chain).
             const LastCtrl previousLastCtrlType = m_lastCtrlType;
-            const LottieVec previousLastCtrl = m_lastCtrl;
+            const BridgeVec previousLastCtrl = m_lastCtrl;
             m_lastCtrlType = LastCtrl::None;
 
             std::vector<double> args;
             switch (std::toupper(static_cast<unsigned char>(cmd))) {
                 case 'M': {
                     if (!ReadNumbers(d, pos, 2, args)) return false;
-                    const LottieVec p
+                    const BridgeVec p
                         = relative ? AddVec(m_current, MakeVec(args[0], args[1])) : MakeVec(args[0], args[1]);
                     this->StartSubpath(p);
                     return true;
                 }
                 case 'L': {
                     if (!ReadNumbers(d, pos, 2, args)) return false;
-                    const LottieVec p
+                    const BridgeVec p
                         = relative ? AddVec(m_current, MakeVec(args[0], args[1])) : MakeVec(args[0], args[1]);
                     this->AddLineVertex(p);
                     return true;
@@ -193,10 +193,10 @@ namespace {
                 }
                 case 'C': {
                     if (!ReadNumbers(d, pos, 6, args)) return false;
-                    const LottieVec base = relative ? m_current : LottieVec();
-                    const LottieVec c1 = AddVec(base, MakeVec(args[0], args[1]));
-                    const LottieVec c2 = AddVec(base, MakeVec(args[2], args[3]));
-                    const LottieVec end = AddVec(base, MakeVec(args[4], args[5]));
+                    const BridgeVec base = relative ? m_current : BridgeVec();
+                    const BridgeVec c1 = AddVec(base, MakeVec(args[0], args[1]));
+                    const BridgeVec c2 = AddVec(base, MakeVec(args[2], args[3]));
+                    const BridgeVec end = AddVec(base, MakeVec(args[4], args[5]));
                     this->AddCubicVertex(c1, c2, end);
                     m_lastCtrlType = LastCtrl::Cubic;
                     m_lastCtrl = c2;
@@ -204,11 +204,11 @@ namespace {
                 }
                 case 'S': {
                     if (!ReadNumbers(d, pos, 4, args)) return false;
-                    const LottieVec base = relative ? m_current : LottieVec();
-                    const LottieVec c1
+                    const BridgeVec base = relative ? m_current : BridgeVec();
+                    const BridgeVec c1
                         = (previousLastCtrlType == LastCtrl::Cubic) ? Reflect(m_current, previousLastCtrl) : m_current;
-                    const LottieVec c2 = AddVec(base, MakeVec(args[0], args[1]));
-                    const LottieVec end = AddVec(base, MakeVec(args[2], args[3]));
+                    const BridgeVec c2 = AddVec(base, MakeVec(args[0], args[1]));
+                    const BridgeVec end = AddVec(base, MakeVec(args[2], args[3]));
                     this->AddCubicVertex(c1, c2, end);
                     m_lastCtrlType = LastCtrl::Cubic;
                     m_lastCtrl = c2;
@@ -216,12 +216,12 @@ namespace {
                 }
                 case 'Q': {
                     if (!ReadNumbers(d, pos, 4, args)) return false;
-                    const LottieVec base = relative ? m_current : LottieVec();
-                    const LottieVec qc = AddVec(base, MakeVec(args[0], args[1]));
-                    const LottieVec end = AddVec(base, MakeVec(args[2], args[3]));
-                    // Degree-elevated to a cubic, as in LottieDeviceContext::DrawQuadBezierPath.
-                    const LottieVec c1 = AddVec(m_current, ScaleVec(SubVec(qc, m_current), 2.0 / 3.0));
-                    const LottieVec c2 = AddVec(end, ScaleVec(SubVec(qc, end), 2.0 / 3.0));
+                    const BridgeVec base = relative ? m_current : BridgeVec();
+                    const BridgeVec qc = AddVec(base, MakeVec(args[0], args[1]));
+                    const BridgeVec end = AddVec(base, MakeVec(args[2], args[3]));
+                    // Degree-elevated to a cubic, as in BridgeDeviceContext::DrawQuadBezierPath.
+                    const BridgeVec c1 = AddVec(m_current, ScaleVec(SubVec(qc, m_current), 2.0 / 3.0));
+                    const BridgeVec c2 = AddVec(end, ScaleVec(SubVec(qc, end), 2.0 / 3.0));
                     this->AddCubicVertex(c1, c2, end);
                     m_lastCtrlType = LastCtrl::Quad;
                     m_lastCtrl = qc;
@@ -229,12 +229,12 @@ namespace {
                 }
                 case 'T': {
                     if (!ReadNumbers(d, pos, 2, args)) return false;
-                    const LottieVec end
+                    const BridgeVec end
                         = relative ? AddVec(m_current, MakeVec(args[0], args[1])) : MakeVec(args[0], args[1]);
-                    const LottieVec qc
+                    const BridgeVec qc
                         = (previousLastCtrlType == LastCtrl::Quad) ? Reflect(m_current, previousLastCtrl) : m_current;
-                    const LottieVec c1 = AddVec(m_current, ScaleVec(SubVec(qc, m_current), 2.0 / 3.0));
-                    const LottieVec c2 = AddVec(end, ScaleVec(SubVec(qc, end), 2.0 / 3.0));
+                    const BridgeVec c1 = AddVec(m_current, ScaleVec(SubVec(qc, m_current), 2.0 / 3.0));
+                    const BridgeVec c2 = AddVec(end, ScaleVec(SubVec(qc, end), 2.0 / 3.0));
                     this->AddCubicVertex(c1, c2, end);
                     m_lastCtrlType = LastCtrl::Quad;
                     m_lastCtrl = qc;
@@ -263,37 +263,37 @@ namespace {
             }
         }
 
-        void StartSubpath(const LottieVec &p)
+        void StartSubpath(const BridgeVec &p)
         {
             this->FinalizeSubpath(false);
-            LottieBezier bezier;
+            BridgeBezier bezier;
             bezier.v.push_back(p);
-            bezier.i.push_back(LottieVec());
-            bezier.o.push_back(LottieVec());
+            bezier.i.push_back(BridgeVec());
+            bezier.o.push_back(BridgeVec());
             m_paths.push_back(std::move(bezier));
             m_hasOpenSubpath = true;
             m_current = p;
             m_subpathStart = p;
         }
 
-        void AddLineVertex(const LottieVec &p)
+        void AddLineVertex(const BridgeVec &p)
         {
             if (!m_hasOpenSubpath) this->StartSubpath(m_current);
-            LottieBezier &subpath = m_paths.back();
+            BridgeBezier &subpath = m_paths.back();
             subpath.v.push_back(p);
-            subpath.i.push_back(LottieVec());
-            subpath.o.push_back(LottieVec());
+            subpath.i.push_back(BridgeVec());
+            subpath.o.push_back(BridgeVec());
             m_current = p;
         }
 
-        void AddCubicVertex(const LottieVec &c1, const LottieVec &c2, const LottieVec &end)
+        void AddCubicVertex(const BridgeVec &c1, const BridgeVec &c2, const BridgeVec &end)
         {
             if (!m_hasOpenSubpath) this->StartSubpath(m_current);
-            LottieBezier &subpath = m_paths.back();
+            BridgeBezier &subpath = m_paths.back();
             subpath.o.back() = SubVec(c1, subpath.v.back());
             subpath.v.push_back(end);
             subpath.i.push_back(SubVec(c2, end));
-            subpath.o.push_back(LottieVec());
+            subpath.o.push_back(BridgeVec());
             m_current = end;
         }
 
@@ -302,10 +302,10 @@ namespace {
         void FinalizeSubpath(bool asClosed)
         {
             if (!m_hasOpenSubpath) return;
-            LottieBezier &subpath = m_paths.back();
+            BridgeBezier &subpath = m_paths.back();
             if (asClosed) {
                 subpath.closed = true;
-                // A Lottie shape closes on its own; keeping a last vertex that coincides with
+                // The Bridge IR records subpath closure explicitly; keeping a last vertex that coincides with
                 // the first would add a zero-length closing segment on top of it.
                 if (subpath.v.size() > 1 && NearlyEqual(subpath.v.back(), subpath.v.front())) {
                     subpath.i[0] = subpath.i.back();
@@ -318,12 +318,12 @@ namespace {
             m_hasOpenSubpath = false;
         }
 
-        std::vector<LottieBezier> &m_paths;
+        std::vector<BridgeBezier> &m_paths;
         bool m_hasOpenSubpath = false;
-        LottieVec m_current;
-        LottieVec m_subpathStart;
+        BridgeVec m_current;
+        BridgeVec m_subpathStart;
         LastCtrl m_lastCtrlType = LastCtrl::None;
-        LottieVec m_lastCtrl;
+        BridgeVec m_lastCtrl;
     };
 
     //------------------------------------------------------------------
@@ -366,15 +366,15 @@ namespace {
         return true;
     }
 
-    void ApplyScale(LottieBezier &subpath, double sx, double sy)
+    void ApplyScale(BridgeBezier &subpath, double sx, double sy)
     {
-        auto scale = [sx, sy](LottieVec &v) {
+        auto scale = [sx, sy](BridgeVec &v) {
             v.x *= sx;
             v.y *= sy;
         };
-        for (LottieVec &v : subpath.v) scale(v);
-        for (LottieVec &v : subpath.i) scale(v);
-        for (LottieVec &v : subpath.o) scale(v);
+        for (BridgeVec &v : subpath.v) scale(v);
+        for (BridgeVec &v : subpath.i) scale(v);
+        for (BridgeVec &v : subpath.o) scale(v);
     }
 
 } // namespace
@@ -383,13 +383,13 @@ namespace {
 // Public API
 //----------------------------------------------------------------------------
 
-bool ParseSvgPathData(const std::string &d, std::vector<LottieBezier> &paths)
+bool ParseSvgPathData(const std::string &d, std::vector<BridgeBezier> &paths)
 {
     PathBuilder builder(paths);
     return builder.Parse(d);
 }
 
-bool ParseGlyphXml(const std::string &xml, std::vector<LottieBezier> &paths)
+bool ParseGlyphXml(const std::string &xml, std::vector<BridgeBezier> &paths)
 {
     pugi::xml_document doc;
     const pugi::xml_parse_result result = doc.load_buffer(xml.c_str(), xml.size());
@@ -412,13 +412,13 @@ bool ParseGlyphXml(const std::string &xml, std::vector<LottieBezier> &paths)
             }
         }
 
-        std::vector<LottieBezier> localPaths;
+        std::vector<BridgeBezier> localPaths;
         if (!ParseSvgPathData(pathNode.attribute("d").value(), localPaths)) {
             success = false;
             continue;
         }
 
-        for (LottieBezier &subpath : localPaths) {
+        for (BridgeBezier &subpath : localPaths) {
             ApplyScale(subpath, sx, sy);
             paths.push_back(std::move(subpath));
         }

@@ -37,7 +37,7 @@
 #include "iopae.h"
 #include "iovolpiano.h"
 #include "layer.h"
-#include "lottiedevicecontext.h"
+#include "bridgedevicecontext.h"
 #include "measure.h"
 #include "nc.h"
 #include "neume.h"

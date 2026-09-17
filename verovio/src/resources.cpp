@@ -237,6 +237,22 @@ bool Resources::FontHasGlyphAvailable(const std::string &fontName, char32_t smuf
     return (table.find(smuflCode) != table.end());
 }
 
+std::string Resources::GetGlyphFontName(char32_t smuflCode, const Glyph *glyph) const
+{
+    if (!glyph) {
+        return "";
+    }
+
+    for (const auto &[fontName, loadedFont] : m_loadedFonts) {
+        const GlyphTable &glyphTable = loadedFont.GetGlyphTable();
+        const auto glyphIt = glyphTable.find(smuflCode);
+        if (glyphIt != glyphTable.end() && &glyphIt->second == glyph) {
+            return fontName;
+        }
+    }
+    return "";
+}
+
 std::string Resources::GetCSSFontFor(const std::string &fontName) const
 {
     if (fontName == this->GetTextFont()) {

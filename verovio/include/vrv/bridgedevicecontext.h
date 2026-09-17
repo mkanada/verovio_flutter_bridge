@@ -151,10 +151,16 @@ public:
      * Accessor to the pages built during drawing
      */
     const std::vector<BridgePage> &GetPages() const { return m_pages; }
+    const std::map<std::string, BridgeGlyphDef> &GetGlyphs() const { return m_glyphs; }
 
 public:
     //
 private:
+    /**
+     * Insert a glyph use into the current node, preserving the same paint-order rules as shapes.
+     */
+    void AddGlyphUse(BridgeGlyphUse &&use);
+
     /**
      * Insert a shape into the current node, replicating SvgDeviceContext::AddChild:
      * before the first child that is a subgroup, otherwise at the front (m_pushBack)
@@ -170,11 +176,10 @@ private:
     void AddTextRun(BridgeTextRun &&run);
 
     /**
-     * Build a filled/stroked Path shape for one glyph, positioned at (x, y) and scaled per
-     * the current font, exactly as SvgDeviceContext::DrawMusicText positions its <use>
-     * elements. Shared by DrawMusicText and the SMuFL-font branch of DrawText.
+     * Build a glyph use for one glyph, positioned at (x, y) and scaled per the current font,
+     * while registering its outline once in the glyph dictionary.
      */
-    BridgeShape MakeGlyphShape(const Glyph *glyph, const FontInfo *font, int x, int y);
+    BridgeGlyphUse MakeGlyphUse(const Glyph *glyph, const FontInfo *font, int x, int y);
 
     /**
      * Horizontal advance for one glyph, replicating the exact integer arithmetic of
@@ -184,7 +189,7 @@ private:
 
     /**
      * Apply the pending text chunk's alignment offset (0 / -width/2 / -width) and insert its
-     * pending SMuFL glyph shapes into the current node.
+     * pending SMuFL glyph uses into the current node.
      */
     void FinalizeTextChunk();
 
@@ -197,21 +202,20 @@ private:
     std::map<std::string, BridgeNode *> m_idMap;
 
     /**
-     * Cache of parsed glyph outlines (in glyph units), keyed by Glyph pointer since glyphs
-     * live for the lifetime of the Resources object and are never mutated after loading.
+     * Cache of parsed glyph outlines (in glyph units), keyed by the exported glyph id.
      */
-    std::map<const Glyph *, std::vector<BridgeBezier>> m_glyphCache;
+    std::map<std::string, BridgeGlyphDef> m_glyphs;
 
     /**
      * State for the text chunk model described in docs/plano/A10-texto-smufl.md: the pen
      * position, the alignment of the current anchored chunk, its accumulated glyph width (for
-     * the alignment offset applied on finalization), and its pending SMuFL glyph shapes.
+     * the alignment offset applied on finalization), and its pending SMuFL glyph uses.
      */
     int m_textPenX = 0;
     int m_textPenY = 0;
     data_HORIZONTALALIGNMENT m_textAlignment = HORIZONTALALIGNMENT_left;
     double m_textChunkWidth = 0.0;
-    std::vector<BridgeShape> m_textChunkShapes;
+    std::vector<BridgeGlyphUse> m_textChunkGlyphUses;
 };
 
 } // namespace vrv

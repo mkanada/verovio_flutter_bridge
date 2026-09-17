@@ -30,6 +30,7 @@ struct BridgeVec {
 
 /**
  * A subpath in the Bridge scene IR: tangents are relative to their vertex.
+ * Scene shapes store page coordinates; glyph definitions store font units.
  */
 struct BridgeBezier {
     std::vector<BridgeVec> v; // vertices (page coordinates)
@@ -58,6 +59,20 @@ struct BridgeShape {
     double gapLength = 0.0;
 };
 
+struct BridgeGlyphDef {
+    std::string font;
+    std::string codepoint;
+    int unitsPerEm = 0;
+    int horizAdvX = 0;
+    int bbox[4] = { 0, 0, 0, 0 };
+    std::vector<BridgeBezier> paths;
+};
+
+struct BridgeGlyphUse {
+    std::string glyphId;
+    double x = 0.0, y = 0.0, sx = 1.0, sy = 1.0;
+};
+
 /**
  * A run of non-SMuFL ("common") text, e.g. a title, tempo mark or fingering, built by
  * BridgeDeviceContext::DrawText (D01, docs/plano/D01-texto-comum.md) and carried as a native
@@ -67,7 +82,7 @@ struct BridgeTextRun {
     std::u32string text;
     Point origin; // anchor (page px), before any alignment offset
     data_HORIZONTALALIGNMENT alignment = HORIZONTALALIGNMENT_left;
-    double pointSize = 0.0; // same unit space as MakeGlyphShape (already page px)
+    double pointSize = 0.0; // same unit space as glyph uses (already page px)
     double letterSpacing = 0.0;
     data_FONTSTYLE style = FONTSTYLE_NONE;
     data_FONTWEIGHT weight = FONTWEIGHT_NONE;
@@ -82,8 +97,9 @@ struct BridgeNode;
 
 struct BridgeChild {
     std::unique_ptr<BridgeNode> group; // non-null = subgroup
-    std::optional<BridgeTextRun> text; // set = common text run; otherwise a shape
-    BridgeShape shape; // used when group == nullptr and text == nullopt
+    std::optional<BridgeTextRun> text; // set = common text run
+    std::optional<BridgeGlyphUse> glyphUse; // set = glyph use
+    BridgeShape shape; // used when group == nullptr, text == nullopt, and glyphUse == nullopt
 };
 
 struct BridgeNode {

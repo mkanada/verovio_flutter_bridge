@@ -118,6 +118,8 @@ public:
     const Glyph *GetTextGlyph(char32_t code) const;
     /** Returns true if the specified font is loaded and it contains the requested glyph */
     bool FontHasGlyphAvailable(const std::string &fontName, char32_t smuflCode) const;
+    /** Return the loaded font that owns the supplied glyph instance */
+    std::string GetGlyphFontName(char32_t smuflCode, const Glyph *glyph) const;
     ///@}
 
     /**

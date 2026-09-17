@@ -99,4 +99,22 @@ exatamente essa incompatibilidade que travou o D06 do projeto anterior).
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-17: adicionados `BridgeGlyphDef`, `BridgeGlyphUse` e o terceiro filho
+  `glyphUse`; `m_glyphCache` virou o dicionário `m_glyphs`, `MakeGlyphShape` virou
+  `MakeGlyphUse`, e as três chamadas de texto/música agora empilham usos de glifo.
+- O `glyphId` usa a fonte que realmente forneceu o `Glyph` (`Resources::GetGlyphFontName`),
+  preservando entradas distintas para o mesmo codepoint em fontes diferentes.
+- Compilação: `cmake ../cmake && make -j4` concluída com sucesso.
+- Verificação geométrica temporária em 10 peças do corpus: todos os usos foram expandidos com
+  `x + sx * contorno`/`y + sy * contorno`; diferença máxima observada: `0.0` (limite `1e-9`).
+- Contagem por peça (usos / distintos / razão): Chopin Etude `1792/34/52.71`, Chopin Mazurka
+  `1434/30/47.80`, Grieg Butterfly `1594/24/66.42`, Grieg Little Bird `1109/23/48.22`,
+  Scarlatti C-major `1064/25/42.56`, Nocturne `2665/37/72.03`, Clair de Lune `2458/31/79.29`,
+  Gymnopédie `417/16/26.06`, Maple Leaf Rag `2045/21/97.38`, Prelude BWV 846 `835/16/52.19`.
+- Teste de duas fontes: render com `Gootville` na Chopin Etude produziu chaves `Gootville:*` e
+  `Leipzig:*` (`1791` usos, `32` defs, razão `55.97`); uma verificação direta do mesmo codepoint
+  `E0A4` retornou `Leipzig` e `Gootville` como donos distintos.
+- `rg -n "MakeGlyphShape" verovio/src` sem resultados; `git diff --check` limpo.
+- SVG de fumaça gerado para as 10 peças; `RenderToDeviceContext` percorreu todas sem crash/assert.
+- `clang-format` não estava instalado no ambiente; o build e `git diff --check` passaram.
+- Bloqueios: nenhum.

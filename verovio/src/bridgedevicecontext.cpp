@@ -11,6 +11,8 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
+#include <cstdlib>
 #include <set>
 
 //----------------------------------------------------------------------------
@@ -385,47 +387,58 @@ void BridgeDeviceContext::DrawRoundedRectangle(int x, int y, int width, int heig
     this->AddShape(std::move(shape));
 }
 
-BridgeShape BridgeDeviceContext::MakeGlyphShape(const Glyph *glyph, const FontInfo *font, int x, int y)
+BridgeGlyphUse BridgeDeviceContext::MakeGlyphUse(const Glyph *glyph, const FontInfo *font, int x, int y)
 {
     assert(glyph);
     assert(font);
 
-    std::map<const Glyph *, std::vector<BridgeBezier>>::iterator cacheIt = m_glyphCache.find(glyph);
-    if (cacheIt == m_glyphCache.end()) {
-        std::vector<BridgeBezier> parsedPaths;
-        ParseGlyphXml(glyph->GetXML(), parsedPaths);
-        cacheIt = m_glyphCache.emplace(glyph, std::move(parsedPaths)).first;
+    const Resources *resources = this->GetResources();
+    std::string fontName = resources ? resources->GetGlyphFontName(
+        static_cast<char32_t>(std::strtoul(glyph->GetCodeStr().c_str(), NULL, 16)), glyph) : "";
+    if (fontName.empty() && resources) {
+        const std::string currentFont = resources->GetCurrentFont();
+        const std::string fallbackFont = resources->GetFallbackFont();
+        if (font->GetSmuflFont() == SMUFL_FONT_FALLBACK) {
+            fontName = fallbackFont;
+        }
+        else if (!currentFont.empty()) {
+            fontName = currentFont;
+        }
+        else {
+            fontName = fallbackFont;
+        }
+    }
+    if (fontName.empty()) {
+        fontName = font->GetFaceName();
     }
 
-    double scaleX = (double)font->GetPointSize() / glyph->GetUnitsPerEm() * DEFINITION_FACTOR;
-    double scaleY = scaleX;
+    std::string codepoint = glyph->GetCodeStr();
+    std::transform(codepoint.begin(), codepoint.end(), codepoint.begin(), [](unsigned char c) {
+        return static_cast<char>(std::toupper(c));
+    });
+    const std::string glyphId = fontName + ":" + codepoint;
+
+    auto [glyphIt, inserted] = m_glyphs.try_emplace(glyphId);
+    if (inserted) {
+        BridgeGlyphDef &glyphDef = glyphIt->second;
+        glyphDef.font = fontName;
+        glyphDef.codepoint = codepoint;
+        glyphDef.unitsPerEm = glyph->GetUnitsPerEm();
+        glyphDef.horizAdvX = glyph->GetHorizAdvX();
+        int bboxX, bboxY, bboxWidth, bboxHeight;
+        glyph->GetBoundingBox(bboxX, bboxY, bboxWidth, bboxHeight);
+        glyphDef.bbox[0] = bboxX;
+        glyphDef.bbox[1] = bboxY;
+        glyphDef.bbox[2] = bboxWidth;
+        glyphDef.bbox[3] = bboxHeight;
+        ParseGlyphXml(glyph->GetXML(), glyphDef.paths);
+    }
+
+    double scaleY = (double)font->GetPointSize() / glyph->GetUnitsPerEm() * DEFINITION_FACTOR;
+    double scaleX = scaleY;
     if (font->GetWidthToHeightRatio() != 1.0f) scaleX *= font->GetWidthToHeightRatio();
 
-    BridgeShape shape;
-    shape.paths.reserve(cacheIt->second.size());
-    for (const BridgeBezier &glyphPath : cacheIt->second) {
-        BridgeBezier path;
-        path.closed = glyphPath.closed;
-        const std::size_t count = glyphPath.v.size();
-        path.v.reserve(count);
-        path.i.reserve(count);
-        path.o.reserve(count);
-        for (std::size_t idx = 0; idx < count; ++idx) {
-            path.v.push_back(BridgeVec{ x + scaleX * glyphPath.v[idx].x, y + scaleY * glyphPath.v[idx].y });
-            path.i.push_back(BridgeVec{ scaleX * glyphPath.i[idx].x, scaleY * glyphPath.i[idx].y });
-            path.o.push_back(BridgeVec{ scaleX * glyphPath.o[idx].x, scaleY * glyphPath.o[idx].y });
-        }
-        shape.paths.push_back(std::move(path));
-    }
-
-    // Fill and stroke both inherited (CSS "path {stroke:currentColor}" plus the ancestor
-    // group's "fill" attribute, same as every other glyph-less shape's COLOR_NONE).
-    // Stroke width mirrors the SVG default (1, in glyph units) scaled like the geometry.
-    shape.hasFill = true;
-    shape.hasStroke = true;
-    shape.strokeWidth = scaleY;
-
-    return shape;
+    return BridgeGlyphUse{ glyphId, double(x), double(y), scaleX, scaleY };
 }
 
 int BridgeDeviceContext::GetGlyphAdvance(const Glyph *glyph, const FontInfo *font)
@@ -486,7 +499,7 @@ void BridgeDeviceContext::DrawText(
             const Glyph *glyph = resources->GetGlyph(c);
             if (!glyph) continue;
 
-            m_textChunkShapes.push_back(this->MakeGlyphShape(glyph, font, m_textPenX, m_textPenY));
+            m_textChunkGlyphUses.push_back(this->MakeGlyphUse(glyph, font, m_textPenX, m_textPenY));
 
             const int advance = this->GetGlyphAdvance(glyph, font);
             m_textPenX += advance;
@@ -537,7 +550,7 @@ void BridgeDeviceContext::DrawText(
                 first = false;
 
                 const Glyph *glyph = resources->GetGlyph(c);
-                m_textChunkShapes.push_back(this->MakeGlyphShape(glyph, font, m_textPenX, m_textPenY));
+                m_textChunkGlyphUses.push_back(this->MakeGlyphUse(glyph, font, m_textPenX, m_textPenY));
 
                 const int advance = this->GetGlyphAdvance(glyph, font);
                 m_textPenX += advance;
@@ -566,7 +579,7 @@ void BridgeDeviceContext::DrawText(
         // Common text is stored as a BridgeTextRun with its own alignment metadata instead of
         // FinalizeTextChunk's manual vertex offset (shapes have no native notion of
         // "justified"), so the pen still needs to advance for any SMuFL runs that follow in
-        // the same chunk, but the run itself is inserted directly, not via m_textChunkShapes.
+        // the same chunk, but the run itself is inserted directly, not via m_textChunkGlyphUses.
         TextExtend extend;
         this->GetTextExtent(chars, &extend, true);
         m_textPenX += extend.m_width;
@@ -588,7 +601,7 @@ void BridgeDeviceContext::DrawMusicText(const std::u32string &text, int x, int y
             continue;
         }
 
-        this->AddShape(this->MakeGlyphShape(glyph, font, x, y));
+        this->AddGlyphUse(this->MakeGlyphUse(glyph, font, x, y));
         x += this->GetGlyphAdvance(glyph, font);
     }
 }
@@ -736,7 +749,7 @@ void BridgeDeviceContext::StartText(int x, int y, data_HORIZONTALALIGNMENT align
     m_textPenX = x;
     m_textPenY = y;
     m_textAlignment = alignment;
-    m_textChunkShapes.clear();
+    m_textChunkGlyphUses.clear();
     m_textChunkWidth = 0.0;
 }
 
@@ -766,7 +779,7 @@ void BridgeDeviceContext::MoveTextVerticallyTo(int y)
 
 void BridgeDeviceContext::FinalizeTextChunk()
 {
-    if (m_textChunkShapes.empty()) {
+    if (m_textChunkGlyphUses.empty()) {
         m_textChunkWidth = 0.0;
         return;
     }
@@ -779,18 +792,12 @@ void BridgeDeviceContext::FinalizeTextChunk()
         offset = -m_textChunkWidth;
     }
 
-    for (BridgeShape &shape : m_textChunkShapes) {
-        if (offset != 0.0) {
-            for (BridgeBezier &path : shape.paths) {
-                for (BridgeVec &vertex : path.v) {
-                    vertex.x += offset;
-                }
-            }
-        }
-        this->AddShape(std::move(shape));
+    for (BridgeGlyphUse &use : m_textChunkGlyphUses) {
+        use.x += offset;
+        this->AddGlyphUse(std::move(use));
     }
 
-    m_textChunkShapes.clear();
+    m_textChunkGlyphUses.clear();
     m_textChunkWidth = 0.0;
 }
 
@@ -943,6 +950,29 @@ void BridgeDeviceContext::EndPage()
 {
     assert(m_nodeStack.size() == 1);
     m_nodeStack.clear();
+}
+
+void BridgeDeviceContext::AddGlyphUse(BridgeGlyphUse &&use)
+{
+    assert(!m_nodeStack.empty());
+
+    BridgeNode *node = m_nodeStack.back();
+
+    std::vector<BridgeChild>::iterator firstGroup = std::find_if(node->children.begin(), node->children.end(),
+        [](const BridgeChild &child) { return (child.group != NULL); });
+
+    BridgeChild child;
+    child.glyphUse = std::move(use);
+
+    if (firstGroup != node->children.end()) {
+        node->children.insert(firstGroup, std::move(child));
+    }
+    else if (m_pushBack) {
+        node->children.insert(node->children.begin(), std::move(child));
+    }
+    else {
+        node->children.push_back(std::move(child));
+    }
 }
 
 void BridgeDeviceContext::AddShape(BridgeShape &&shape)

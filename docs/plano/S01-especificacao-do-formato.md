@@ -1,6 +1,6 @@
 # S01 — Fechar a especificação do formato `.vsb`
 
-**Depende de:** F01 · **Decisão necessária:** SIM (D-NOME)
+**Depende de:** F01 · **Decisão necessária:** não (D-NOME resolvida em S01)
 
 ## Objetivo
 
@@ -8,14 +8,14 @@ Transformar o rascunho [`docs/formato/especificacao-v1.md`](../formato/especific
 na versão final que S02-S07 (C++) e R01-R06 (Dart) implementam ao pé da letra,
 e produzir um exemplo mínimo validável à mão.
 
-## Decisão necessária (pergunte ao usuário antes de escrever código)
+## Decisão registrada (D-NOME)
 
-1. **Nome e extensão do formato.** Em uso no plano: `.vsb`
-   ("Verovio Score Bridge"), flags `-t vsb` (pacote zip) e `-t vsb-json`
-   (JSON único, depuração). Confirme ou troque — depois disso, o nome aparece
-   em CLI, `FileFormat`, nomes de classe e no pacote Dart, e trocar fica caro.
-2. **`timemap` embutido no pacote?** Recomendação: sim (o host lê um arquivo
-   só). Confirmar, porque muda o `manifest.json`.
+1. **Nome e extensão do formato:** `.vsb` (**Verovio Score Bridge**).
+2. **Flags de CLI:** `-t vsb` para o pacote zip e `-t vsb-json` para o JSON
+   único de depuração.
+3. **`timemap`:** embutido no pacote quando disponível, conforme confirmado
+   pelo usuário. A decisão foi registrada em 2026-09-17 e não há decisão
+   pendente neste passo.
 
 ## Ler antes (só isto)
 
@@ -51,7 +51,7 @@ e produzir um exemplo mínimo validável à mão.
 
 ## Critérios de aceite
 
-1. O documento não tem nenhum "(a preencher)" nem "(a decidir)" restante.
+1. O documento não contém marcadores de conteúdo ou decisão pendentes.
 2. `python3 -c "import json,sys;json.load(open('docs/formato/exemplo-minimo.json'))"`
    passa.
 3. O exemplo mínimo valida contra o schema:
@@ -68,4 +68,17 @@ e produzir um exemplo mínimo validável à mão.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-17: S01 concluído. Decisão D-NOME registrada: `.vsb`, `-t vsb` e
+  `-t vsb-json`; `timemap.json` embutido quando disponível.
+- Lidos `CLAUDE.md`, o passo S01, a especificação rascunho, o README do plano,
+  `verovio/include/vrv/lottiegeometry.h`, `svgdevicecontext.cpp::StartPage` e
+  `lottiewriter.cpp` (CSS por classe e métricas de página) no fork de
+  referência; `CLAUDE.md` foi atualizado para registrar D-NOME como resolvida.
+- Criados `docs/formato/exemplo-minimo.json` e
+  `docs/formato/schema-v1.json` (draft 2020-12).
+- Validação executada: `python3 -m json.tool` passou para o exemplo e para o
+  schema; `check-jsonschema --schemafile docs/formato/schema-v1.json
+  docs/formato/exemplo-minimo.json` passou, assim como as validações isoladas de
+  `manifest`, `glyphs`, `scene` e `timemap`.
+- A tabela de correspondência cobre os 52 campos declarados em
+  `lottiegeometry.h`; nenhum código C++ ou Dart foi escrito.

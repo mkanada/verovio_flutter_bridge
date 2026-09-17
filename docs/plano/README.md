@@ -104,7 +104,7 @@ Fatos do corpus que orientam o plano (medidos no projeto anterior):
 
 | Id | Pergunta | Bloqueia | Recomendação |
 | --- | --- | --- | --- |
-| D-NOME | Nome do formato, extensão e flags de CLI | S01 | `.vsb`, `-t vsb`, `-t vsb-json` |
+| D-NOME | Nome do formato, extensão e flags de CLI | — | Resolvida em S01 (2026-09-17): `.vsb`, `-t vsb`, `-t vsb-json`; timemap embutido quando disponível |
 | D-BIN | Vale trocar JSON por encoding binário? | P01 | medir primeiro; só decidir com números reais na mão |
 | D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02 | depende do zywny; perguntar |
 
@@ -138,12 +138,12 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | --- | --- | --- | --- | --- |
 | [F01](F01-montar-repositorio.md) | Montar o repositório a partir do fork validado | — | — | concluído com ressalva |
 | [F02](F02-corpus-e-referencia-svg.md) | Corpus + referência SVG→PNG reproduzível | F01 | — | concluído |
-| [S01](S01-especificacao-do-formato.md) | Fechar a especificação do formato `.vsb` | F01 | D-NOME | a fazer |
+| [S01](S01-especificacao-do-formato.md) | Fechar a especificação do formato `.vsb` | F01 | D-NOME resolvida | concluído |
 | [S02](S02-bridge-device-context.md) | `BridgeDeviceContext`: renomear e limpar a IR | F01, S01 | — | a fazer |
 | [S03](S03-dicionario-de-glifos.md) | Dicionário de glifos + instâncias (substitui o baking) | S02 | — | a fazer |
 | [S04](S04-bboxes-e-indice.md) | Bounding boxes e índice de elementos endereçáveis | S02 | — | a fazer |
 | [S05](S05-writer-json.md) | `BridgeWriter`: IR → `scene.json`/`glyphs.json` | S01, S02, S03, S04 | — | a fazer |
-| [S06](S06-toolkit-e-cli.md) | `Toolkit` + CLI (`-t vsb-json`, todas as páginas) | S05 | D-NOME | a fazer |
+| [S06](S06-toolkit-e-cli.md) | `Toolkit` + CLI (`-t vsb-json`, todas as páginas) | S05 | D-NOME resolvida | a fazer |
 | [S07](S07-pacote-vsb.md) | Pacote `.vsb` (zip) com timemap embutido | S06 | — | a fazer |
 | [R01](R01-pacote-dart-e-parser.md) | Pacote `score_bridge`: modelo + parser | S05 | — | a fazer |
 | [R02](R02-scene-painter-primitivas.md) | `ScenePainter`: primitivas, cor herdada, ajuste de página | R01 | — | a fazer |

@@ -66,10 +66,11 @@ Trate como fixas — não reabra sem confirmar com o usuário:
 - **Timemap embutido no pacote** `.vsb` (o Verovio já sabe gerá-lo), para o
   host não precisar cruzar dois arquivos.
 
-## O que está em aberto (pergunte, não decida sozinho)
+## Decisões registradas e itens abertos
 
-- Nome final do formato/extensão e das flags de CLI (recomendação em uso:
-  `-t vsb` / `-t vsb-json`, extensão `.vsb`) — ver S01.
+- **Nome final do formato/extensão e flags de CLI:** `.vsb` (**Verovio Score
+  Bridge**), `-t vsb` para o pacote zip e `-t vsb-json` para o JSON único;
+  resolvido em S01 em 2026-09-17.
 - Encoding binário (P01) — só após medição real.
 - Backend gráfico do Flutter para a comparação (Impeller vs. Skia) — decidido
   por medição em R05, registre o resultado.

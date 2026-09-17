@@ -1,0 +1,445 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verovio Score Bridge v1",
+  "oneOf": [
+    { "$ref": "#/$defs/document" },
+    { "$ref": "#/$defs/sceneDocument" },
+    { "$ref": "#/$defs/glyphsDocument" },
+    { "$ref": "#/$defs/manifestDocument" },
+    { "$ref": "#/$defs/timemapDocument" }
+  ],
+  "$defs": {
+    "number": {
+      "type": "number"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-f]{6}$"
+    },
+    "paint": {
+      "oneOf": [
+        { "$ref": "#/$defs/color" },
+        { "const": "none" }
+      ]
+    },
+    "vec2": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/number" }
+    },
+    "vec4": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/number" }
+    },
+    "flatNumbers": {
+      "type": "array",
+      "minItems": 0,
+      "items": { "$ref": "#/$defs/number" },
+      "$comment": "O parser deve rejeitar comprimentos ímpares; os arrays v/i/o também devem ter o mesmo comprimento."
+    },
+    "bezier": {
+      "type": "object",
+      "required": ["closed", "v", "i", "o"],
+      "properties": {
+        "closed": { "type": "boolean" },
+        "v": { "$ref": "#/$defs/flatNumbers" },
+        "i": { "$ref": "#/$defs/flatNumbers" },
+        "o": { "$ref": "#/$defs/flatNumbers" }
+      },
+      "additionalProperties": false
+    },
+    "style": {
+      "type": "object",
+      "properties": {
+        "fill": { "$ref": "#/$defs/paint" },
+        "fillOpacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stroke": { "$ref": "#/$defs/paint" },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0
+        },
+        "strokeOpacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lineCap": {
+          "enum": ["default", "butt", "round", "square"]
+        },
+        "lineJoin": {
+          "enum": ["default", "arcs", "bevel", "miter", "miter-clip", "round"]
+        },
+        "dash": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "rotate": {
+      "type": "object",
+      "required": ["angle", "origin"],
+      "properties": {
+        "angle": { "$ref": "#/$defs/number" },
+        "origin": { "$ref": "#/$defs/vec2" }
+      },
+      "additionalProperties": false
+    },
+    "bbox": {
+      "$ref": "#/$defs/vec4"
+    },
+    "node": {
+      "type": "object",
+      "required": ["t", "children"],
+      "properties": {
+        "t": { "const": "g" },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "class": { "type": "string" },
+        "color": { "$ref": "#/$defs/color" },
+        "hidden": { "type": "boolean" },
+        "rotate": { "$ref": "#/$defs/rotate" },
+        "bbox": { "$ref": "#/$defs/bbox" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/child" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "child": {
+      "oneOf": [
+        { "$ref": "#/$defs/node" },
+        { "$ref": "#/$defs/pathShape" },
+        { "$ref": "#/$defs/rectShape" },
+        { "$ref": "#/$defs/ellipseShape" },
+        { "$ref": "#/$defs/glyphUse" },
+        { "$ref": "#/$defs/textRun" }
+      ]
+    },
+    "pathShape": {
+      "type": "object",
+      "required": ["t", "paths"],
+      "properties": {
+        "t": { "const": "p" },
+        "paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bezier" }
+        }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/style" }
+      ],
+      "additionalProperties": true
+    },
+    "rectShape": {
+      "type": "object",
+      "required": ["t", "x", "y", "w", "h"],
+      "properties": {
+        "t": { "const": "r" },
+        "x": { "$ref": "#/$defs/number" },
+        "y": { "$ref": "#/$defs/number" },
+        "w": { "$ref": "#/$defs/number" },
+        "h": { "$ref": "#/$defs/number" },
+        "rx": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/style" }
+      ],
+      "additionalProperties": true
+    },
+    "ellipseShape": {
+      "type": "object",
+      "required": ["t", "cx", "cy", "rx", "ry"],
+      "properties": {
+        "t": { "const": "e" },
+        "cx": { "$ref": "#/$defs/number" },
+        "cy": { "$ref": "#/$defs/number" },
+        "rx": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ry": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/style" }
+      ],
+      "additionalProperties": true
+    },
+    "glyphUse": {
+      "type": "object",
+      "required": ["t", "g", "x", "y", "sx", "sy"],
+      "properties": {
+        "t": { "const": "u" },
+        "g": {
+          "type": "string",
+          "minLength": 1
+        },
+        "x": { "$ref": "#/$defs/number" },
+        "y": { "$ref": "#/$defs/number" },
+        "sx": { "$ref": "#/$defs/number" },
+        "sy": { "$ref": "#/$defs/number" }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/style" }
+      ],
+      "additionalProperties": true
+    },
+    "textRun": {
+      "type": "object",
+      "required": ["t", "s", "x", "y", "size", "align", "family"],
+      "properties": {
+        "t": { "const": "t" },
+        "s": { "type": "string" },
+        "x": { "$ref": "#/$defs/number" },
+        "y": { "$ref": "#/$defs/number" },
+        "size": {
+          "type": "number",
+          "minimum": 0
+        },
+        "align": {
+          "enum": ["left", "center", "right"]
+        },
+        "letterSpacing": { "$ref": "#/$defs/number" },
+        "bold": { "type": "boolean" },
+        "italic": { "type": "boolean" },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "color": { "$ref": "#/$defs/color" }
+      },
+      "additionalProperties": true
+    },
+    "glyphDef": {
+      "type": "object",
+      "required": ["font", "codepoint", "unitsPerEm", "horizAdvX", "bbox", "paths"],
+      "properties": {
+        "font": {
+          "type": "string",
+          "minLength": 1
+        },
+        "codepoint": {
+          "type": "string",
+          "pattern": "^[0-9A-F]+$"
+        },
+        "unitsPerEm": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "horizAdvX": {
+          "type": "number",
+          "minimum": 0
+        },
+        "bbox": { "$ref": "#/$defs/vec4" },
+        "paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bezier" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "glyphsDocument": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^.+:[0-9A-F]+$"
+      },
+      "additionalProperties": { "$ref": "#/$defs/glyphDef" }
+    },
+    "manifest": {
+      "type": "object",
+      "required": ["format", "version", "generator", "pageCount", "files"],
+      "properties": {
+        "format": { "const": "vsb" },
+        "version": { "const": 1 },
+        "generator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pageCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files": {
+          "type": "object",
+          "required": ["scene", "glyphs"],
+          "properties": {
+            "scene": { "const": "scene.json" },
+            "glyphs": { "const": "glyphs.json" },
+            "timemap": { "const": "timemap.json" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "manifestDocument": {
+      "$ref": "#/$defs/manifest"
+    },
+    "page": {
+      "type": "object",
+      "required": [
+        "index",
+        "width",
+        "height",
+        "contentHeight",
+        "viewBoxFactor",
+        "viewBox",
+        "baseWidth",
+        "baseHeight",
+        "userScaleX",
+        "userScaleY",
+        "widthPx",
+        "heightPx",
+        "fit",
+        "origin",
+        "root"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contentHeight": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "viewBoxFactor": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "viewBox": { "$ref": "#/$defs/vec4" },
+        "baseWidth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "baseHeight": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "userScaleX": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "userScaleY": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "widthPx": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "heightPx": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fit": {
+          "type": "object",
+          "required": ["scale", "tx", "ty"],
+          "properties": {
+            "scale": { "$ref": "#/$defs/number" },
+            "tx": { "$ref": "#/$defs/number" },
+            "ty": { "$ref": "#/$defs/number" }
+          },
+          "additionalProperties": false
+        },
+        "origin": { "$ref": "#/$defs/vec2" },
+        "root": { "$ref": "#/$defs/node" }
+      },
+      "additionalProperties": false
+    },
+    "sceneDocument": {
+      "type": "object",
+      "required": ["pages"],
+      "properties": {
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/page" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "timemapEntry": {
+      "type": "object",
+      "required": ["tstamp"],
+      "properties": {
+        "qstamp": { "$ref": "#/$defs/number" },
+        "qfrac": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "integer" }
+        },
+        "tstamp": { "$ref": "#/$defs/number" },
+        "on": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "off": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "restsOn": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "restsOff": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tempo": { "$ref": "#/$defs/number" },
+        "measureOn": { "type": "string" }
+      },
+      "anyOf": [
+        { "required": ["qstamp"] },
+        { "required": ["qfrac"] }
+      ],
+      "additionalProperties": false
+    },
+    "timemapDocument": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/timemapEntry" }
+    },
+    "document": {
+      "type": "object",
+      "required": ["manifest", "glyphs", "scene"],
+      "properties": {
+        "manifest": { "$ref": "#/$defs/manifest" },
+        "glyphs": { "$ref": "#/$defs/glyphsDocument" },
+        "scene": { "$ref": "#/$defs/sceneDocument" },
+        "timemap": { "$ref": "#/$defs/timemapDocument" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

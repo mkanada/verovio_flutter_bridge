@@ -136,7 +136,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 
 | Passo | Título | Depende de | Decisão | Status |
 | --- | --- | --- | --- | --- |
-| [F01](F01-montar-repositorio.md) | Montar o repositório a partir do fork validado | — | — | a fazer |
+| [F01](F01-montar-repositorio.md) | Montar o repositório a partir do fork validado | — | — | concluído com ressalva |
 | [F02](F02-corpus-e-referencia-svg.md) | Corpus + referência SVG→PNG reproduzível | F01 | — | concluído |
 | [S01](S01-especificacao-do-formato.md) | Fechar a especificação do formato `.vsb` | F01 | D-NOME | a fazer |
 | [S02](S02-bridge-device-context.md) | `BridgeDeviceContext`: renomear e limpar a IR | F01, S01 | — | a fazer |

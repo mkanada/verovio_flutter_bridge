@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <set>
 
@@ -97,6 +98,231 @@ namespace {
         shape.fillColor = brush.HasColor() ? brush.GetColor() : COLOR_NONE;
         if (brush.HasOpacity()) {
             shape.fillOpacity = brush.GetOpacity();
+        }
+    }
+
+    struct BridgeBBox {
+        double x0 = 0.0;
+        double y0 = 0.0;
+        double x1 = 0.0;
+        double y1 = 0.0;
+        bool valid = false;
+    };
+
+    struct BridgeTransform {
+        double a = 1.0;
+        double b = 0.0;
+        double c = 0.0;
+        double d = 1.0;
+        double e = 0.0;
+        double f = 0.0;
+
+        BridgeVec Apply(const BridgeVec &point) const
+        {
+            return BridgeVec{ a * point.x + c * point.y + e, b * point.x + d * point.y + f };
+        }
+    };
+
+    BridgeTransform RotationTransform(const BridgeNode &node)
+    {
+        if (!node.hasRotation) {
+            return {};
+        }
+        const double radians = node.rotation * std::acos(-1.0) / 180.0;
+        const double cosine = std::cos(radians);
+        const double sine = std::sin(radians);
+        return BridgeTransform{ cosine, sine, -sine, cosine,
+            node.rotationOrigin.x - cosine * node.rotationOrigin.x + sine * node.rotationOrigin.y,
+            node.rotationOrigin.y - sine * node.rotationOrigin.x - cosine * node.rotationOrigin.y };
+    }
+
+    BridgeTransform ComposeTransform(const BridgeTransform &outer, const BridgeTransform &inner)
+    {
+        return BridgeTransform{ outer.a * inner.a + outer.c * inner.b, outer.b * inner.a + outer.d * inner.b,
+            outer.a * inner.c + outer.c * inner.d, outer.b * inner.c + outer.d * inner.d,
+            outer.a * inner.e + outer.c * inner.f + outer.e, outer.b * inner.e + outer.d * inner.f + outer.f };
+    }
+
+    void UnionBBox(BridgeBBox &target, const BridgeBBox &source)
+    {
+        if (!source.valid) return;
+        if (!target.valid) {
+            target = source;
+            return;
+        }
+        target.x0 = std::min(target.x0, source.x0);
+        target.y0 = std::min(target.y0, source.y0);
+        target.x1 = std::max(target.x1, source.x1);
+        target.y1 = std::max(target.y1, source.y1);
+    }
+
+    void ExpandBBox(BridgeBBox &bbox, double amount)
+    {
+        if (!bbox.valid) return;
+        bbox.x0 -= amount;
+        bbox.y0 -= amount;
+        bbox.x1 += amount;
+        bbox.y1 += amount;
+    }
+
+    void AddPoint(BridgeBBox &bbox, const BridgeVec &point)
+    {
+        if (!bbox.valid) {
+            bbox.x0 = bbox.x1 = point.x;
+            bbox.y0 = bbox.y1 = point.y;
+            bbox.valid = true;
+            return;
+        }
+        bbox.x0 = std::min(bbox.x0, point.x);
+        bbox.y0 = std::min(bbox.y0, point.y);
+        bbox.x1 = std::max(bbox.x1, point.x);
+        bbox.y1 = std::max(bbox.y1, point.y);
+    }
+
+    BridgeBBox ShapeBBox(const BridgeShape &shape)
+    {
+        if (!shape.hasFill && !shape.hasStroke) {
+            return {};
+        }
+
+        BridgeBBox bbox;
+        if (shape.kind == BridgeShapeKind::Path) {
+            for (const BridgeBezier &path : shape.paths) {
+                const std::size_t count = std::min(path.v.size(), std::min(path.i.size(), path.o.size()));
+                for (std::size_t idx = 0; idx < count; ++idx) {
+                    AddPoint(bbox, path.v[idx]);
+                    AddPoint(bbox, BridgeVec{ path.v[idx].x + path.i[idx].x, path.v[idx].y + path.i[idx].y });
+                    AddPoint(bbox, BridgeVec{ path.v[idx].x + path.o[idx].x, path.v[idx].y + path.o[idx].y });
+                }
+            }
+        }
+        else if (shape.kind == BridgeShapeKind::Rect) {
+            const double x0 = shape.center.x - shape.size.x / 2.0;
+            const double y0 = shape.center.y - shape.size.y / 2.0;
+            AddPoint(bbox, BridgeVec{ x0, y0 });
+            AddPoint(bbox, BridgeVec{ x0 + shape.size.x, y0 + shape.size.y });
+        }
+        else {
+            const double x0 = shape.center.x - shape.size.x / 2.0;
+            const double y0 = shape.center.y - shape.size.y / 2.0;
+            AddPoint(bbox, BridgeVec{ x0, y0 });
+            AddPoint(bbox, BridgeVec{ x0 + shape.size.x, y0 + shape.size.y });
+        }
+
+        if (!bbox.valid || ((bbox.x1 - bbox.x0 <= 0.0) && (bbox.y1 - bbox.y0 <= 0.0) && !shape.hasStroke)) {
+            return {};
+        }
+        if (shape.hasStroke) {
+            ExpandBBox(bbox, shape.strokeWidth / 2.0);
+        }
+        return bbox;
+    }
+
+    BridgeBBox GlyphBBox(
+        const BridgeGlyphUse &use, const std::map<std::string, BridgeGlyphDef> &glyphs)
+    {
+        const auto glyphIt = glyphs.find(use.glyphId);
+        if (glyphIt == glyphs.end()) {
+            return {};
+        }
+        const int *glyphBBox = glyphIt->second.bbox;
+        // use.sx/sy already are the same "translate(x,y) scale(sx,sy)" factors SvgDeviceContext
+        // applies to the <use> element (font units -> viewBox units), so no further division by
+        // DEFINITION_FACTOR is needed here.
+        const double x0 = use.x + glyphBBox[0] * use.sx;
+        const double y0 = use.y + glyphBBox[1] * use.sy;
+        const double x1 = use.x + (glyphBBox[0] + glyphBBox[2]) * use.sx;
+        const double y1 = use.y + (glyphBBox[1] + glyphBBox[3]) * use.sy;
+        if ((x1 - x0 <= 0.0) || (y1 - y0 <= 0.0)) {
+            return {};
+        }
+        return BridgeBBox{ std::min(x0, x1), std::min(y0, y1), std::max(x0, x1), std::max(y0, y1), true };
+    }
+
+    BridgeBBox TextBBox(const BridgeTextRun &run)
+    {
+        if (!run.hasBBox) {
+            return {};
+        }
+        return BridgeBBox{ run.bbox[0], run.bbox[1], run.bbox[2], run.bbox[3], true };
+    }
+
+    BridgeBBox TransformBBox(const BridgeBBox &source, const BridgeTransform &transform)
+    {
+        if (!source.valid) {
+            return {};
+        }
+        BridgeBBox transformed;
+        const BridgeVec corners[4] = { BridgeVec{ source.x0, source.y0 }, BridgeVec{ source.x1, source.y0 },
+            BridgeVec{ source.x0, source.y1 }, BridgeVec{ source.x1, source.y1 } };
+        for (const BridgeVec &corner : corners) {
+            AddPoint(transformed, transform.Apply(corner));
+        }
+        return transformed;
+    }
+
+    BridgeBBox RotateBBox(const BridgeBBox &source, const BridgeNode &node)
+    {
+        return TransformBBox(source, RotationTransform(node));
+    }
+
+    BridgeBBox CalculateNodeBBox(
+        BridgeNode &node, const std::map<std::string, BridgeGlyphDef> &glyphs, const BridgeTransform &toPage)
+    {
+        if (node.hidden) {
+            node.hasBBox = false;
+            return {};
+        }
+
+        BridgeBBox bbox;
+        const BridgeTransform childToPage = ComposeTransform(toPage, RotationTransform(node));
+        for (BridgeChild &child : node.children) {
+            BridgeBBox childBBox;
+            if (child.group != NULL) {
+                childBBox = CalculateNodeBBox(*child.group, glyphs, childToPage);
+            }
+            else if (child.text != std::nullopt) {
+                childBBox = TextBBox(*child.text);
+            }
+            else if (child.glyphUse != std::nullopt) {
+                childBBox = GlyphBBox(*child.glyphUse, glyphs);
+            }
+            else {
+                childBBox = ShapeBBox(child.shape);
+            }
+
+            childBBox = RotateBBox(childBBox, node);
+            UnionBBox(bbox, childBBox);
+        }
+
+        node.hasBBox = bbox.valid;
+        if (bbox.valid) {
+            const BridgeBBox pageBBox = TransformBBox(bbox, toPage);
+            node.bbox[0] = pageBBox.x0;
+            node.bbox[1] = pageBBox.y0;
+            node.bbox[2] = pageBBox.x1;
+            node.bbox[3] = pageBBox.y1;
+        }
+        return bbox;
+    }
+
+    void BuildIndex(const BridgeNode &node, int &nodePath, std::vector<BridgeIndexEntry> &index)
+    {
+        ++nodePath;
+        if (!node.id.empty()) {
+            BridgeIndexEntry entry;
+            entry.id = node.id;
+            entry.className = node.className;
+            entry.nodePath = nodePath;
+            if (node.hasBBox) {
+                std::copy(std::begin(node.bbox), std::end(node.bbox), std::begin(entry.bbox));
+            }
+            index.push_back(std::move(entry));
+        }
+        for (const BridgeChild &child : node.children) {
+            if (child.group != NULL) {
+                BuildIndex(*child.group, nodePath, index);
+            }
         }
     }
 
@@ -574,14 +800,28 @@ void BridgeDeviceContext::DrawText(
         run.style = font->GetStyle();
         run.weight = font->GetWeight();
         run.color = currentBrush.HasColor() ? currentBrush.GetColor() : COLOR_NONE;
-        this->AddTextRun(std::move(run));
 
-        // Common text is stored as a BridgeTextRun with its own alignment metadata instead of
-        // FinalizeTextChunk's manual vertex offset (shapes have no native notion of
-        // "justified"), so the pen still needs to advance for any SMuFL runs that follow in
-        // the same chunk, but the run itself is inserted directly, not via m_textChunkGlyphUses.
         TextExtend extend;
         this->GetTextExtent(chars, &extend, true);
+        double x0 = run.origin.x;
+        if (run.alignment == HORIZONTALALIGNMENT_center) {
+            x0 -= extend.m_width / 2.0;
+        }
+        else if (run.alignment == HORIZONTALALIGNMENT_right) {
+            x0 -= extend.m_width;
+        }
+        const double y0 = run.origin.y - extend.m_ascent;
+        const double y1 = run.origin.y + extend.m_descent;
+        const double x1 = x0 + extend.m_width;
+        if ((extend.m_width > 0.0) && (y1 > y0)) {
+            run.hasBBox = true;
+            run.bbox[0] = x0;
+            run.bbox[1] = y0;
+            run.bbox[2] = x1;
+            run.bbox[3] = y1;
+        }
+        this->AddTextRun(std::move(run));
+
         m_textPenX += extend.m_width;
         m_textChunkWidth += extend.m_width;
     }
@@ -852,7 +1092,9 @@ void BridgeDeviceContext::StartGraphic(
 void BridgeDeviceContext::EndGraphic(Object *object, View *view)
 {
     assert(m_nodeStack.size() > 1);
+    BridgeNode *node = m_nodeStack.back();
     m_nodeStack.pop_back();
+    CalculateNodeBBox(*node, m_glyphs, {});
 }
 
 void BridgeDeviceContext::StartCustomGraphic(const std::string &name, std::string gClass, std::string gId)
@@ -883,7 +1125,9 @@ void BridgeDeviceContext::StartCustomGraphic(const std::string &name, std::strin
 void BridgeDeviceContext::EndCustomGraphic()
 {
     assert(m_nodeStack.size() > 1);
+    BridgeNode *node = m_nodeStack.back();
     m_nodeStack.pop_back();
+    CalculateNodeBBox(*node, m_glyphs, {});
 }
 
 void BridgeDeviceContext::SetCustomGraphicColor(const std::string &color)
@@ -908,7 +1152,9 @@ void BridgeDeviceContext::ResumeGraphic(Object *object, std::string gId)
 void BridgeDeviceContext::EndResumedGraphic(Object *object, View *view)
 {
     assert(m_nodeStack.size() > 1);
+    BridgeNode *node = m_nodeStack.back();
     m_nodeStack.pop_back();
+    CalculateNodeBBox(*node, m_glyphs, {});
 }
 
 void BridgeDeviceContext::RotateGraphic(Point const &orig, double angle)
@@ -949,6 +1195,10 @@ void BridgeDeviceContext::StartPage()
 void BridgeDeviceContext::EndPage()
 {
     assert(m_nodeStack.size() == 1);
+    BridgePage &page = m_pages.back();
+    CalculateNodeBBox(*page.root, m_glyphs, {});
+    int nodePath = -1;
+    BuildIndex(*page.root, nodePath, page.index);
     m_nodeStack.clear();
 }
 

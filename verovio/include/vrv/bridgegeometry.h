@@ -87,6 +87,8 @@ struct BridgeTextRun {
     data_FONTSTYLE style = FONTSTYLE_NONE;
     data_FONTWEIGHT weight = FONTWEIGHT_NONE;
     int color = COLOR_NONE; // COLOR_NONE = inherit, same convention as BridgeShape::fillColor
+    bool hasBBox = false;
+    double bbox[4] = { 0, 0, 0, 0 };
 };
 
 //----------------------------------------------------------------------------
@@ -110,7 +112,16 @@ struct BridgeNode {
     bool hasRotation = false;
     double rotation = 0.0;
     Point rotationOrigin;
+    bool hasBBox = false;
+    double bbox[4] = { 0, 0, 0, 0 }; // x0, y0, x1, y1 in viewBox units
     std::vector<BridgeChild> children; // document order: later entries paint on top
+};
+
+struct BridgeIndexEntry {
+    std::string id;
+    std::string className;
+    int nodePath = -1;
+    double bbox[4] = { 0, 0, 0, 0 };
 };
 
 struct BridgePage {
@@ -120,6 +131,7 @@ struct BridgePage {
     double userScaleX = 1.0, userScaleY = 1.0;
     double viewBoxFactor = 10.0;
     int originX = 0, originY = 0;
+    std::vector<BridgeIndexEntry> index;
 };
 
 } // namespace vrv

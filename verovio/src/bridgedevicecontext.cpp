@@ -800,6 +800,10 @@ void BridgeDeviceContext::DrawText(
         run.style = font->GetStyle();
         run.weight = font->GetWeight();
         run.color = currentBrush.HasColor() ? currentBrush.GetColor() : COLOR_NONE;
+        // Mirrors SvgDeviceContext's "definition-scale" root font-family default
+        // (resources->GetTextFont() + ", serif") for the (rare) case a caller never set an
+        // explicit face name on this FontInfo - the run's family must never be empty.
+        run.family = !font->GetFaceName().empty() ? font->GetFaceName() : (resources->GetTextFont() + ", serif");
 
         TextExtend extend;
         this->GetTextExtent(chars, &extend, true);

@@ -87,6 +87,7 @@ struct BridgeTextRun {
     data_FONTSTYLE style = FONTSTYLE_NONE;
     data_FONTWEIGHT weight = FONTWEIGHT_NONE;
     int color = COLOR_NONE; // COLOR_NONE = inherit, same convention as BridgeShape::fillColor
+    std::string family; // FontInfo::GetFaceName() active at DrawText time, never empty (see BridgeDeviceContext::DrawText)
     bool hasBBox = false;
     double bbox[4] = { 0, 0, 0, 0 };
 };

@@ -435,7 +435,7 @@ explicitamente.
 | derivado de `width/contentHeight/viewBoxFactor` | `pages[].viewBox` | `[0, 0, width * factor, contentHeight * factor]` |
 | derivado de `baseWidth/baseHeight/userScale*` | `pages[].widthPx`, `heightPx` | tamanho de saída da página |
 | derivado de todos os campos acima | `pages[].fit` | `scale`, `tx`, `ty` pré-computados |
-| `FontInfo` ativo (fora de `BridgeTextRun`) | `t.family` | família/TTF do texto comum |
+| `BridgeTextRun.family` (S05) | `t.family` | face ativa (`FontInfo::GetFaceName()`) no momento do `DrawText`, com fallback para `resources->GetTextFont() + ", serif"` quando vazia (mesmo default do `font-family` da raiz `svg.definition-scale`); nunca vazia |
 | empacotamento | `manifest`, `timemap` | nomes, versão, páginas e timemap embutido |
 
 ## 9. Compatibilidade
@@ -454,3 +454,4 @@ explicitamente.
 | --- | --- |
 | 2026-09-17 | S01: formato nomeado Verovio Score Bridge (`.vsb`), flags `-t vsb`/`-t vsb-json`, timemap embutido quando disponível, exemplo mínimo, schema v1 e correspondência completa da IR. |
 | 2026-09-17 | Correção pós-S04: `pages[].elements` (§5.5) definido para o índice plano de elementos endereçáveis que `BridgeDeviceContext` já constrói (`BridgePage::index`) mas que nunca tinha ganhado forma na especificação/schema; tabela de §8 atualizada de `Lottie*` para os nomes atuais `Bridge*` (renomeados em S02) e completada com as linhas de `BridgeGlyphUse`/`BridgeChild.glyphUse` (S03) e `BridgeNode.bbox`/`BridgeIndexEntry` (S04), que tinham ficado como placeholders de uma linha só. |
+| 2026-09-17 | Correção durante S05: a tabela de §8 previa `t.family` vindo de "`FontInfo` ativo (fora de `BridgeTextRun`)", mas nenhuma estrutura da IR carregava essa informação até a árvore ser serializada, e o `BridgeWriter` não tem acesso ao `FontInfo` do `DeviceContext` (que só existe durante o `DrawText`). Adicionado `BridgeTextRun::family` (`bridgegeometry.h`), populado em `BridgeDeviceContext::DrawText` a partir de `FontInfo::GetFaceName()` (com o mesmo fallback que a raiz do SVG usa quando vazia); tabela corrigida para refletir a IR real. |

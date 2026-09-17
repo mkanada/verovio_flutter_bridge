@@ -1,0 +1,21 @@
+name: compare
+description: "Comparacao visual de PNGs; o SVG e gerado separadamente por compare/svg_render/."
+publish_to: 'none'
+version: 0.2.0+1
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image: ^4.5.4
+  args: ^2.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

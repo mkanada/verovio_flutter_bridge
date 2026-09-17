@@ -116,4 +116,13 @@ produzindo **exatamente o mesmo SVG** de antes.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-17: bloqueado. A cópia foi feita com os excludes prescritos e os seis arquivos listados foram removidos. A busca prescrita retornou 3 ocorrências, todas em `verovio/src/lottiepageturn.cpp` (nome, include e comentário).
+- `cmake ../cmake` configurou com sucesso. `make -j4` falhou em `verovio/src/lottiepageturn.cpp:8`: `lottiepageturn.h` não existe. O passo manda remover esse cabeçalho, mas não lista `src/lottiepageturn.cpp` para remoção; o CMake o coleta por `file(GLOB ../src/*.cpp)`.
+- Uma primeira tentativa de build foi interrompida pelo limite de 120 s em 36%; a repetição com 600 s chegou à falha acima.
+- Comparação SVG do corpus, `--help`, criação do `.gitignore`/preparação git e status final não foram executados após o bloqueio. Nenhum commit ou push foi feito.
+- 2026-09-17 (continuação): `verovio/src/lottiepageturn.cpp` já estava ausente no início desta execução; nenhuma outra fonte foi removida. Confirmados presentes `lottiedevicecontext.{h,cpp}`, `lottiegeometry.h` e `svgpathparser.{h,cpp}`.
+- Limpos os artefatos conhecidos de build/binário e refeitos `cmake ../cmake` e `make -j4` em `verovio/tools`: configuração e compilação concluíram sem erro. O build emitiu avisos GCC em `iohumdrum.cpp` (código não alterado neste passo).
+- Busca prescrita em `verovio/src verovio/include verovio/tools verovio/emscripten`: vazia.
+- `verovio/tools/verovio -h`: executou com sucesso e não listou opções Lottie.
+- Corpus MEI disponível em `../verovio_lottie/corpus/mei`: 5 peças, 15 SVGs de saída. A comparação byte a byte literal falhou somente nos metadados de versão/IDs: o binário atual embeda `Verovio 6.3.0-460cfd1-dirty`, o original `6.3.0-4f68a7c-dirty`. Com `-x 1` os IDs ficam iguais e, normalizando apenas esse hash no `<desc>`, todos os 15 SVGs coincidem; portanto não há diferença de renderização observada, mas o critério F01 de byte-idêntico literal permanece bloqueado por metadados de build.
+- Criado `.gitignore` na raiz com os caminhos mínimos do passo; após a limpeza, não há `CMakeCache.txt`, `CMakeFiles`, `Makefile`, `cmake_install.cmake`, `verovio` ou `.o` gerados. Nenhum commit ou push foi feito.

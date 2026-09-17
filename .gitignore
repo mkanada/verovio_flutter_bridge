@@ -1,0 +1,12 @@
+verovio/tools/verovio
+verovio/tools/build-*/
+verovio/tools/CMakeFiles/
+verovio/tools/CMakeCache.txt
+verovio/tools/Makefile
+verovio/tools/cmake_install.cmake
+verovio/src/*.o
+compare/out/
+compare/build/
+compare/svg_render/target/
+**/.dart_tool/
+build/

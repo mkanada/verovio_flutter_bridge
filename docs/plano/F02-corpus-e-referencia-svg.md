@@ -82,4 +82,34 @@ comparável com o histórico.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-17: copiado `../verovio_lottie/corpus/` para `corpus/` excluindo
+  `lottie/`; copiado `compare/svg_render/` sem artefatos de build; montado o
+  app Flutter de comparação com apenas `diff`, removidas as dependências
+  `dotlottie_flutter` e `verovio_viewer` e os arquivos específicos de Lottie.
+  `compare/scripts/compare-page.sh` e `compare-corpus.sh` foram copiados com os
+  blocos do exportador/render Lottie preservados e comentados; o caminho
+  SVG→PNG permanece funcional.
+- `compare/svg_render`: `cargo build --release` e `cargo test` passaram
+  (3 testes).
+- `compare`: `flutter pub get`, `flutter analyze`, `flutter build linux
+  --release` e `flutter test` passaram (4 testes). `compare --help` lista o
+  comando `diff`; `compare diff --help` também passa.
+- Referências SVG→PNG da página 1, comparadas contra o projeto anterior com
+  tolerância 0 (imagens 2100x2970, 6.237.000 pixels cada):
+  - MEI `Chopin_Etude_Op10_No9`: 0 pixels divergentes, 0.0000%, maior
+    diferença de canal 0.
+  - MusicXML `Prelude_I_in_C_major_BWV_846`: 0 pixels divergentes, 0.0000%,
+    maior diferença de canal 0.
+  - MusicXML `Clair_de_Lune__Debussy`: 0 pixels divergentes, 0.0000%, maior
+    diferença de canal 0.
+- `compare/scripts/compare-page.sh corpus/mei/Chopin_Etude_Op10_No9.mei 1 0`
+  gerou o SVG e o PNG de referência com sucesso em `compare/out/` (ignorado).
+- Corpus verificado: 5 MEI, 5 MusicXML e 0 `.lottie`.
+- O binário atual do Verovio teve de ser reconstruído porque a limpeza de F01
+  removeu o executável; `cmake ../cmake && make -j4` concluiu com os avisos GCC
+  já conhecidos em `iohumdrum.cpp`. A ressalva de F01 permanece restrita ao hash
+  de versão nos metadados do SVG; as renderizações PNG acima são idênticas.
+- `git status --short` mostra as alterações de documentação esperadas e os
+  diretórios de fonte ainda não versionados (`.gitignore`, `compare/`, `corpus/`,
+  `verovio/`); `compare/out/`, builds e binários estão ignorados. Nenhum commit
+  ou push foi feito.

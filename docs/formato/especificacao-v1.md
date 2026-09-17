@@ -182,15 +182,17 @@ se closed:
       "heightPx": 2970,
       "fit": { "scale": 0.1, "tx": 0.0, "ty": 0.0 },
       "origin": [500, 500],
-      "root": { "...": "nó" }
+      "root": { "...": "nó" },
+      "elements": [{ "...": "entrada do índice, ver §5.5" }]
     }
   ]
 }
 ```
 
-Todos os campos vindos de `LottiePage` são serializados. `viewBox`,
+Todos os campos vindos de `BridgePage` são serializados. `viewBox`,
 `widthPx`/`heightPx` e `fit` são derivados, mas também são gravados para que o
-leitor não refaça a métrica da página.
+leitor não refaça a métrica da página. `elements` é o índice plano de
+elementos endereçáveis (`BridgePage::index`, ver §5.5).
 
 ### 5.1 Nó (grupo)
 
@@ -246,7 +248,7 @@ intervalo]`).
 { "t": "e", "cx": 0, "cy": 0, "rx": 50, "ry": 50 }
 ```
 
-`LottieShape.hasFill` e `hasStroke` controlam a presença de `fill` e `stroke`:
+`BridgeShape.hasFill` e `hasStroke` controlam a presença de `fill` e `stroke`:
 `false` vira `"none"`; `true` com cor `COLOR_NONE` omite o campo (herança);
 `true` com cor explícita vira `#rrggbb`. `fillOpacity` e `strokeOpacity` são
 omitidos quando valem `1.0`.
@@ -283,7 +285,7 @@ omitidos quando valem `1.0`.
 }
 ```
 
-- `s` vem de `LottieTextRun.text`.
+- `s` vem de `BridgeTextRun.text`.
 - `x`/`y` vêm de `origin`, antes do deslocamento de alinhamento.
 - `align` usa `left`, `center` ou `right`, mapeados respectivamente para
   `text-anchor=start`, `middle` e `end`. `none` e `justify` são normalizados para
@@ -298,6 +300,31 @@ omitidos quando valem `1.0`.
 - `color` segue a mesma regra de herança dos nós.
 - Runs cujos caracteres são todos codepoints SMuFL cobertos pelas fontes do
   projeto não viram `t`: viram usos de glifo (`u`).
+
+### 5.5 Índice de elementos endereçáveis (`elements`)
+
+```json
+{ "id": "note-0000001386", "class": "note", "nodePath": 42, "bbox": [x0, y0, x1, y1] }
+```
+
+`pages[].elements` é um array plano, com uma entrada para **cada nó da árvore
+que tem `id`** — a mesma condição de §5.1 que já obriga a bbox daquele nó a
+ser emitida — em ordem de percurso em pré-ordem da árvore (a raiz é a posição
+`0`; cada nó, com ou sem `id`, consome uma posição; só nós com `id` viram
+entrada no array). Ele existe só para o host achar um nó por `xml:id` em
+O(1), sem varrer `root`; não é informação nova, é uma redundância deliberada
+com o que já está na árvore (`g.id`/`g.class`/`g.bbox`).
+
+- `id` e `class` são idênticos a `g.id`/`g.class` do nó indexado.
+- `nodePath` é a posição sequencial do nó na ordem de percurso em pré-ordem
+  descrita acima, só dentro desta exportação (não é estável entre exportações
+  nem é um índice no array `children`); serve de posição pronta para o host
+  guardar em memória.
+- `bbox` é idêntico ao `bbox` do nó indexado (§5.1), nas mesmas unidades de
+  viewBox. Como todo nó com `id` sempre emite bbox por §5.1, `bbox` está
+  sempre presente aqui — exceto no caso teórico de um nó com `id` sem nenhum
+  conteúdo desenhável (`hidden`, por exemplo), em que o valor gravado é
+  `[0, 0, 0, 0]`; nenhum caso assim foi observado no corpus de teste do S04.
 
 ## 6. Ordem de pintura e estado herdado
 
@@ -326,71 +353,89 @@ Para que duas exportações da mesma peça sejam comparáveis:
 ## 8. Correspondência IR ↔ formato
 
 A tabela abaixo cobre campo a campo a IR de
-[`lottiegeometry.h`](../../verovio/include/vrv/lottiegeometry.h). Os campos
-derivados ou vindos de estruturas auxiliares (`Glyph`, `FontInfo`, S03/S04 e
-empacotamento) estão indicados explicitamente.
+[`bridgegeometry.h`](../../verovio/include/vrv/bridgegeometry.h) (o arquivo se
+chamava `lottiegeometry.h` até o renome mecânico de S02; os tipos abaixo já
+usam os nomes atuais, `Bridge*`). Os campos derivados ou vindos de estruturas
+auxiliares (`Glyph`, `FontInfo`, S03/S04 e empacotamento) estão indicados
+explicitamente.
 
 | Tipo/campo da IR | Campo JSON | Regra de correspondência |
 | --- | --- | --- |
-| `LottieVec.x` | pares x em `v`/`i`/`o`, `origin`, `bbox`, `fit`, `viewBox` etc. | coordenada horizontal em unidades de viewBox ou de fonte, conforme o objeto |
-| `LottieVec.y` | pares y nos mesmos arrays/objetos | coordenada vertical; eixo Y para baixo |
-| `LottieBezier.v` | `paths[].v` | vértices em array plano de pares |
-| `LottieBezier.i` | `paths[].i` | tangentes de entrada relativas ao vértice |
-| `LottieBezier.o` | `paths[].o` | tangentes de saída relativas ao vértice |
-| `LottieBezier.closed` | `paths[].closed` | booleano de fechamento do subpath |
-| `LottieShape.kind` | `t` da forma (`p`, `r` ou `e`) | `Path` → `p`, `Rect` → `r`, `Ellipse` → `e` |
-| `LottieShape.paths` | `p.paths` | subpaths compartilhando o mesmo fill |
-| `LottieShape.center` | `r.x/y/w/h` ou `e.cx/cy` | centro convertido para canto superior esquerdo no retângulo; centro direto na elipse |
-| `LottieShape.size` | `r.w/h` ou `e.rx/ry` | tamanho direto no retângulo; metade do tamanho nos raios da elipse |
-| `LottieShape.radius` | `r.rx` | raio dos cantos; `0` quando não arredondado |
-| `LottieShape.hasFill` | presença/valor de `fill` | `false` → `"none"`; `true` + `COLOR_NONE` → ausente; `true` + cor → hex |
-| `LottieShape.fillColor` | `fill` | cor resolvida em `#rrggbb`, ou ausente para herança |
-| `LottieShape.fillOpacity` | `fillOpacity` | omitido quando `1.0` |
-| `LottieShape.hasStroke` | presença/valor de `stroke` | `false` → `"none"`; `true` + `COLOR_NONE` → ausente; `true` + cor → hex |
-| `LottieShape.strokeWidth` | `strokeWidth` | largura em unidades de viewBox; padrão IR `1.0` |
-| `LottieShape.strokeColor` | `stroke` | cor resolvida em `#rrggbb`, ou ausente para herança |
-| `LottieShape.strokeOpacity` | `strokeOpacity` | omitido quando `1.0` |
-| `LottieShape.lineCap` | `lineCap` | enum normalizado para `default`, `butt`, `round` ou `square` |
-| `LottieShape.lineJoin` | `lineJoin` | enum normalizado para `default`, `arcs`, `bevel`, `miter`, `miter-clip` ou `round` |
-| `LottieShape.dashLength` | `dash[0]` | presente somente quando maior que zero |
-| `LottieShape.gapLength` | `dash[1]` | intervalo correspondente; usa o valor resolvido da IR |
-| `LottieTextRun.text` | `t.s` | string UTF-8/JSON do run comum |
-| `LottieTextRun.origin` | `t.x`, `t.y` | âncora antes do offset de alinhamento |
-| `LottieTextRun.alignment` | `t.align` | `left`/`center`/`right`; `none` e `justify` normalizados para `left` |
-| `LottieTextRun.pointSize` | `t.size` | tamanho já convertido para unidades de viewBox |
-| `LottieTextRun.letterSpacing` | `t.letterSpacing` | espaçamento entre caracteres; `0.0` quando não usado |
-| `LottieTextRun.style` | `t.italic` | `italic`/`oblique` → `true`; `normal`/`none` → `false`, após CSS |
-| `LottieTextRun.weight` | `t.bold` | `bold` → `true`; `normal`/`none` → `false`, após CSS |
-| `LottieTextRun.color` | `t.color` | cor explícita ou ausente para `COLOR_NONE` (herança) |
-| `LottieChild.group` | item `children[]` com `t: "g"` | subgrupo; os campos do `LottieNode` entram no mesmo objeto |
-| `LottieChild.text` | item `children[]` com `t: "t"` | run de texto comum |
-| `LottieChild.shape` | item `children[]` com `t: "p"`, `"r"` ou `"e"` | forma; o discriminante vem de `kind` |
-| `LottieNode.id` | `g.id` | `xml:id` primário; ausente quando vazio |
-| `LottieNode.className` | `g.class` | classes/nome do grupo |
-| `LottieNode.colorCss` | `g.color` | CSS color resolvido e normalizado; ausente quando vazio |
-| `LottieNode.hidden` | `g.hidden` | booleano de visibilidade |
-| `LottieNode.hasRotation` | presença de `g.rotate` | `false` → campo ausente; `true` → objeto presente |
-| `LottieNode.rotation` | `g.rotate.angle` | ângulo em graus |
-| `LottieNode.rotationOrigin` | `g.rotate.origin` | pivô `[x, y]` |
-| `LottieNode.children` | `g.children` | ordem de documento; o último filho pinta por cima |
-| `LottiePage.root` | `pages[].root` | raiz da árvore da página |
-| `LottiePage.width` | `pages[].width` | largura lógica da página |
-| `LottiePage.height` | `pages[].height` | altura lógica da página |
-| `LottiePage.contentHeight` | `pages[].contentHeight` | altura usada no viewBox vertical |
-| `LottiePage.baseWidth` | `pages[].baseWidth` | largura base usada por `ComputePageMetrics` |
-| `LottiePage.baseHeight` | `pages[].baseHeight` | altura base usada por `ComputePageMetrics` |
-| `LottiePage.userScaleX` | `pages[].userScaleX` | escala horizontal de entrada |
-| `LottiePage.userScaleY` | `pages[].userScaleY` | escala vertical de entrada |
-| `LottiePage.viewBoxFactor` | `pages[].viewBoxFactor` | fator de conversão para o viewBox |
-| `LottiePage.originX` | `pages[].origin[0]` | translação `page-margin` em X |
-| `LottiePage.originY` | `pages[].origin[1]` | translação `page-margin` em Y |
+| `BridgeVec.x` | pares x em `v`/`i`/`o`, `origin`, `bbox`, `fit`, `viewBox` etc. | coordenada horizontal em unidades de viewBox ou de fonte, conforme o objeto |
+| `BridgeVec.y` | pares y nos mesmos arrays/objetos | coordenada vertical; eixo Y para baixo |
+| `BridgeBezier.v` | `paths[].v` | vértices em array plano de pares |
+| `BridgeBezier.i` | `paths[].i` | tangentes de entrada relativas ao vértice |
+| `BridgeBezier.o` | `paths[].o` | tangentes de saída relativas ao vértice |
+| `BridgeBezier.closed` | `paths[].closed` | booleano de fechamento do subpath |
+| `BridgeShape.kind` | `t` da forma (`p`, `r` ou `e`) | `Path` → `p`, `Rect` → `r`, `Ellipse` → `e` |
+| `BridgeShape.paths` | `p.paths` | subpaths compartilhando o mesmo fill |
+| `BridgeShape.center` | `r.x/y/w/h` ou `e.cx/cy` | centro convertido para canto superior esquerdo no retângulo; centro direto na elipse |
+| `BridgeShape.size` | `r.w/h` ou `e.rx/ry` | tamanho direto no retângulo; metade do tamanho nos raios da elipse |
+| `BridgeShape.radius` | `r.rx` | raio dos cantos; `0` quando não arredondado |
+| `BridgeShape.hasFill` | presença/valor de `fill` | `false` → `"none"`; `true` + `COLOR_NONE` → ausente; `true` + cor → hex |
+| `BridgeShape.fillColor` | `fill` | cor resolvida em `#rrggbb`, ou ausente para herança |
+| `BridgeShape.fillOpacity` | `fillOpacity` | omitido quando `1.0` |
+| `BridgeShape.hasStroke` | presença/valor de `stroke` | `false` → `"none"`; `true` + `COLOR_NONE` → ausente; `true` + cor → hex |
+| `BridgeShape.strokeWidth` | `strokeWidth` | largura em unidades de viewBox; padrão IR `1.0` |
+| `BridgeShape.strokeColor` | `stroke` | cor resolvida em `#rrggbb`, ou ausente para herança |
+| `BridgeShape.strokeOpacity` | `strokeOpacity` | omitido quando `1.0` |
+| `BridgeShape.lineCap` | `lineCap` | enum normalizado para `default`, `butt`, `round` ou `square` |
+| `BridgeShape.lineJoin` | `lineJoin` | enum normalizado para `default`, `arcs`, `bevel`, `miter`, `miter-clip` ou `round` |
+| `BridgeShape.dashLength` | `dash[0]` | presente somente quando maior que zero |
+| `BridgeShape.gapLength` | `dash[1]` | intervalo correspondente; usa o valor resolvido da IR |
+| `BridgeGlyphDef.font` | `glyphs[...].font` | família que forneceu o glifo (S03) |
+| `BridgeGlyphDef.codepoint` | `glyphs[...].codepoint` | metade da chave do dicionário |
+| `BridgeGlyphDef.unitsPerEm` | `glyphs[...].unitsPerEm` | metadado de `Glyph`, futuro caminho TTF |
+| `BridgeGlyphDef.horizAdvX` | `glyphs[...].horizAdvX` | metadado de `Glyph`, futuro caminho TTF |
+| `BridgeGlyphDef.bbox` | `glyphs[...].bbox` | bbox do glifo em unidades de fonte |
+| `BridgeGlyphDef.paths` | `glyphs[...].paths` | contorno em unidades de fonte (S03) |
+| `BridgeGlyphUse.glyphId` | `u.g` | chave no dicionário `glyphs`, `"<fonte>:<codepoint hex maiúsculo>"` (S03) |
+| `BridgeGlyphUse.x` | `u.x` | posição horizontal em unidades de viewBox |
+| `BridgeGlyphUse.y` | `u.y` | posição vertical em unidades de viewBox |
+| `BridgeGlyphUse.sx` | `u.sx` | escala horizontal, `pointSize / unitsPerEm * DEFINITION_FACTOR` (+ `widthToHeightRatio`) |
+| `BridgeGlyphUse.sy` | `u.sy` | escala vertical, `pointSize / unitsPerEm * DEFINITION_FACTOR` |
+| `BridgeTextRun.text` | `t.s` | string UTF-8/JSON do run comum |
+| `BridgeTextRun.origin` | `t.x`, `t.y` | âncora antes do offset de alinhamento |
+| `BridgeTextRun.alignment` | `t.align` | `left`/`center`/`right`; `none` e `justify` normalizados para `left` |
+| `BridgeTextRun.pointSize` | `t.size` | tamanho já convertido para unidades de viewBox |
+| `BridgeTextRun.letterSpacing` | `t.letterSpacing` | espaçamento entre caracteres; `0.0` quando não usado |
+| `BridgeTextRun.style` | `t.italic` | `italic`/`oblique` → `true`; `normal`/`none` → `false`, após CSS |
+| `BridgeTextRun.weight` | `t.bold` | `bold` → `true`; `normal`/`none` → `false`, após CSS |
+| `BridgeTextRun.color` | `t.color` | cor explícita ou ausente para `COLOR_NONE` (herança) |
+| `BridgeChild.group` | item `children[]` com `t: "g"` | subgrupo; os campos do `BridgeNode` entram no mesmo objeto |
+| `BridgeChild.text` | item `children[]` com `t: "t"` | run de texto comum |
+| `BridgeChild.glyphUse` | item `children[]` com `t: "u"` | uso de glifo; substitui o baking de contorno (S03) |
+| `BridgeChild.shape` | item `children[]` com `t: "p"`, `"r"` ou `"e"` | forma; o discriminante vem de `kind` |
+| `BridgeNode.id` | `g.id` | `xml:id` primário; ausente quando vazio |
+| `BridgeNode.className` | `g.class` | classes/nome do grupo |
+| `BridgeNode.colorCss` | `g.color` | CSS color resolvido e normalizado; ausente quando vazio |
+| `BridgeNode.hidden` | `g.hidden` | booleano de visibilidade |
+| `BridgeNode.hasRotation` | presença de `g.rotate` | `false` → campo ausente; `true` → objeto presente |
+| `BridgeNode.rotation` | `g.rotate.angle` | ângulo em graus |
+| `BridgeNode.rotationOrigin` | `g.rotate.origin` | pivô `[x, y]` |
+| `BridgeNode.hasBBox` (S04) | presença de `g.bbox` | `false` → campo ausente; `true` → array presente (regra de emissão em §5.1) |
+| `BridgeNode.bbox` (S04) | `g.bbox` | união das bboxes dos filhos após transformações locais, unidades de viewBox |
+| `BridgeNode.children` | `g.children` | ordem de documento; o último filho pinta por cima |
+| `BridgePage.root` | `pages[].root` | raiz da árvore da página |
+| `BridgePage.width` | `pages[].width` | largura lógica da página |
+| `BridgePage.height` | `pages[].height` | altura lógica da página |
+| `BridgePage.contentHeight` | `pages[].contentHeight` | altura usada no viewBox vertical |
+| `BridgePage.baseWidth` | `pages[].baseWidth` | largura base usada por `ComputePageMetrics` |
+| `BridgePage.baseHeight` | `pages[].baseHeight` | altura base usada por `ComputePageMetrics` |
+| `BridgePage.userScaleX` | `pages[].userScaleX` | escala horizontal de entrada |
+| `BridgePage.userScaleY` | `pages[].userScaleY` | escala vertical de entrada |
+| `BridgePage.viewBoxFactor` | `pages[].viewBoxFactor` | fator de conversão para o viewBox |
+| `BridgePage.originX` | `pages[].origin[0]` | translação `page-margin` em X |
+| `BridgePage.originY` | `pages[].origin[1]` | translação `page-margin` em Y |
+| `BridgePage.index` (S04) | `pages[].elements` | índice plano de elementos endereçáveis, ver §5.5 |
+| `BridgeIndexEntry.id` (S04) | `elements[].id` | mesmo valor de `g.id` do nó indexado |
+| `BridgeIndexEntry.className` (S04) | `elements[].class` | mesmo valor de `g.class` do nó indexado |
+| `BridgeIndexEntry.nodePath` (S04) | `elements[].nodePath` | posição sequencial em pré-ordem, só válida dentro da mesma exportação |
+| `BridgeIndexEntry.bbox` (S04) | `elements[].bbox` | idêntico ao `bbox` do nó indexado |
 | derivado de `width/contentHeight/viewBoxFactor` | `pages[].viewBox` | `[0, 0, width * factor, contentHeight * factor]` |
 | derivado de `baseWidth/baseHeight/userScale*` | `pages[].widthPx`, `heightPx` | tamanho de saída da página |
 | derivado de todos os campos acima | `pages[].fit` | `scale`, `tx`, `ty` pré-computados |
-| metadados de `Glyph` (fora da IR de cena) | `glyphs[...].font/codepoint/unitsPerEm/horizAdvX/bbox` | dicionário de contornos e futuro caminho TTF |
-| `FontInfo` ativo (fora de `LottieTextRun`) | `t.family` | família/TTF do texto comum |
-| S03 | `t: "u"` e `glyphs` | substitui contornos assados por referência ao dicionário |
-| S04 | `bbox` e índice por `id` | bounding boxes exportadas para overlay/navegação |
+| `FontInfo` ativo (fora de `BridgeTextRun`) | `t.family` | família/TTF do texto comum |
 | empacotamento | `manifest`, `timemap` | nomes, versão, páginas e timemap embutido |
 
 ## 9. Compatibilidade
@@ -408,3 +453,4 @@ empacotamento) estão indicados explicitamente.
 | Data | Mudança |
 | --- | --- |
 | 2026-09-17 | S01: formato nomeado Verovio Score Bridge (`.vsb`), flags `-t vsb`/`-t vsb-json`, timemap embutido quando disponível, exemplo mínimo, schema v1 e correspondência completa da IR. |
+| 2026-09-17 | Correção pós-S04: `pages[].elements` (§5.5) definido para o índice plano de elementos endereçáveis que `BridgeDeviceContext` já constrói (`BridgePage::index`) mas que nunca tinha ganhado forma na especificação/schema; tabela de §8 atualizada de `Lottie*` para os nomes atuais `Bridge*` (renomeados em S02) e completada com as linhas de `BridgeGlyphUse`/`BridgeChild.glyphUse` (S03) e `BridgeNode.bbox`/`BridgeIndexEntry` (S04), que tinham ficado como placeholders de uma linha só. |

@@ -82,3 +82,26 @@ e produzir um exemplo mínimo validável à mão.
   `manifest`, `glyphs`, `scene` e `timemap`.
 - A tabela de correspondência cobre os 52 campos declarados em
   `lottiegeometry.h`; nenhum código C++ ou Dart foi escrito.
+- 2026-09-17 (correção pós-S04): a auditoria dos passos anteriores, ao revisar
+  S04, achou dois desvios entre este documento e a IR que S02-S04 já tinham
+  produzido — nenhum deles tinha sido reaberto para atualizar a especificação
+  depois que os passos seguintes mudaram a IR, apesar de o cabeçalho do
+  documento normativo exigir isso ("uma divergência encontrada durante a
+  implementação é resolvida editando este documento primeiro"):
+  1. `BridgePage::index` (o índice plano de elementos endereçáveis que S04
+     implementou e verificou contra o `timemap`) nunca tinha ganhado uma forma
+     em JSON — a linha "S04 | bbox e índice por id" na tabela de §8 era só um
+     placeholder de uma linha, nunca expandido. Adicionado `pages[].elements`
+     (§5.5 da especificação) + `$defs/indexEntry` no schema + exemplo em
+     `exemplo-minimo.json`, validado com `jsonschema` (Draft 2020-12) contra o
+     documento único e contra `scene`/`glyphs`/`manifest` isolados.
+  2. A tabela de §8 (e três frases soltas em §5) ainda citava os nomes
+     `Lottie*` e o caminho `lottiegeometry.h`, que S02 renomeou para `Bridge*`/
+     `bridgegeometry.h` — a tabela nunca foi revisitada depois do renome nem
+     depois de S03 (uso de glifo, `BridgeChild.glyphUse`/`BridgeGlyphUse`) e S04
+     (`BridgeNode.hasBBox`/`bbox`) acrescentarem campos novos à IR, que também
+     ficaram sem linha própria. Renomeado em todo o documento e adicionadas as
+     linhas que faltavam.
+  - Nenhuma mudança de código (C++/Dart) foi feita; é só especificação/schema
+    alcançando a IR que S02-S04 já implementaram. Ver a entrada correspondente
+    no "Histórico de revisões" da especificação.

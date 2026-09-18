@@ -283,11 +283,11 @@ int main(int argc, char **argv)
 
     const std::vector<std::string> outformats
         = { "mei", "mei-basic", "mei-pb", "mei-facs", "svg", "midi", "timemap", "expansionmap", "humdrum", "hum",
-              "pae", "mei-pb-serialized", "vsb-json" };
+              "pae", "mei-pb-serialized", "vsb", "vsb-json" };
     if (std::find(outformats.begin(), outformats.end(), outformat) == outformats.end()) {
         std::cerr << "Output format (" << outformat
                   << ") can only be 'mei', 'mei-basic', 'mei-pb', mei-facs', 'svg', 'midi', "
-                     "'timemap', 'expansionmap', 'humdrum', 'hum', 'pae', 'mei-pb-serialized', or 'vsb-json'."
+                     "'timemap', 'expansionmap', 'humdrum', 'hum', 'pae', 'mei-pb-serialized', 'vsb', or 'vsb-json'."
                   << std::endl;
         exit(1);
     }
@@ -543,6 +543,20 @@ int main(int argc, char **argv)
         }
         else if (!toolkit.RenderToPAEFile(outfile)) {
             std::cerr << "Unable to write PAE to " << outfile << "." << std::endl;
+            exit(1);
+        }
+        else {
+            std::cerr << "Output written to " << outfile << "." << std::endl;
+        }
+    }
+    else if (outformat == "vsb") {
+        outfile += ".vsb";
+        if (stdOutput) {
+            std::cerr << "vsb is a binary package and cannot be written to standard output." << std::endl;
+            exit(1);
+        }
+        else if (!toolkit.RenderToBridgeFile(outfile)) {
+            std::cerr << "Unable to write vsb to " << outfile << "." << std::endl;
             exit(1);
         }
         else {

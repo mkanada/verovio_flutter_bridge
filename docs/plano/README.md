@@ -144,7 +144,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [S04](S04-bboxes-e-indice.md) | Bounding boxes e índice de elementos endereçáveis | S02 | — | concluído com ressalva |
 | [S05](S05-writer-json.md) | `BridgeWriter`: IR → `scene.json`/`glyphs.json` | S01, S02, S03, S04 | — | concluído |
 | [S06](S06-toolkit-e-cli.md) | `Toolkit` + CLI (`-t vsb-json`, todas as páginas) | S05 | D-NOME resolvida | concluído |
-| [S07](S07-pacote-vsb.md) | Pacote `.vsb` (zip) com timemap embutido | S06 | — | a fazer |
+| [S07](S07-pacote-vsb.md) | Pacote `.vsb` (zip) com timemap embutido | S06 | — | concluído |
 | [R01](R01-pacote-dart-e-parser.md) | Pacote `score_bridge`: modelo + parser | S05 | — | a fazer |
 | [R02](R02-scene-painter-primitivas.md) | `ScenePainter`: primitivas, cor herdada, ajuste de página | R01 | — | a fazer |
 | [R03](R03-glifos.md) | Glifos: `Path` por `glyphId`, cache e instâncias | R02, S03 | — | a fazer |

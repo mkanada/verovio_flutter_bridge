@@ -21,6 +21,7 @@
 
 namespace vrv {
 
+class BridgeDeviceContext;
 class EditorToolkit;
 class RuntimeClock;
 
@@ -470,6 +471,20 @@ public:
      */
     bool RenderToBridgeJsonFile(const std::string &filename, int fromPage = 1, int toPage = -1);
 
+    /**
+     * Render the whole document to the `.vsb` package (`-t vsb`): a zip archive with
+     * manifest.json, scene.json and glyphs.json, plus timemap.json when the piece produces one
+     * (docs/formato/especificacao-v1.md §2 - a piece with no usable rhythmic information omits
+     * both the file and the manifest entry, never an empty timemap). Always the full document,
+     * unlike RenderToBridgeJsonFile's optional page range.
+     *
+     * @remark nojs
+     *
+     * @param filename The output filename
+     * @return True if the file was successfully written
+     */
+    bool RenderToBridgeFile(const std::string &filename);
+
     //@}
 
     /**
@@ -843,6 +858,16 @@ private:
      * Point to the main Doc if no difference in expansion handling is needed.
      */
     void SetMidiDoc();
+
+    /**
+     * Renders a page range into `bridge`, accumulating both the pages and the document-wide glyph
+     * dictionary (S06 finding: BridgeDeviceContext never resets its glyph cache between StartPage
+     * calls). Shared by RenderToBridgeJson (an arbitrary range) and RenderToBridgeFile (always the
+     * full document).
+     *
+     * @param toPage A negative value means the last page
+     */
+    bool RenderPagesToBridge(BridgeDeviceContext &bridge, int fromPage, int toPage);
 
 public:
     //

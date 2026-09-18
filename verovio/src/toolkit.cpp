@@ -2051,20 +2051,26 @@ bool Toolkit::RenderToExpansionMapFile(const std::string &filename)
     return true;
 }
 
-std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
+bool Toolkit::RenderPagesToBridge(BridgeDeviceContext &bridge, int fromPage, int toPage)
 {
-    this->ResetLogBuffer();
-
     if (toPage < 0) toPage = this->GetPageCount();
 
     // The glyph dictionary is shared by every page rendered into this device context - see
     // BridgeDeviceContext::m_glyphs, never reset in StartPage (S06's "Achado importante").
-    BridgeDeviceContext bridge;
     bridge.SetResources(&m_doc.GetResources());
 
     for (int p = fromPage; p <= toPage; ++p) {
-        if (!this->RenderToDeviceContext(p, &bridge)) return "";
+        if (!this->RenderToDeviceContext(p, &bridge)) return false;
     }
+    return true;
+}
+
+std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
+{
+    this->ResetLogBuffer();
+
+    BridgeDeviceContext bridge;
+    if (!this->RenderPagesToBridge(bridge, fromPage, toPage)) return "";
 
     std::vector<const BridgePage *> pages;
     for (const BridgePage &page : bridge.GetPages()) {
@@ -2087,6 +2093,55 @@ bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, 
 
     outfile << output;
     return true;
+}
+
+bool Toolkit::RenderToBridgeFile(const std::string &filename)
+{
+    this->ResetLogBuffer();
+
+    BridgeDeviceContext bridge;
+    if (!this->RenderPagesToBridge(bridge, 1, -1)) return false;
+
+    std::vector<const BridgePage *> pages;
+    for (const BridgePage &page : bridge.GetPages()) {
+        pages.push_back(&page);
+    }
+
+    const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
+
+    // docs/formato/especificacao-v1.md §2: omit timemap.json (and the manifest "timemap" file
+    // entry) for a piece with no usable rhythmic information, instead of writing an empty
+    // timemap. RenderToTimemap signals outright failure (Doc::ExportTimemap's own sentinel) with
+    // the literal "{}" (a JSON object; a real timemap is always a JSON array, so this string can
+    // never occur on success) - but a doc with pages and no rhythmic content at all (e.g. an empty
+    // score) still "succeeds" with a JSON array that just has no instants, so both cases have to be
+    // checked: parse as an array and treat a missing/unparseable/empty one as "no timemap" alike.
+    //
+    // Pre-existing quirk found while validating this against a standalone `-t timemap` run (S07
+    // acceptance criterion 5, docs/plano/S07-pacote-vsb.md): for a piece with a repeat/<expansion>
+    // (S06's corpus has one, the Satie Gymnopédie), the tempo value can differ in its last digit
+    // from what `-t timemap` produces alone, because Doc::ExpandExpansions() only expands eagerly
+    // at import time for outputTo in {MIDI, TIMEMAP, EXPANSIONMAP} (iomusxml.cpp/iomei.cpp) - for
+    // every other format, including VSB, SetMidiDoc() instead expands lazily by round-tripping the
+    // doc through GetMEI() + MEIInput::Import(), and MEI attribute parsing (Att::StrToDbl, an
+    // existing bug: it calls std::stof, not std::stod) truncates to float32 precision on that
+    // round-trip. Not a bridge/vsb defect - Att::StrToDbl affects every MEI double attribute and is
+    // out of S07's scope to fix; onset/offset xml:ids are unaffected, only a tempo value's last
+    // significant digit is.
+    std::string timemapJson = this->RenderToTimemap();
+    jsonxx::Array timemapArray;
+    const bool hasTimemap = timemapArray.parse(timemapJson) && !timemapArray.empty();
+    if (!hasTimemap) timemapJson.clear();
+
+    ZipFileWriter zip;
+    zip.AddFile("manifest.json", BridgeWriter::WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap));
+    zip.AddFile("scene.json", BridgeWriter::WriteScene(pages));
+    zip.AddFile("glyphs.json", BridgeWriter::WriteGlyphs(bridge.GetGlyphs()));
+    if (hasTimemap) {
+        zip.AddFile("timemap.json", timemapJson);
+    }
+
+    return zip.Save(filename);
 }
 
 int Toolkit::GetPageCount()

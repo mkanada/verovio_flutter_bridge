@@ -965,7 +965,7 @@ Options::Options()
 
     m_outputTo.SetInfo("Output to",
         "Select output format to: \"mei\", \"mei-pb\", \"mei-facs\", \"mei-basic\", \"svg\", \"midi\", \"timemap\", "
-        "\"expansionmap\", \"humdrum\", \"pae\", \"mei-pb-serialized\" or \"vsb-json\"");
+        "\"expansionmap\", \"humdrum\", \"pae\", \"mei-pb-serialized\", \"vsb\" or \"vsb-json\"");
     m_outputTo.Init("svg");
     m_outputTo.SetKey("outputTo");
     m_outputTo.SetShortOption('t', true);
@@ -2018,6 +2018,9 @@ bool Options::SetOutputTo(std::string const &outputTo)
     }
     else if (outputTo == "mei-pb-serialized") {
         m_outputToFormat = SERIALIZATION;
+    }
+    else if (outputTo == "vsb") {
+        m_outputToFormat = VSB;
     }
     else if (outputTo == "vsb-json") {
         m_outputToFormat = VSB_JSON;

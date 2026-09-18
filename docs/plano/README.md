@@ -5,6 +5,13 @@ modelo com contexto limitado. Leia **só** este README, o [`CLAUDE.md`](../../CL
 da raiz, a [especificação do formato](../formato/especificacao-v1.md) e o
 arquivo do passo que for executar.
 
+Os passos das fases R, A e P têm sufixo de letra (`R02a`, `R02b`, …). O
+número indica o tema (R02 = primitivas, A03 = páginas) e a letra, a ordem
+dentro dele. Cada arquivo traz, numa seção **"Contexto que você precisa"**,
+os fatos medidos e as armadilhas conhecidas daquele tema — a intenção é que
+executar um passo não exija abrir mais nada além dos arquivos listados em
+"Ler antes".
+
 Contexto de por que este projeto existe:
 [`docs/licoes-do-verovio-lottie.md`](../licoes-do-verovio-lottie.md).
 
@@ -20,7 +27,10 @@ Contexto de por que este projeto existe:
    cada critério foi executado e o resultado registrado.
 6. Marque o passo como `concluído` na tabela abaixo e registre em "Notas de
    execução" (no fim do arquivo do passo) qualquer desvio, número medido ou
-   descoberta que afete passos seguintes.
+   descoberta que afete passos seguintes. Se um número medido contradisser um
+   fato citado neste README ou no arquivo do passo, **corrija o documento** —
+   os números aqui existem para poupar medição, e um número errado custa mais
+   caro que nenhum.
 7. Não faça commit nem push sem o usuário pedir.
 
 ## Convenções
@@ -65,31 +75,61 @@ Flutter:
               └─ ScoreController      → cor/animação por xml:id
 ```
 
-## Mapa do código (verificado em `../verovio_lottie`, Verovio 6.3.0)
+## Mapa do código (estado real do repositório)
 
-Referências para o código que **vem junto** na cópia do fork (F01). Se uma
-linha "andou", localize o símbolo por `grep -rn "<símbolo>" verovio/src`.
+O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
+"andou", localize o símbolo com `grep -rn "<símbolo>" verovio/src` ou
+`score_bridge/lib`.
+
+### Lado C++ (exportador, fases F e S — concluído até S07)
+
+| Conceito | Onde |
+| --- | --- |
+| Device context do bridge | `src/bridgedevicecontext.cpp`, `include/vrv/bridgedevicecontext.h` (renomeados de `lottie*` em S02) |
+| IR de cena | `include/vrv/bridgegeometry.h` (`BridgeVec`, `BridgeBezier`, `BridgeShape`, `BridgeGlyphDef`, `BridgeGlyphUse`, `BridgeTextRun`, `BridgeNode`, `BridgePage`, `BridgeIndexEntry`) |
+| Serializador JSON | `src/bridgewriter.cpp`, `include/vrv/bridgewriter.h` (S05): `ApplyClassStyleRule` L166 (CSS por classe), `ComputePageMetrics` L202 (ajuste `meet` de §3) |
+| Uso de glifo e dicionário | `src/bridgedevicecontext.cpp` `MakeGlyphUse` L616 (fórmula de `sx`/`sy`), `GetGlyphAdvance` L670 |
+| Bbox de nó e índice | `src/bridgedevicecontext.cpp` `GlyphBBox` L221, `CalculateNodeBBox` L269, `BuildIndex` L309 (**`GlyphBBox` contém o defeito que S08 corrige**) |
+| Toolkit | `include/vrv/toolkit.h`: `RenderToBridgeJson` L460, `RenderToBridgeJsonFile` L472, `RenderToBridgeFile` L486 |
+| CLI | `tools/main.cpp` L286 (lista de formatos), L552 (`vsb`), L566 (`vsb-json`); `include/vrv/toolkitdef.h` L35-L36 (`VSB`, `VSB_JSON`) |
+| Escrita de zip | `ZipFileWriter` em `include/vrv/filereader.h` / `src/filereader.cpp` (header-only com miniz: só pode ser incluído nessa unidade) |
+| Timemap | `include/vrv/timemap.h`, `src/timemap.cpp`, `Toolkit::RenderToTimemap` |
+| Parser de path de glifo | `src/svgpathparser.cpp`, `include/vrv/svgpathparser.h` |
+| Glifos SMuFL (dados) | `Resources::GetGlyph` (`include/vrv/resources.h`), `Glyph::GetXML` (`src/glyph.cpp`), `Glyph::SetBoundingBox` L95 (a bbox ×10 de S08), dados em `data/<fonte>/*.xml` |
+| Bindings C (modelo para P02a) | `tools/c_wrapper.cpp` L296-L340 |
+
+### Referência de verdade (não alterar — é o que a paridade compara)
 
 | Conceito | Onde |
 | --- | --- |
 | API abstrata de desenho | `include/vrv/devicecontext.h` L99-L337 |
 | `DEFINITION_FACTOR` | `include/vrv/vrvdef.h` L457 |
 | `Pen`/`Brush`/`FontInfo`, `COLOR_NONE` | `include/vrv/devicecontextbase.h` |
-| Implementação de referência (SVG) | `src/svgdevicecontext.cpp`: `StartGraphic` L251, `StartPage` L484 (viewBox/`page-margin`/CSS global), primitivas L686-L1017, texto L1019-L1167, `DrawMusicText` L1174, `GetColor` L1295 |
-| Device context a renomear | `src/lottiedevicecontext.cpp` (980 linhas), `include/vrv/lottiedevicecontext.h` |
-| IR de cena | `include/vrv/lottiegeometry.h` (`LottieVec`, `LottieBezier`, `LottieShape`, `LottieTextRun`, `LottieNode`, `LottiePage`) |
-| Baking de glifo (vira referência em S03) | `src/lottiedevicecontext.cpp` `MakeGlyphShape` L388-L429, `GetGlyphAdvance` L431-L444, cache `m_glyphCache` |
-| Parser de path de glifo | `src/svgpathparser.cpp`, `include/vrv/svgpathparser.h` |
-| Métricas de página / ajuste `meet` | `src/lottiewriter.cpp` `ComputePageMetrics` L597-L620 |
-| Resolução de CSS por classe (bold/italic) | `src/lottiewriter.cpp` L426-L530 |
-| Glifos SMuFL (dados) | `Resources::GetGlyph` (`include/vrv/resources.h`), `Glyph::GetXML` (`src/glyph.cpp` L150-L161), dados em `data/<fonte>/*.xml` |
-| Toolkit | `include/vrv/toolkit.h`, `src/toolkit.cpp` (`RenderToDeviceContext` L1674-L1730; funções Lottie L1912+ servem de modelo) |
-| Timemap | `include/vrv/timemap.h`, `src/timemap.cpp`, `Toolkit::RenderToTimemap` |
-| Formatos de saída | `include/vrv/toolkitdef.h` L13-L37 (`FileFormat`), `src/options.cpp` L2027-L2060 (`SetOutputTo`), `tools/main.cpp` L284-L292 (validação), L350-L390 (laço de páginas) |
-| Escrita de zip | `ZipFileWriter` em `include/vrv/filereader.h` / `src/filereader.cpp` |
-| Bindings C (modelo para P02) | `tools/c_wrapper.cpp` L296-L340 |
+| Implementação de referência (SVG) | `src/svgdevicecontext.cpp`: `StartGraphic` L251, `StartPage` L484 (viewBox, `page-margin`, CSS global, `font-family="Times, serif"`), primitivas L686-L1017, texto L1019-L1167, `DrawMusicText` L1174 (o `<use>` do glifo), `GetColor` L1295 |
 
-Fatos do corpus que orientam o plano (medidos no projeto anterior):
+### Lado Dart (renderizador, fases R e A)
+
+| Conceito | Onde |
+| --- | --- |
+| Modelo imutável | `score_bridge/lib/src/model.dart` (R01): `VsbDocument`, `ScenePage`, `SceneNode`, `ScenePath`/`SceneRect`/`SceneEllipse`/`SceneGlyphUse`/`SceneText`, `ScenePaint`, `GlyphDef`, `TimemapEntry`, `IndexEntry` |
+| Parser | `score_bridge/lib/src/parser.dart` (R01): `parseVsbDocumentBytes`, `parseSceneDocument`, `_asRect` (o ponto que S08 corrige para a bbox de glifo) |
+| API pública | `score_bridge/lib/score_bridge.dart` (só o que o app pode importar) |
+| Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`; fixture real em `test/fixtures/erik-satie.vsb` |
+| Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
+| A criar nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `segmentation.dart` (A01a), `score_page_view.dart` (A01b), `score_controller.dart` (A01c), `highlight_engine.dart` (A02a), `score_view.dart` (A03a), `hit_test.dart` (A04a), `score_player.dart` (A05a) |
+
+### Comparação visual
+
+| Conceito | Onde |
+| --- | --- |
+| App de diff (Flutter/Linux) | `compare/lib/main.dart` (comando `diff`; `scene-to-png` entra em R02d), `compare/lib/src/diff.dart` |
+| SVG → PNG de referência | `compare/svg_render/src/main.rs` (resvg 0.48 + tiny-skia): fontes em L100-L125, `set_serif_family` L119 |
+| Scripts | `compare/scripts/compare-page.sh` (R05b reescreve), `compare/scripts/compare-corpus.sh` (R06a reescreve) |
+| Pacotes `.vsb` já gerados | `compare/out/s07/*.vsb` (10 peças, 34 páginas) — é deles que saem os números desta página |
+
+## Fatos do corpus
+
+Medidos no projeto anterior, sobre a saída SVG:
 
 - Contagem de elementos no SVG do corpus inteiro: `path` 8025, `use` (glifos)
   5444, `polygon` 1526, `tspan` 398, `ellipse` 339, `rect` 250, `text` 160,
@@ -100,13 +140,47 @@ Fatos do corpus que orientam o plano (medidos no projeto anterior):
 - `data/text/Times*.xml` só tem métricas: **não há contornos de texto comum**
   no Verovio. Texto comum depende de TTF no lado do renderizador.
 
+### Fatos medidos nos `.vsb` do corpus (S07, `compare/out/s07/*.vsb`)
+
+Estes números vêm dos pacotes gerados pelo próprio projeto e orientam quase
+todos os passos das fases R e A. Cada passo repete os que lhe interessam, para
+que ninguém precise ler este README inteiro para executar um passo.
+
+| Medida | Valor |
+| --- | --- |
+| Peças / páginas | 10 / **34** |
+| Nós da árvore | 50 544, dos quais 39 290 têm `id` |
+| Profundidade máxima da árvore | 9 |
+| Formas | `p` 26 469 · `r` 1 401 · `e` 911 |
+| Usos de glifo (`u`) | 15 413, com apenas **16 a 37 glifos distintos por peça** |
+| Runs de texto (`t`) | 417 (12 a 89 por peça) |
+| Formas com `strokeWidth` | **todas**; nenhuma traz `stroke` explícito (100% herdam a cor) |
+| `fill` | `"none"` em 20 440, explícito em 58, herdado no restante |
+| `fillOpacity`/`strokeOpacity` | **nenhuma ocorrência** |
+| `lineCap` | `default` 27 285 · `round` 1 331 · `square` 165 |
+| `dash` | 8 ocorrências, todas `[36, 72]`, classe `octave` (Chopin Étude e Clair de Lune) |
+| `rotate` | 8 ocorrências, todas `arpeg` a −90° (Nocturne e Clair de Lune) |
+| `hidden` | 116 nós, todos `note` |
+| `letterSpacing` | 0,0 em 100% dos runs |
+| `family` do texto | só `"Times"` (294) e `"Times, serif"` (123) — os dois significam Liberation Serif |
+| Alinhamento do texto | `center` 195 · `left` 191 · `right` 31 |
+| Tamanhos de texto | 405 (229×), 324 (175×), 303 (8×), 607 (5×) |
+| Estilos de texto | 268 itálicos, 122 negritos, 50 bold+italic (todos no Clair de Lune) |
+| Classes com `id` mais frequentes | `note` 10 068 · `stem` 7 792 · `accid` 5 795 · `chord` 1 686 · `beam` 1 519 · `measure` 615 |
+| Formas desenhadas por página | mediana 1 345, máximo 2 463 |
+| Nós dinâmicos (ids do timemap) por página | mediana 308, máximo 719 |
+| Segmentos alternados por página (A01a) | mediana **196**, máximo **545** |
+| Ids do timemap **ausentes** da cena | Gymnopédie 180, Maple Leaf Rag 883 (sufixo `-rend2`, repetição/expansão) |
+| `measureOn` no timemap | **nunca preenchido** — a relação nota→compasso→página sai da cena |
+
 ## Decisões pendentes
 
 | Id | Pergunta | Bloqueia | Recomendação |
 | --- | --- | --- | --- |
 | D-NOME | Nome do formato, extensão e flags de CLI | — | Resolvida em S01 (2026-09-17): `.vsb`, `-t vsb`, `-t vsb-json`; timemap embutido quando disponível |
-| D-BIN | Vale trocar JSON por encoding binário? | P01 | medir primeiro; só decidir com números reais na mão |
-| D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02 | depende do zywny; perguntar |
+| D-BIN | Vale trocar JSON por encoding binário? | P01b | medir primeiro (P01a); só decidir com números reais na mão |
+| D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02a | depende do zywny; perguntar antes de compilar qualquer coisa |
+| D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | medir os dois e levar os números ao usuário |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
 no [`CLAUDE.md`](../../CLAUDE.md).
@@ -116,21 +190,33 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 1. **Paridade de texto comum** — foi a maior fonte de divergência no projeto
    anterior (de 0,36% média caiu para 0,13% só depois de 4 passos sobre texto).
    Aqui o renderizador é o Flutter, com a mesma TTF que o `resvg` usa, mas
-   shaping/hinting podem divergir. **Mitigação:** R04 é um passo inteiro só
-   para isso, com medição antes/depois, e o R06 mede o corpus.
+   shaping/hinting podem divergir. **Mitigação:** R04a-R04d são quatro passos
+   só para isso, com medição antes/depois em R04d, e R06a-R06c medem o corpus.
+   Armadilha específica já identificada: `t.family` vale `"Times"` ou
+   `"Times, serif"`, e **nenhum** dos dois é o nome de uma fonte instalada —
+   os dois querem dizer Liberation Serif (ver R04a).
 2. **Backend gráfico** — Impeller e Skia antialiasam diferente do `tiny-skia`
-   (do `resvg`). **Mitigação:** R05 mede os dois e registra o escolhido; a
+   (do `resvg`). **Mitigação:** R05a mede os dois e registra o escolhido; a
    tolerância 32/255 absorve diferença de AA de borda, que é o que o projeto
    anterior já observava.
 3. **Desempenho com página inteira em `CustomPaint`** — uma página do corpus
-   tem ~2.000 formas. **Mitigação:** A01 separa estático (compilado uma vez em
-   `ui.Picture`) de dinâmico; P03 mede em dispositivo.
+   tem 1 345 formas na mediana (máximo 2 463) e produz ~196 segmentos
+   alternados (máximo 545). **Mitigação:** A01a/A01b separam estático
+   (compilado uma vez em `ui.Picture`) de dinâmico, com o critério de
+   byte-identidade; P03a mede em dispositivo.
 4. **Tamanho do JSON** — o dicionário de glifos remove a maior repetição, mas
-   o corpus é pequeno (5-16 compassos/peça). **Mitigação:** P01 mede tamanho e
-   tempo de parse antes de qualquer otimização.
+   o corpus é pequeno (5-16 compassos/peça). **Mitigação:** P01a mede tamanho
+   e tempo de parse (incluindo uma peça de 20+ páginas, fora do corpus) antes
+   de qualquer otimização; P01b é o gate com o usuário.
 5. **`zip_file.hpp` é header-only com o miniz embutido** — incluí-lo em mais de
    uma unidade de tradução gera símbolos duplicados no link. O escritor de zip
    fica em `src/filereader.cpp`, que já o inclui.
+6. **Bbox de glifo errada no exportador** (defeito confirmado, não hipótese) —
+   `Glyph::GetBoundingBox` devolve `[x, y, w, h]` multiplicado por 10 e com o
+   eixo Y para cima, e o exportador a usa crua: toda bbox de nó com glifo sai
+   10× maior e espelhada em Y. **Mitigação:** [S08](S08-corrigir-bbox-de-glifo.md)
+   corrige antes de A04a, que é quem depende dela. Enquanto S08 não rodar,
+   nenhum número de bbox do corpus vale.
 
 ## Passos
 
@@ -145,21 +231,65 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [S05](S05-writer-json.md) | `BridgeWriter`: IR → `scene.json`/`glyphs.json` | S01, S02, S03, S04 | — | concluído |
 | [S06](S06-toolkit-e-cli.md) | `Toolkit` + CLI (`-t vsb-json`, todas as páginas) | S05 | D-NOME resolvida | concluído |
 | [S07](S07-pacote-vsb.md) | Pacote `.vsb` (zip) com timemap embutido | S06 | — | concluído |
+| [S08](S08-corrigir-bbox-de-glifo.md) | **Corrigir a escala e o eixo da bbox de glifo** | S04, S07 | — | a fazer |
 | [R01](R01-pacote-dart-e-parser.md) | Pacote `score_bridge`: modelo + parser | S05 | — | concluído |
-| [R02](R02-scene-painter-primitivas.md) | `ScenePainter`: primitivas, cor herdada, ajuste de página | R01 | — | a fazer |
-| [R03](R03-glifos.md) | Glifos: `Path` por `glyphId`, cache e instâncias | R02, S03 | — | a fazer |
-| [R04](R04-texto-comum.md) | Texto comum: TTF, alinhamento, bold/italic | R02 | — | a fazer |
-| [R05](R05-harness-de-comparacao.md) | Harness cena→PNG + diff no `compare/` | R02, F02 | backend gráfico | a fazer |
-| [R06](R06-varredura-do-corpus.md) | Varredura do corpus e relatório de paridade (> 99,9%) | R03, R04, R05, S06 | — | a fazer |
-| [A01](A01-camadas-e-controller.md) | Camadas, cache de `Picture` e `ScoreController` | R06 | — | a fazer |
-| [A02](A02-cor-e-animacao-por-nota.md) | Cor e animação individual por nota | A01 | — | a fazer |
-| [A03](A03-paginas-e-navegacao.md) | Páginas: navegação, virada e rolagem | A01 | — | a fazer |
-| [A04](A04-overlay-de-widgets.md) | Overlay de widgets por bbox (cursor, toque, gestos) | A01, S04 | — | a fazer |
-| [A05](A05-host-simulado-timemap.md) | Host simulado com `timemap` (playback automático) | A02, A03, S07 | — | a fazer |
-| [P01](P01-medicao-e-encoding.md) | Medição (tamanho, parse, frame) e gate de encoding binário | R06, A02 | D-BIN | a fazer |
-| [P02](P02-geracao-em-runtime.md) | Geração em runtime: `libverovio` + FFI Dart | S07 | D-RUNTIME | a fazer |
-| [P03](P03-desempenho-e-app-exemplo.md) | Desempenho em dispositivo + app de exemplo + docs finais | A05, P01 | — | a fazer |
+| [R02a](R02a-geometria-para-path.md) | Geometria: `v`/`i`/`o` → `ui.Path` | R01 | — | a fazer |
+| [R02b](R02b-percurso-e-ajuste-de-pagina.md) | Percurso da árvore, ajuste de página e cor herdada | R02a | — | a fazer |
+| [R02c](R02c-formas-traco-e-preenchimento.md) | Formas: traço, opacidade, cap/join, tracejado | R02b | — | a fazer |
+| [R02d](R02d-primeira-imagem.md) | Primeira imagem: `scene-to-png` mínimo e sobreposição | R02c, F02 | — | a fazer |
+| [R03a](R03a-cache-de-glifos.md) | `GlyphCache`: `glyphId` → `ui.Path` | R02a, S03 | — | a fazer |
+| [R03b](R03b-instancias-de-glifo.md) | Instâncias `u`: transformação, traço e herança | R03a, R02c | — | a fazer |
+| [R03c](R03c-paridade-de-glifos.md) | Paridade parcial só com formas e glifos | R03b, R02d | — | a fazer |
+| [R04a](R04a-fontes-e-familia.md) | Fontes: carregar as TTFs e resolver `family` | R02b | — | a fazer |
+| [R04b](R04b-baseline-e-tamanho.md) | Run de texto: linha de base, tamanho e cor | R04a | — | a fazer |
+| [R04c](R04c-alinhamento.md) | Alinhamento e `letterSpacing` | R04b | — | a fazer |
+| [R04d](R04d-estilos-e-paridade-de-texto.md) | Bold/itálico e paridade do texto | R04c, R03c | — | a fazer |
+| [R05a](R05a-backend-grafico.md) | Decisão: backend gráfico (Impeller × Skia) | R03c | backend gráfico | a fazer |
+| [R05b](R05b-script-ponta-a-ponta.md) | `compare-page.sh` no fluxo `.vsb`, ponta a ponta | R05a, R04d | — | a fazer |
+| [R05c](R05c-widget-vs-harness.md) | Prova widget-vs-harness (0 pixels) | R05b | — | a fazer |
+| [R06a](R06a-varredura-do-corpus.md) | Varredura do corpus: CSV das 34 páginas | R05b, R05c, S06 | — | a fazer |
+| [R06b](R06b-investigacao-de-divergencias.md) | Investigação das páginas acima de 0,1% | R06a | — | a fazer |
+| [R06c](R06c-relatorio-de-paridade.md) | Relatório de paridade e mesa de prova (**portão**) | R06b | — | a fazer |
+| [A01a](A01a-segmentacao.md) | Segmentação da página por ordem de documento | R06c | — | a fazer |
+| [A01b](A01b-cache-de-picture.md) | `ScorePageView`: camadas e cache de `ui.Picture` | A01a | — | a fazer |
+| [A01c](A01c-score-controller.md) | `ScoreController` (cor instantânea) e medições | A01b | — | a fazer |
+| [A02a](A02a-motor-de-animacao.md) | Motor de animação: um `Ticker`, fases e curvas | A01c | — | a fazer |
+| [A02b](A02b-api-de-destaque.md) | API de destaque e restauração da cor original | A02a | — | a fazer |
+| [A02c](A02c-evidencia-e-desempenho.md) | Evidência visual e orçamento de frame | A02b | — | a fazer |
+| [A03a](A03a-trilha-de-paginas.md) | `ScoreView`: trilha de páginas e navegação direta | A01b | — | a fazer |
+| [A03b](A03b-virada-animada.md) | Virada animada: `pagedPeek` e `pagedSlide` | A03a, A02b | — | a fazer |
+| [A03c](A03c-rolagem-continua.md) | `continuousScroll`, `scrollToId` e cache de páginas | A03b | — | a fazer |
+| [A04a](A04a-coordenadas-e-hit-test.md) | Coordenadas e hit-test: `rectForId` e `idAt` | A01b, S04, S08 | — | a fazer |
+| [A04b](A04b-overlay-e-gestos.md) | Overlay de widgets, toque e `ScoreCursor` | A04a | — | a fazer |
+| [A05a](A05a-score-player.md) | `ScorePlayer`: relógio próprio e timemap → destaque | A02b, S07 | — | a fazer |
+| [A05b](A05b-virada-automatica-e-evidencias.md) | Virada automática por compasso e evidências | A05a, A03b | — | a fazer |
+| [P01a](P01a-medicoes.md) | Medições: tamanho, parse, compilação e memória | R06c, A02c | — | a fazer |
+| [P01b](P01b-gate-de-encoding.md) | Gate D-BIN: decidir com o usuário | P01a | D-BIN | a fazer |
+| [P02a](P02a-libverovio-e-wrapper.md) | Decisão D-RUNTIME, `libverovio` e wrapper C | S07 | D-RUNTIME | a fazer |
+| [P02b](P02b-ffi-dart-e-isolate.md) | Binding FFI Dart, dados empacotados e isolate | P02a | — | a fazer |
+| [P03a](P03a-perfil-em-dispositivo.md) | Perfil em dispositivo Android | A05b, P01a | — | a fazer |
+| [P03b](P03b-app-de-exemplo.md) | App de exemplo | P03a | — | a fazer |
+| [P03c](P03c-documentacao-final.md) | Documentação final e fechamento dos requisitos | P03b | — | a fazer |
 
-Ordem sugerida: F01 → F02 → S01 → S02 → S03 → S04 → S05 → S06 → S07, com
-R01-R02 começando em paralelo assim que S05 produzir o primeiro `scene.json`
-de uma página. A fase A só começa depois que R06 fechar o número de paridade.
+Ordem sugerida, a partir de onde o projeto está (S07 e R01 concluídos):
+
+```
+S08  →  R02a → R02b → R02c → R02d → R03a → R03b → R03c
+                          ↘ R04a → R04b → R04c ↗
+        R04d → R05a → R05b → R05c → R06a → R06b → R06c   ← portão
+        A01a → A01b → A01c → A02a → A02b → A02c
+                           ↘ A03a → A03b → A03c
+                             A04a → A04b        (precisa de S08)
+                             A05a → A05b
+        P01a → P01b · P02a → P02b · P03a → P03b → P03c
+```
+
+S08 pode ser feito a qualquer momento antes de A04a, mas quanto antes melhor:
+ele regenera o corpus, e todo número de bbox medido antes dele está errado.
+A fase A só começa depois que R06c fechar o número de paridade.
+
+**Passos pequenos de propósito.** Cada arquivo acima cabe numa sessão de
+trabalho e tem critérios de aceite executáveis. Não junte dois passos "porque
+são parecidos": a razão de existirem separados é que o critério de aceite de
+cada um é verificável sozinho — é isso que impede um erro de percorrer três
+passos antes de aparecer.

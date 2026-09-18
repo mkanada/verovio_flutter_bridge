@@ -43,8 +43,8 @@ Trate como fixas — não reabra sem confirmar com o usuário:
   o único que precisa bater a paridade).
 - **Encoding: JSON** (compacto, chaves legíveis, geometria em arrays planos de
   números), empacotado em zip no formato `.vsb`. Encoding binário só entra se o
-  passo de medição (P01) mostrar necessidade real — **decisão do usuário, não
-  decida sozinho**.
+  passo de medição (P01a/P01b) mostrar necessidade real — **decisão do
+  usuário, não decida sozinho**.
 - **Render no Flutter: `CustomPaint` em camadas** — conteúdo estático da página
   compilado uma vez em `ui.Picture` e reusado; elementos endereçáveis (notas)
   numa camada separada que repinta só quando uma cor muda. Widgets reais
@@ -71,11 +71,11 @@ Trate como fixas — não reabra sem confirmar com o usuário:
 - **Nome final do formato/extensão e flags de CLI:** `.vsb` (**Verovio Score
   Bridge**), `-t vsb` para o pacote zip e `-t vsb-json` para o JSON único;
   resolvido em S01 em 2026-09-17.
-- Encoding binário (P01) — só após medição real.
+- Encoding binário (P01a mede, P01b decide) — só após medição real.
 - Backend gráfico do Flutter para a comparação (Impeller vs. Skia) — decidido
-  por medição em R05, registre o resultado.
+  por medição em R05a, registre o resultado.
 - Estratégia de geração em runtime no app (FFI com `libverovio.so` vs. `.vsb`
-  pré-gerado no servidor) — ver P02.
+  pré-gerado no servidor) — ver P02a (perguntar antes de compilar).
 
 ## Convenções de trabalho
 

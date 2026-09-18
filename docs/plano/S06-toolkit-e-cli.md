@@ -45,7 +45,7 @@ modo que `verovio -t vsb-json partitura.mei -o saida.json` produza a cena de
 ## Fora de escopo
 
 - Pacote zip e timemap (S07).
-- Bindings C/FFI (P02).
+- Bindings C/FFI (P02a/P02b).
 - Opções de CLI específicas do formato — **não existem**; a animação toda é do
   lado Flutter. Se aparecer vontade de criar uma, pare e pergunte.
 

@@ -59,7 +59,7 @@ geometria, e o que permite rolar até um compasso.
 ## Fora de escopo
 
 - Serializar (S05).
-- Qualquer decisão sobre *como* o Flutter usa a bbox (A04).
+- Qualquer decisão sobre *como* o Flutter usa a bbox (A04a/A04b).
 - Bbox "de tinta" exata de curvas (a envoltória de controle é suficiente e é o
   que o resto do Verovio já usa; não implemente cálculo de extremos de Bézier
   sem um caso real pedindo).

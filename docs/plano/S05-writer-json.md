@@ -202,7 +202,7 @@ arquivo consumível pelo Flutter.
     passada de desenho por página. Fica registrado aqui porque é a mesma família do
     achado de S04 ("ids automáticos não são estáveis entre execuções"), agora também
     válido *dentro* de uma única execução quando o mesmo desenho é repetido — vale a
-    pena qualquer harness de comparação futuro (R05/R06) saber disso.
+    pena qualquer harness de comparação futuro (R05b/R06a) saber disso.
 - Ids reais (glifos, formas, notas, textos comuns) batem em praticamente 100%
   (diferença de 1-2 em ~1200-7300 ids por peça, sempre um dos dois casos acima) —
   nenhum id de conteúdo real (nota, acidente, dinâmica, texto comum) ficou de fora

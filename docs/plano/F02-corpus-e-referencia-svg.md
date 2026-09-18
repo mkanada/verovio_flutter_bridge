@@ -36,17 +36,18 @@ comparável com o histórico.
    - remover: `lottie_native.dart`, `lottie_package.dart`, `widget_render.dart`,
      `script.dart`, `render_jobs.dart` e as dependências
      `dotlottie_flutter`/`verovio_viewer` do `pubspec.yaml`.
-   - o comando `scene-to-png` entra em R05; aqui o binário expõe só `diff`.
+   - o comando `scene-to-png` entra em R02d e é endurecido em R05b; aqui o
+     binário expõe só `diff`.
 
 4. Copiar `compare/scripts/compare-page.sh` e `compare-corpus.sh`, comentando
    (não apagando) os trechos que chamam o exportador; eles são reescritos em
-   R05/R06. O trecho de SVG→PNG deve continuar funcional desde já.
+   R05b/R06a. O trecho de SVG→PNG deve continuar funcional desde já.
 
 5. Build dos dois binários (ver "Convenções" no README do plano).
 
 ## Fora de escopo
 
-- Qualquer render de cena/Flutter (R05).
+- Qualquer render de cena/Flutter (R02d/R05b).
 - Mudar o `svg_render` (ele já está correto: `--pin-serif-family`, remoção de
   `<title>` aninhado, fundo branco opaco).
 

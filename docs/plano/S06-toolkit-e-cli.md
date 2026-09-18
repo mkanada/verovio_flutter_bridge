@@ -72,4 +72,51 @@ modo que `verovio -t vsb-json partitura.mei -o saida.json` produza a cena de
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-17: `FileFormat` ganhou `VSB` e `VSB_JSON` (`toolkitdef.h`); `VSB` fica
+  sem uso até S07 (declarado agora porque o passo pediu, sem CLI/`SetOutputTo`
+  associado). `Options::SetOutputTo` aceita `"vsb-json"`. `Toolkit` ganhou
+  `RenderToBridgeJson(int fromPage = 1, int toPage = -1)` (`toPage < 0` = até a
+  última página) e `RenderToBridgeJsonFile(filename, fromPage, toPage)`, nos
+  moldes de `RenderToLottieAnimation`/`RenderToLottie` do fork antigo: um
+  `BridgeDeviceContext` local, `SetResources` chamado antes do laço (achado de
+  S05 - `RenderToDeviceContext` não faz isso sozinho), um `RenderToDeviceContext`
+  por página do intervalo, depois `BridgeWriter::WriteSingleJson` sobre todas as
+  páginas acumuladas e o dicionário de glifos único do device context (nunca
+  resetado em `StartPage`, então acumula sozinho). `generator` gravado como
+  `"verovio <versão> / bridge 1"`, igual ao exemplo do `manifest.json` na
+  especificação. `main.cpp`: `"vsb-json"` na lista de formatos válidos e na
+  mensagem de erro, sem entrar na lista que força `breaks: none`; o branch novo
+  usa exatamente o mesmo `from`/`to` que o branch `svg` já calculava a partir de
+  `-a`/`-p` (nenhuma semântica nova), mas escreve **um** JSON só (o formato é um
+  documento único com `scene.pages`, não um arquivo por página como o SVG).
+  `cmake ../cmake && make -j4` limpo, sem avisos novos.
+- **Critério 1**: `verovio -h base` lista `"vsb-json"` na ajuda de
+  `-t`/`--output-to`.
+- **Critério 2**: as 10 peças do corpus (5 `.mei` + 5 `.mxl`) exportadas com
+  `-t vsb-json -a`, 10/10 `python3 -m json.tool` válido, exit code 0. `stderr`
+  tem só `[Warning]` de parsing de entrada (`@startid`+`@tstamp`, etc.) e a
+  linha `Output written to`; confirmado que são os **mesmos avisos, em igual
+  quantidade**, que `-t svg -a` já emite para os mesmos arquivos (comparado
+  para 3 peças) - não são avisos novos introduzidos pelo exportador.
+- **Critério 3**: contagem de páginas do JSON (`len(scene.pages)`) bate com a
+  contagem de arquivos `.svg` gerados por `-t svg -a` nas 10 peças (34 páginas
+  no total, mesmo número já registrado em S05).
+- **Critério 4**: testado com Chopin Etude (4 páginas), mesmo `-x 42` nas duas
+  chamadas (necessário para ids auto-gerados baterem entre os dois processos,
+  achado de S04/S05). `-p 2` produz `scene.pages` com 1 elemento; comparado
+  contra `scene.pages[1]` do export completo (`-a`), os dois sub-objetos são
+  idênticos **exceto o campo `"index"`** (`0` no export de 1 página vs. `1` no
+  export completo) - esperado e correto: `index` é a posição da página *dentro
+  do documento exportado* (`BridgeWriter::WriteScene` usa a posição no array
+  `pages` recebido, não um número de página absoluto da peça), então um
+  documento de 1 página sempre tem `index: 0`. Ignorando esse campo (que por
+  construção não podia bater), o conteúdo é 100% idêntico.
+- **Critério 5**: mesma peça (Etude, 4 páginas), dicionário de glifos do export
+  completo (`-a`) tem 34 entradas; soma dos dicionários dos 4 exports de página
+  única (`-p 1`..`-p 4`, 20+25+26+16) dá 87 - confirma o compartilhamento (34 <
+  87).
+- **Critério 6**: `LC_ALL=de_DE.utf8` (mesma classe de locale de vírgula
+  decimal do teste de S05; `tr_TR.UTF-8` continua não instalado no ambiente)
+  contra locale padrão (`C`/`en_US`), mesma peça, mesmo `-x 42`: `cmp` não
+  reporta diferença - saída da CLI byte-idêntica.
+- Bloqueios: nenhum.

@@ -283,11 +283,11 @@ int main(int argc, char **argv)
 
     const std::vector<std::string> outformats
         = { "mei", "mei-basic", "mei-pb", "mei-facs", "svg", "midi", "timemap", "expansionmap", "humdrum", "hum",
-              "pae", "mei-pb-serialized" };
+              "pae", "mei-pb-serialized", "vsb-json" };
     if (std::find(outformats.begin(), outformats.end(), outformat) == outformats.end()) {
         std::cerr << "Output format (" << outformat
                   << ") can only be 'mei', 'mei-basic', 'mei-pb', mei-facs', 'svg', 'midi', "
-                     "'timemap', 'expansionmap', 'humdrum', 'hum', 'pae', or , 'mei-pb-serialized'."
+                     "'timemap', 'expansionmap', 'humdrum', 'hum', 'pae', 'mei-pb-serialized', or 'vsb-json'."
                   << std::endl;
         exit(1);
     }
@@ -543,6 +543,22 @@ int main(int argc, char **argv)
         }
         else if (!toolkit.RenderToPAEFile(outfile)) {
             std::cerr << "Unable to write PAE to " << outfile << "." << std::endl;
+            exit(1);
+        }
+        else {
+            std::cerr << "Output written to " << outfile << "." << std::endl;
+        }
+    }
+    else if (outformat == "vsb-json") {
+        outfile += ".json";
+        const int from = page ? *page : 1;
+        const int to = allPages ? toolkit.GetPageCount() : from;
+
+        if (stdOutput) {
+            std::cout << toolkit.RenderToBridgeJson(from, to);
+        }
+        else if (!toolkit.RenderToBridgeJsonFile(outfile, from, to)) {
+            std::cerr << "Unable to write Bridge JSON to " << outfile << "." << std::endl;
             exit(1);
         }
         else {

@@ -448,6 +448,28 @@ public:
      */
     bool RenderToExpansionMapFile(const std::string &filename);
 
+    /**
+     * Render a page range to the Bridge JSON document (`-t vsb-json`): one glyph dictionary
+     * shared by every page in the range, plus the scene for each of those pages.
+     *
+     * @param fromPage The first page to render (1-based)
+     * @param toPage The last page to render (1-based); a negative value means the last page
+     * @return The Bridge JSON document as a string
+     */
+    std::string RenderToBridgeJson(int fromPage = 1, int toPage = -1);
+
+    /**
+     * Render a page range to the Bridge JSON document and save it to a file.
+     *
+     * @remark nojs
+     *
+     * @param filename The output filename
+     * @param fromPage The first page to render (1-based)
+     * @param toPage The last page to render (1-based); a negative value means the last page
+     * @return True if the file was successfully written
+     */
+    bool RenderToBridgeJsonFile(const std::string &filename, int fromPage = 1, int toPage = -1);
+
     //@}
 
     /**

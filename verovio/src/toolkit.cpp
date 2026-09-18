@@ -38,6 +38,7 @@
 #include "iovolpiano.h"
 #include "layer.h"
 #include "bridgedevicecontext.h"
+#include "bridgewriter.h"
 #include "measure.h"
 #include "nc.h"
 #include "neume.h"
@@ -2047,6 +2048,44 @@ bool Toolkit::RenderToExpansionMapFile(const std::string &filename)
     }
     output << outputString;
 
+    return true;
+}
+
+std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
+{
+    this->ResetLogBuffer();
+
+    if (toPage < 0) toPage = this->GetPageCount();
+
+    // The glyph dictionary is shared by every page rendered into this device context - see
+    // BridgeDeviceContext::m_glyphs, never reset in StartPage (S06's "Achado importante").
+    BridgeDeviceContext bridge;
+    bridge.SetResources(&m_doc.GetResources());
+
+    for (int p = fromPage; p <= toPage; ++p) {
+        if (!this->RenderToDeviceContext(p, &bridge)) return "";
+    }
+
+    std::vector<const BridgePage *> pages;
+    for (const BridgePage &page : bridge.GetPages()) {
+        pages.push_back(&page);
+    }
+
+    const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
+    return BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator);
+}
+
+bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, int toPage)
+{
+    this->ResetLogBuffer();
+
+    std::string output = this->RenderToBridgeJson(fromPage, toPage);
+    if (output.empty()) return false;
+
+    std::ofstream outfile(filename.c_str());
+    if (!outfile.is_open()) return false;
+
+    outfile << output;
     return true;
 }
 

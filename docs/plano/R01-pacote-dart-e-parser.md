@@ -77,4 +77,88 @@ Nada de desenho ainda.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-18: `flutter create --template=package score_bridge` na raiz do
+  repositório (Flutter 3.47.4 / Dart 3.13.3). Única dependência adicionada:
+  `archive: ^4.3.0` (leitura do zip). Estrutura: `lib/src/model.dart` (classes
+  imutáveis + `VsbFormatException`/`UnsupportedVsbVersionException`),
+  `lib/src/parser.dart` (funções de parse), `lib/score_bridge.dart` (barrel).
+- **Modelo segue a especificação seção a seção**, com estas escolhas de
+  design não ditadas literalmente pelo esboço do passo (registradas aqui por
+  serem decisões, não por serem desvio de um contrato já fechado):
+  - `fill`/`stroke` viram uma classe `sealed ScenePaint` de 3 estados
+    (`inherit`/`none`/`ColorPaint(hex)`) em vez de `String?` cru — deixa a
+    regra de herança do §5.2 explícita no tipo, não em convenção de string.
+  - `bbox`/`viewBox`/`origin`/`rotate.origin` usam `dart:ui Rect`/`Offset`
+    (o pacote já depende de `flutter`, então `dart:ui` está disponível);
+    `v`/`i`/`o` dos beziers continuam `Float64List` plano, como o passo pede
+    explicitamente (maior volume de números do formato).
+  - `fillOpacity`/`strokeOpacity` ausentes viram `1.0` e `lineCap`/`lineJoin`
+    ausentes viram o próprio enum `defaultCap`/`defaultJoin` — em ambos os
+    casos a ausência já tem um significado único e documentado no §5.2
+    (dash) e no texto (é o "não fizemos nada de especial aqui").
+  - **`strokeWidth` fica cru (`double?`, sem sintetizar `1.0`) para os
+    quatro tipos de forma, inclusive `p`/`r`/`e`.** A especificação (§8)
+    documenta "padrão IR 1.0" para `BridgeShape.strokeWidth`, mas o efetivo a
+    aplicar diverge por tipo — `1.0` para forma, `sy` para glifo (§5.3) — e
+    decidir isso é decisão de pintura (fora de escopo do R01, "Nada de
+    Canvas/Path ainda"). Conferido no corpus real (10 peças de S07): formas
+    `p`/`r`/`e` sempre emitem `strokeWidth` explícito (nunca omitido), usos de
+    glifo (`u`, 15413 ocorrências) **nunca** emitem `fill`/`stroke`/
+    `strokeWidth` no corpus de teste. R02/R03 decidem o default a aplicar
+    quando renderizarem.
+  - Discriminante `t` de filho desconhecido (nem `g`/`p`/`r`/`e`/`u`/`t`)
+    lança `VsbFormatException` — diferente de "chave desconhecida ignorada"
+    (§9): é um *tipo* de elemento que o leitor não sabe desenhar, não um
+    campo aditivo.
+  - `VsbDocument.fromBytes`/`.fromJson` são factory constructors em
+    `model.dart` que delegam para funções de nível superior em `parser.dart`
+    (`parseVsbDocumentBytes`/`parseVsbDocumentJson`); os dois arquivos se
+    importam mutuamente (`model.dart` → `parser.dart` para as factories,
+    `parser.dart` → `model.dart` para os tipos) — válido em Dart (não é
+    `part of`), confirmado sem erro pelo analyzer.
+- **Fixtures**: `docs/formato/exemplo-minimo.json` é lido **direto** de
+  `docs/formato/` (caminho relativo `../docs/formato/exemplo-minimo.json`,
+  válido porque os testes rodam com cwd em `score_bridge/`), não copiado, para
+  nunca divergir do fixture normativo de S01. O `.vsb` real do corpus é
+  `Erik_Satie_-_Gymnopedie_No.1.vsb` (S07, `-x 42`, o menor do corpus a
+  90.837 bytes), copiado para `score_bridge/test/fixtures/erik-satie.vsb`.
+- **Critério 3 (ida e volta de contagem)**: script de referência
+  `score_bridge/test/scripts/count_elements.py` (extrai `scene.json` de
+  dentro do `.vsb` e conta nós/`p`/`r`/`e`/`u`/`t` por percurso recursivo,
+  implementação independente do parser Dart) chamado via `Process.runSync`
+  em `test/roundtrip_count_test.dart`. Contagens no fixture batem
+  exatamente: 1606 nós, 981 `p`, 0 `r`, 88 `e`, 417 `u`, 21 `t`.
+- **Critério 4**: para as 2 páginas do fixture, `Set(byId.keys) ==
+  Set(elements[].id)` (1055 ids na página 0, 170 na página 1) e cada
+  `byId[id]` aponta para um nó com o mesmo `id`/`class` da entrada do índice.
+- **Critério 5 (tempo de parse)**: `score_bridge/tool/measure_parse_time.dart`
+  (Stopwatch, 3 execuções, mediana). Precisa rodar sob o Flutter Tester, não
+  o Dart SDK puro — `VsbDocument` usa `dart:ui` (`Rect`/`Offset`), que só
+  existe no engine Flutter — então a invocação é `flutter test
+  tool/measure_parse_time.dart` (`main()` sem argumentos; diretório do
+  corpus configurável por `CORPUS_DIR`, default `../compare/out/s07`).
+  Medido uma vez, debug/JIT sob `flutter test` (não é número de release/AOT;
+  é só a primeira leitura de ordem de grandeza para o gate de P01):
+
+  | Peça | Bytes do `.vsb` | Mediana de parse (ms) |
+  | --- | ---: | ---: |
+  | Erik_Satie_-_Gymnopedie_No.1 | 90 837 | 29.14 |
+  | Grieg_Little_bird_Op43_No4 | 139 008 | 51.59 |
+  | Prelude_I_BWV_846 | 145 958 | 45.47 |
+  | Scarlatti_Sonata_in_C-major | 169 399 | 75.16 |
+  | Grieg_Butterfly_Op43_No1 | 218 336 | 85.97 |
+  | Chopin_Mazurka_Op6_No1 | 221 367 | 89.52 |
+  | Maple_Leaf_Rag_Scott_Joplin | 310 849 | 106.90 |
+  | Clair_de_Lune__Debussy | 381 747 | 150.41 |
+  | Chopin_-_Nocturne_Op._9_No._1 | 471 450 | 141.63 |
+  | Chopin_Etude_Op10_No9 | 286 268 | 127.81 |
+
+  Sem relação clara e monotônica só com bytes do `.vsb` (o parse decodifica o
+  zip + 3 JSONs, então o custo depende também da forma da árvore, não só do
+  tamanho comprimido) — dado bruto para P01 comparar contra o encoding
+  binário, sem conclusão tirada aqui.
+- **Critérios 1/2 (compilação/testes)**: `flutter analyze` sem avisos,
+  `dart format --set-exit-if-changed .` limpo, `flutter test` com 21 testes,
+  todos passando (`exemplo_minimo_test.dart`, `parser_errors_test.dart`,
+  `corpus_fixture_test.dart`, `roundtrip_count_test.dart`).
+- Bloqueios: nenhum.

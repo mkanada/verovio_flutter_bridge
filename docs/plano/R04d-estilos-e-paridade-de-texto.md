@@ -89,4 +89,31 @@ requisito de 99,9%.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. **Nenhum ajuste de código necessário**: os 4
+assets já estavam declarados com os pares `weight`/`style` certos (R04a) e
+o `TextStyle` já pedia `w700`+`italic` (R04b) — os testes 2 e 3 abaixo
+provam que as 4 faces reais são usadas (armadilhas D01-4/D01-5 não se
+repetiram). `flutter analyze` limpo, `dart format` limpo, `flutter test`
+65/65 (2 novos em `test/text_run_test.dart`: 4 imagens duas a duas
+diferentes por bytes; largura de cada estilo contra a TTF daquele arquivo
+a <1% — itálico sintético preservaria a largura da regular e falharia).
+
+Paridade (`compare diff --tolerance 32`, 6 237 000 px, Impeller, artefatos
+em `compare/out/r04b/`):
+
+| Página | Diferentes | % |
+| --- | ---: | ---: |
+| Clair de Lune p1 | 53 578 | **0,8590%** |
+| Nocturne p1 | 42 373 | **0,6794%** |
+| Étude p1 | 31 046 | **0,4978%** |
+
+Clair ficou acima de 0,5% — investigado antes de seguir, como o passo
+manda. Causa: **bordas, não blocos**. Todo o texto está presente, no lugar
+e no estilo certo: nos 35 runs da p1, recall 98,16% e precision 98,88% da
+tinta a 2 px; o '52' bold+itálico (caso D01-5) sai inclinado e em negrito
+como no SVG (`clair-p1-52-side.png`); componentes sólidos de diff só tocam
+runs de texto; o resto é pixel isolado (14 742× 1 px) e linhas finas de
+1–2 px (colchetes de pedal: mesmas fileiras 605–606 nos dois PNGs — AA
+Impeller vs tiny-skia). Nenhuma linha inteira deslocada (R04b ok), nenhum
+bloco de estilo/fonte errada. O Nocturne tem o mesmo perfil. A média
+<0,1% fica para a varredura R06a–R06c; nenhum bug bloqueante aqui.

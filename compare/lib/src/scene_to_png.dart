@@ -3,8 +3,8 @@
 /// mesmas dimensões do PNG de referência do `svg_render`.
 ///
 /// É o render mínimo de conferência visual: formas `p`/`r`/`e`, glifos `u`
-/// (R03) e runs de texto `t` (R04b, só `left`; `center`/`right` caem como
-/// `left` até R04c). O critério aqui é alinhamento, não percentual.
+/// (R03) e runs de texto `t` (R04b/R04c, três alinhamentos). O critério aqui
+/// é alinhamento, não percentual.
 library;
 
 import 'dart:io';

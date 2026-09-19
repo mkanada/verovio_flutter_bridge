@@ -83,4 +83,19 @@ semântica do `text-anchor` do SVG, incluindo a interação com `letterSpacing`
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Deslocamento `dx` no `_drawText` (`0`, `-w/2`,
+`-w` sobre `painter.width`, com `layout()` já feito no `painterForRun`).
+**Sem compensação e sem `anchorWidth`**: a sonda (Flutter 3.47.4) mediu
+`width` = soma dos avanços + n×`letterSpacing` exatos ('ab'+40: 462,258;
+'Lent'+40: 902,170; '5'+40: 242,5) — o Flutter INCLUI o espaçamento final,
+como o `resvg`; o teste com `letterSpacing: 40` trava esse comportamento
+(quebra se o motor mudar). `flutter analyze` limpo, `dart format` limpo,
+`flutter test` 63/63 (3 novos em `test/text_run_test.dart`: 3 aligns sem
+ls a `1e-6`, 3 aligns com ls 40 contra largura à mão, dedilhado real).
+
+Visual (Chopin Étude p1, `compare/out/r04b/`, Impeller): diff tol 32 =
+**0,4978%** (31 046 px). Recorte `etude-p1-fingering-side.png` (SVG ×
+cena, 2×): o '5' `303/center/bold` cai centrado sobre a haste nos dois;
+centroides da região a 0,03 px em x e 0,12 px em y (1322 vs 1324 px de
+tinta — 1 px de AA). Critério 4 (centro sobre `x` a 0,5 viewBox) medido
+no mesmo run.

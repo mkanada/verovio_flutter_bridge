@@ -115,4 +115,28 @@ As TTFs estão em `verovio/data/text/`:
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. As 4 TTFs copiadas de `verovio/data/text/` para
+`score_bridge/fonts/` (+ `LiberationSerif-OFL.txt`), declaradas no
+`pubspec.yaml` exatamente como o passo pedia (família `Liberation Serif`,
+italic/Bold 700/BoldItalic 700). Criado `lib/src/text_font.dart`
+(`kScoreTextFamily`, `kScoreTextFamilyPackage = 'score_bridge'`,
+`resolveFamily`: `"Times"`, `"Times, serif"` e desconhecidos → Liberation
+Serif — mapeamento deliberado, nunca `family` cru) e exportado em
+`score_bridge.dart`. Helper `test/support/load_fonts.dart`
+(`loadScoreFonts`, idempotente; um `FontLoader` só — o motor casa
+estilo/peso pelos metadados da fonte) e parser mínimo de avanços
+`test/support/ttf_metrics.dart` (`head`/`hhea`/`hmtx` + `cmap` 4/12).
+
+Medido (`test/text_font_test.dart`, 3 testes): `"Allegro molto agitato."`
+a 405 dá **3588,046875 px tanto no `TextPainter` quanto na soma de `hmtx`**
+(unitsPerEm 2048) — diff **0,0%**, folga total sobre o <1%; 4 estilos dão
+4 larguras (3588,05 / 3573,61 / 3760,49 / 3633,93). Chaves
+`packages/score_bridge/fonts/*.ttf` resolvem no `rootBundle` do teste
+(fiação do pubspec provada). **Verificação de falha alta feita na mão**:
+com `loadScoreFonts()` comentado, os testes antifallback e 4-estilos
+falham (o fallback ignora estilo: 1 largura só) — restaurado em seguida.
+`flutter analyze` limpo, `dart format` limpo, `flutter test` 55/55.
+
+Pendente deliberado: o `compare` ainda não chama `loadScoreFonts` — ele só
+desenha texto a partir de R04b (item 3, "quando ele for renderizar"); fazer
+agora seria código morto.

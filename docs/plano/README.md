@@ -269,18 +269,18 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
 ```
-S08  →  R02a → R02b → R02c → R02d → R03a → R03b → R03c
-                          ↘ R04a → R04b → R04c ↗
+R02a → R02b → R02c → R02d → R03a → R03b → R03c
+                ↘ R04a → R04b → R04c ↗
         R04d → R05a → R05b → R05c → R06a → R06b → R06c   ← portão
         A01a → A01b → A01c → A02a → A02b → A02c
                            ↘ A03a → A03b → A03c
-                             A04a → A04b        (precisa de S08)
+                             A04a → A04b        (usa as bboxes corrigidas em S08)
                              A05a → A05b
         P01a → P01b · P02a → P02b · P03a → P03b → P03c
 ```
 
-S08 pode ser feito a qualquer momento antes de A04a, mas quanto antes melhor:
-ele regenera o corpus, e todo número de bbox medido antes dele está errado.
+S08 já foi executado e o corpus em `compare/out/s08/` traz as bboxes
+corrigidas; todo número de bbox medido antes dele (S07) está errado.
 A fase A só começa depois que R06c fechar o número de paridade.
 
 **Passos pequenos de propósito.** Cada arquivo acima cabe numa sessão de

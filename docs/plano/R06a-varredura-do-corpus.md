@@ -16,20 +16,20 @@ de R06c.
 
 ## Contexto que você precisa (não vá procurar, está aqui)
 
-O corpus e o tamanho de cada peça (medido em S07, `compare/out/s07/`):
+O corpus e o tamanho de cada peça (medido em S08, `compare/out/s08/`):
 
 | Peça | Páginas | `.vsb` (bytes) | Runs de texto | Usos de glifo |
 | --- | ---: | ---: | ---: | ---: |
-| Chopin Nocturne Op.9 No.1 | 7 | 471 450 | 89 | 2 665 |
-| Clair de Lune (Debussy) | 5 | 381 747 | 88 | 2 458 |
-| Chopin Étude Op.10 No.9 | 4 | 286 268 | 64 | 1 792 |
-| Chopin Mazurka Op.6 No.1 | 3 | 221 367 | 34 | 1 434 |
-| Grieg Butterfly Op.43 No.1 | 3 | 218 336 | 23 | 1 594 |
-| Maple Leaf Rag (Joplin) | 3 | 310 849 | 46 | 2 045 |
-| Scarlatti Sonata in C major | 3 | 169 399 | 21 | 1 064 |
-| Grieg Little bird Op.43 No.4 | 2 | 139 008 | 12 | 1 109 |
-| Prelúdio BWV 846 | 2 | 145 958 | 19 | 835 |
-| Gymnopédie No.1 (Satie) | 2 | 90 837 | 21 | 417 |
+| Chopin Nocturne Op.9 No.1 | 7 | 472 703 | 89 | 2 665 |
+| Clair de Lune (Debussy) | 5 | 383 502 | 88 | 2 458 |
+| Chopin Étude Op.10 No.9 | 4 | 288 443 | 64 | 1 792 |
+| Chopin Mazurka Op.6 No.1 | 3 | 223 137 | 34 | 1 434 |
+| Grieg Butterfly Op.43 No.1 | 3 | 219 454 | 23 | 1 594 |
+| Maple Leaf Rag (Joplin) | 3 | 314 700 | 46 | 2 045 |
+| Scarlatti Sonata in C major | 3 | 170 786 | 21 | 1 064 |
+| Grieg Little bird Op.43 No.4 | 2 | 140 433 | 12 | 1 109 |
+| Prelúdio BWV 846 | 2 | 146 141 | 19 | 835 |
+| Gymnopédie No.1 (Satie) | 2 | 91 253 | 21 | 417 |
 
 **Total: 34 páginas.** Uma varredura que produza 33 ou 35 linhas está errada.
 

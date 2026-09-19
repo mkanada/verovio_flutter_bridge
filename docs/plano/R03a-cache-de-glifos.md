@@ -23,7 +23,7 @@ e compartilhado por todas as páginas e todas as ocorrências.
   `transform="scale(1,-1)"` do XML do Verovio foi aplicado pelo
   `svgpathparser` na exportação. Não inverta nada aqui. Se um glifo sair de
   cabeça para baixo, o bug é em S03, não neste passo.
-- Tamanho real do dicionário, medido no corpus (`compare/out/s07/*.vsb`):
+- Tamanho real do dicionário, medido no corpus (`compare/out/s08/*.vsb`):
 
   | Peça | Glifos distintos | Usos (`u`) | Razão |
   | --- | ---: | ---: | ---: |
@@ -66,11 +66,12 @@ Exemplo real (`Leipzig:E050`, clave de sol): `bbox = [-10, -6550, 6470,
 17380]`; os vértices do contorno vão de x −1 a 646 e de y −1083 a 655 — que é
 exatamente o resultado da fórmula acima.
 
-**Consequência**: o lado C++ foi corrigido no S08, mas R01 ainda lia esse campo com
-`Rect.fromLTRB` (`parser.dart`, `_asRect`), o que produz um `Rect` sem sentido para
-glifos. Neste passo, **não** altere o formato nem a IR: represente `GlyphDef.bbox` com
-um tipo explícito `GlyphBBox(x, y, width, height)` e use a conversão acima somente ao
-comparar com os contornos (recomendado: expor `toContourRect()`).
+**Consequência**: os dois lados foram corrigidos no S08: o C++ converte a bbox
+para a escala/eixo dos contornos ao calcular a bbox dos nós, e o parser Dart
+representa `glyphs[].bbox` com um tipo explícito `GlyphBBox(x, y, width,
+height)` (nunca `Rect`). Neste passo, **não** altere o formato nem a IR: use
+a conversão acima somente ao comparar com os contornos (via
+`GlyphBBox.toContourRect()`).
 
 ## O que fazer
 

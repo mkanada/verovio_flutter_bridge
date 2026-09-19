@@ -101,7 +101,7 @@ Nada de desenho ainda.
     documenta "padrão IR 1.0" para `BridgeShape.strokeWidth`, mas o efetivo a
     aplicar diverge por tipo — `1.0` para forma, `sy` para glifo (§5.3) — e
     decidir isso é decisão de pintura (fora de escopo do R01, "Nada de
-    Canvas/Path ainda"). Conferido no corpus real (10 peças de S07): formas
+    Canvas/Path ainda"). Conferido no corpus real (10 peças de S08): formas
     `p`/`r`/`e` sempre emitem `strokeWidth` explícito (nunca omitido), usos de
     glifo (`u`, 15413 ocorrências) **nunca** emitem `fill`/`stroke`/
     `strokeWidth` no corpus de teste. R02/R03 decidem o default a aplicar
@@ -120,8 +120,8 @@ Nada de desenho ainda.
   `docs/formato/` (caminho relativo `../docs/formato/exemplo-minimo.json`,
   válido porque os testes rodam com cwd em `score_bridge/`), não copiado, para
   nunca divergir do fixture normativo de S01. O `.vsb` real do corpus é
-  `Erik_Satie_-_Gymnopedie_No.1.vsb` (S07, `-x 42`, o menor do corpus a
-  90.837 bytes), copiado para `score_bridge/test/fixtures/erik-satie.vsb`.
+  `Erik_Satie_-_Gymnopedie_No.1.vsb` (S08, `-x 42`, o menor do corpus a
+  91.253 bytes), copiado para `score_bridge/test/fixtures/erik-satie.vsb`.
 - **Critério 3 (ida e volta de contagem)**: script de referência
   `score_bridge/test/scripts/count_elements.py` (extrai `scene.json` de
   dentro do `.vsb` e conta nós/`p`/`r`/`e`/`u`/`t` por percurso recursivo,
@@ -136,27 +136,29 @@ Nada de desenho ainda.
   o Dart SDK puro — `VsbDocument` usa `dart:ui` (`Rect`/`Offset`), que só
   existe no engine Flutter — então a invocação é `flutter test
   tool/measure_parse_time.dart` (`main()` sem argumentos; diretório do
-  corpus configurável por `CORPUS_DIR`, default `../compare/out/s07`).
+  corpus configurável por `CORPUS_DIR`, default `../compare/out/s08`).
   Medido uma vez, debug/JIT sob `flutter test` (não é número de release/AOT;
   é só a primeira leitura de ordem de grandeza para o gate de P01):
 
   | Peça | Bytes do `.vsb` | Mediana de parse (ms) |
   | --- | ---: | ---: |
-  | Erik_Satie_-_Gymnopedie_No.1 | 90 837 | 29.14 |
-  | Grieg_Little_bird_Op43_No4 | 139 008 | 51.59 |
-  | Prelude_I_BWV_846 | 145 958 | 45.47 |
-  | Scarlatti_Sonata_in_C-major | 169 399 | 75.16 |
-  | Grieg_Butterfly_Op43_No1 | 218 336 | 85.97 |
-  | Chopin_Mazurka_Op6_No1 | 221 367 | 89.52 |
-  | Maple_Leaf_Rag_Scott_Joplin | 310 849 | 106.90 |
-  | Clair_de_Lune__Debussy | 381 747 | 150.41 |
-  | Chopin_-_Nocturne_Op._9_No._1 | 471 450 | 141.63 |
-  | Chopin_Etude_Op10_No9 | 286 268 | 127.81 |
+  | Erik_Satie_-_Gymnopedie_No.1 | 91 253 | 29.14 |
+  | Grieg_Little_bird_Op43_No4 | 140 433 | 51.59 |
+  | Prelude_I_BWV_846 | 146 141 | 45.47 |
+  | Scarlatti_Sonata_in_C-major | 170 786 | 75.16 |
+  | Grieg_Butterfly_Op43_No1 | 219 454 | 85.97 |
+  | Chopin_Mazurka_Op6_No1 | 223 137 | 89.52 |
+  | Maple_Leaf_Rag_Scott_Joplin | 314 700 | 106.90 |
+  | Clair_de_Lune__Debussy | 383 502 | 150.41 |
+  | Chopin_-_Nocturne_Op._9_No._1 | 472 703 | 141.63 |
+  | Chopin_Etude_Op10_No9 | 288 443 | 127.81 |
 
   Sem relação clara e monotônica só com bytes do `.vsb` (o parse decodifica o
   zip + 3 JSONs, então o custo depende também da forma da árvore, não só do
   tamanho comprimido) — dado bruto para P01 comparar contra o encoding
-  binário, sem conclusão tirada aqui.
+  binário, sem conclusão tirada aqui. (Tempos medidos sobre o corpus S07;
+  tamanhos atualizados para S08 — a diferença entre os dois é só nas bboxes,
+  ~1% dos bytes, sem efeito na ordem de grandeza.)
 - **Critérios 1/2 (compilação/testes)**: `flutter analyze` sem avisos,
   `dart format --set-exit-if-changed .` limpo, `flutter test` com 21 testes,
   todos passando (`exemplo_minimo_test.dart`, `parser_errors_test.dart`,

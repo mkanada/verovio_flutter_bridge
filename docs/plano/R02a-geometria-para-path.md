@@ -33,7 +33,7 @@ está em `v[2k]`, `v[2k+1]`. `i`/`o` são tangentes **relativas ao vértice**
 (somam-se a ele). Os três arrays têm sempre o mesmo comprimento (R01 já
 valida isso no parser e lança `VsbFormatException` caso contrário).
 
-Medido no corpus real de 10 peças (34 páginas, `compare/out/s07/*.vsb`) —
+Medido no corpus real de 10 peças (34 páginas, `compare/out/s08/*.vsb`) —
 serve para você saber o que é caso comum e o que é caso raro:
 
 | Fato | Valor |

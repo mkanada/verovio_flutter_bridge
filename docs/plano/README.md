@@ -232,7 +232,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [R02b](R02b-percurso-e-ajuste-de-pagina.md) | Percurso da árvore, ajuste de página e cor herdada | R02a | — | concluído |
 | [R02c](R02c-formas-traco-e-preenchimento.md) | Formas: traço, opacidade, cap/join, tracejado | R02b | — | concluído |
 | [R02d](R02d-primeira-imagem.md) | Primeira imagem: `scene-to-png` mínimo e sobreposição | R02c, F02 | — | concluído |
-| [R03a](R03a-cache-de-glifos.md) | `GlyphCache`: `glyphId` → `ui.Path` | R02a, S03 | — | a fazer |
+| [R03a](R03a-cache-de-glifos.md) | `GlyphCache`: `glyphId` → `ui.Path` | R02a, S03 | — | concluído |
 | [R03b](R03b-instancias-de-glifo.md) | Instâncias `u`: transformação, traço e herança | R03a, R02c | — | a fazer |
 | [R03c](R03c-paridade-de-glifos.md) | Paridade parcial só com formas e glifos | R03b, R02d | — | a fazer |
 | [R04a](R04a-fontes-e-familia.md) | Fontes: carregar as TTFs e resolver `family` | R02b | — | a fazer |

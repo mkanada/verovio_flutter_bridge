@@ -121,4 +121,16 @@ a conversão acima somente ao comparar com os contornos (via
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Criado `score_bridge/lib/src/glyph_cache.dart`
+(`GlyphCache`: `pathFor` lazy memoizado via `pathFromBeziers` de R02a,
+`builtCount`, id ausente → `VsbFormatException('u.g', 'glifo "<id>" ausente
+do dicionário')`) e exposto como `VsbDocument.glyphCache` (`late final`;
+o construtor deixou de ser `const` — só o parser constrói o documento).
+Exportado em `score_bridge.dart`. `flutter analyze` limpo, `dart format`
+limpo, `flutter test` 46/46 (5 novos em `test/glyph_cache_test.dart`:
+bbox, memoização, fixture real, erro e compartilhamento).
+Medido no fixture `erik-satie.vsb`: **16 `Path` construídos para 417
+usos** (fator 26×, igual à tabela do passo); os 16 contornos batem com
+`GlyphBBox.toContourRect()` dentro de 2,0 unidades (o `EAA9`, único que
+estoura a tolerância no corpus, não está neste fixture). `pathFor` 100× no
+mesmo id devolve a mesma instância com `builtCount == 1`.

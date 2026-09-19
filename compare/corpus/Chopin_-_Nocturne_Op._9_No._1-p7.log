@@ -7,6 +7,6 @@ Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Chopin_-
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 32)
 Pixels comparados: 6237000
-Pixels diferentes: 9239 (0.1481%)
+Pixels diferentes: 9117 (0.1462%)
 Maior diferença de canal observada: 255
-Chopin_-_Nocturne_Op._9_No._1;7;2100;2970;9239;6237000;0.1481
+Chopin_-_Nocturne_Op._9_No._1;7;2100;2970;9117;6237000;0.1462

@@ -7,6 +7,6 @@ Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Prelude_
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 32)
 Pixels comparados: 6237000
-Pixels diferentes: 16299 (0.2613%)
+Pixels diferentes: 16498 (0.2645%)
 Maior diferença de canal observada: 255
-Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book;2;2100;2970;16299;6237000;0.2613
+Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book;2;2100;2970;16498;6237000;0.2645

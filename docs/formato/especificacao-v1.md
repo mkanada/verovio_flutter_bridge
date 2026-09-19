@@ -249,7 +249,13 @@ intervalo]`).
   são `dashLength` e `gapLength`.
 - Por padrão o Verovio aplica `stroke:currentColor` a `path`, `polygon`,
   `polyline`, `rect` e `ellipse` (regra CSS global do SVG). O exportador resolve
-  isso em `stroke` + `strokeWidth`.
+  isso em `stroke` + `strokeWidth` — **exceto quando a largura da pena é 0**
+  (`DrawFilledRectangle`, `DrawObliquePolygon`, `DrawDot`, `DrawVerticalDots`:
+  feixes, colchetes de pedal, pontos de aumento/repetição). Pena 0 significa
+  "só preenchimento" no `View`; o hairline de 1 unidade que o SVG mostra ali é
+  um artefato da regra global, quase invisível no `resvg`, mas o Impeller o
+  alarga em um pixel inteiro nas formas finas (R06b). Nesses casos o exportador
+  emite `"stroke": "none"` (`hasStroke = false).
 
 ```json
 { "t": "p", "paths": [{ "closed": true, "v": [], "i": [], "o": [] }] }
@@ -469,3 +475,4 @@ explicitamente.
 | 2026-09-17 | Correção durante S05: a tabela de §8 previa `t.family` vindo de "`FontInfo` ativo (fora de `BridgeTextRun`)", mas nenhuma estrutura da IR carregava essa informação até a árvore ser serializada, e o `BridgeWriter` não tem acesso ao `FontInfo` do `DeviceContext` (que só existe durante o `DrawText`). Adicionado `BridgeTextRun::family` (`bridgegeometry.h`), populado em `BridgeDeviceContext::DrawText` a partir de `FontInfo::GetFaceName()` (com o mesmo fallback que a raiz do SVG usa quando vazia); tabela corrigida para refletir a IR real. |
 | 2026-09-18 | Correção do S08: especificado que `glyphs[].bbox` é `[x, y, width, height]` na escala interna do Verovio (10× os contornos) e com Y para cima, incluindo a conversão normativa para o sistema dos contornos; tabela de §8 e parser Dart atualizados para o tipo explícito `GlyphBBox`. |
 | 2026-09-19 | Correção pós-S04: §5.1 explicita que `bbox` é no referencial de conteúdo (antes do `translate(origin)`; comparar contra o `viewBox` somando `origin`, §3) — era o que sustentava a ressalva da bbox da raiz, agora encerrada; §5.5 corrige "nenhum caso observado" para os 5 653 casos reais de `[0, 0, 0, 0]` (tabela por classe nas notas de S04). |
+| 2026-09-19 | Correção R06b: §5.2 ganha a exceção de pena 0 — formas desenhadas com `SetPen(0)` (só preenchimento por intenção: feixes, colchetes de pedal, pontos) saem com `"stroke": "none"` em vez do hairline de 1 unidade herdado da regra CSS global, que o Impeller alargava em um pixel inteiro nas formas finas. Medido no corpus: 24,2% das formas passam a `stroke: none` (todos os `r`/`e`, mais os `p` de feixe/polígono cheio); média de divergência 0,4122% → 0,3959% (−3,9% dos pixels divergentes). |

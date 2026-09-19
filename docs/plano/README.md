@@ -154,7 +154,7 @@ que ninguém precise ler este README inteiro para executar um passo.
 | Formas | `p` 26 469 · `r` 1 401 · `e` 911 |
 | Usos de glifo (`u`) | 15 413, com apenas **16 a 37 glifos distintos por peça** |
 | Runs de texto (`t`) | 417 (12 a 89 por peça) |
-| Formas com `strokeWidth` | **todas**; nenhuma traz `stroke` explícito (100% herdam a cor) |
+| Formas com `strokeWidth` | **todas** trazem o campo; 6 604 (22,9%) trazem `"stroke":"none"` (pena 0 — feixes, `r`/`e` cheios —, R06b) e o restante herda a cor (nenhuma traz cor explícita) |
 | `fill` | `"none"` em 20 440, explícito em 58, herdado no restante |
 | `fillOpacity`/`strokeOpacity` | **nenhuma ocorrência** |
 | `lineCap` | `default` 27 285 · `round` 1 331 · `square` 165 |

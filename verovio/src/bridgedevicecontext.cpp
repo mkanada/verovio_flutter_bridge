@@ -67,13 +67,21 @@ namespace {
         return bezier;
     }
 
-    // The SVG output always has a visible outline (global CSS: "stroke:currentColor"), so every
-    // shape in the Bridge IR carries an explicit stroke too. Width defaults to 1 (SVG default),
-    // color/opacity stay COLOR_NONE / default so they are inherited from the enclosing group.
+    // Pen width 0 means "fill only" (DrawFilledRectangle, DrawObliquePolygon, DrawDot,
+    // DrawVerticalDots: beams, pedal brackets, augmentation dots...). The SVG output still shows
+    // a 1-unit hairline there through the global CSS rule ("stroke:currentColor"), but resvg
+    // renders it nearly invisibly while Impeller widens such thin filled shapes by a whole pixel
+    // (R06b: pedal brackets came out with 2 full-black rows instead of 1 + soft edge, dots with
+    // darker edges). Emitting no stroke matches the reference within tolerance; every pen-0 call
+    // site pairs it with a fill, so no shape is left with neither fill nor stroke.
     void ApplyStrokeFromPen(BridgeShape &shape, const Pen &pen)
     {
+        if (pen.GetWidth() <= 0) {
+            shape.hasStroke = false;
+            return;
+        }
         shape.hasStroke = true;
-        shape.strokeWidth = (pen.GetWidth() > 0) ? pen.GetWidth() : 1;
+        shape.strokeWidth = pen.GetWidth();
         shape.strokeColor = pen.HasColor() ? pen.GetColor() : COLOR_NONE;
         if (pen.HasOpacity()) {
             shape.strokeOpacity = pen.GetOpacity();

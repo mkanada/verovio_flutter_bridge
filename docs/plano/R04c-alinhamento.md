@@ -93,7 +93,7 @@ como o `resvg`; o teste com `letterSpacing: 40` trava esse comportamento
 `flutter test` 63/63 (3 novos em `test/text_run_test.dart`: 3 aligns sem
 ls a `1e-6`, 3 aligns com ls 40 contra largura à mão, dedilhado real).
 
-Visual (Chopin Étude p1, `compare/out/r04b/`, Impeller): diff tol 32 =
+Visual (Chopin Étude p1, `compare/out/r04b/`, Impeller): diff tol 32 (tolerância da época) =
 **0,4978%** (31 046 px). Recorte `etude-p1-fingering-side.png` (SVG ×
 cena, 2×): o '5' `303/center/bold` cai centrado sobre a haste nos dois;
 centroides da região a 0,03 px em x e 0,12 px em y (1322 vs 1324 px de

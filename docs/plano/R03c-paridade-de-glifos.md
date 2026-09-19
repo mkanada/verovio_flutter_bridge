@@ -27,7 +27,8 @@ pentagrama.
   era de **alguns por cento** e caiu para 0,13% de média quando o texto
   entrou. Ordem de grandeza esperada aqui: poucos por cento, concentrada em
   blocos retangulares onde deveria haver texto.
-- A tolerância do diff é sempre **32/255 por canal** — todo número citado no
+- A tolerância do diff é sempre **128/255 por canal** (decisão do usuário em
+  2026-09-19; antes 32/255) — todo número citado no
   plano usa essa tolerância; um número medido com outra não é comparável.
 - Sintomas e onde está o bug:
 
@@ -43,7 +44,8 @@ pentagrama.
 ## O que fazer
 
 1. Gerar, para 2 peças (uma MEI e uma MusicXML) e 2 páginas cada, os PNGs do
-   SVG e da cena, e rodar `compare diff` com tolerância 32.
+   SVG e da cena, e rodar `compare diff` com tolerância 128 (na época do passo,
+   32 — números abaixo preservados como medidos).
 2. Registrar os 4 percentuais nas notas, junto com o backend gráfico usado.
 3. Abrir cada imagem de diff e **classificar** o resíduo. O critério não é o
    número: é a localização do resíduo.
@@ -80,7 +82,7 @@ com o pintor de R03b (`flutter build linux --release` ok). Backend ativo
 a decisão Impeller×Skia continua em R05a. Artefatos em `compare/out/r03c/`
 (`*-svg.png`, `*-scene.png`, `*-diff32.png`, todos 2100×2970).
 
-Percentuais (`compare diff --tolerance 32`, 6 237 000 px, maxDiff 255):
+Percentuais (`compare diff --tolerance 32` — tolerância da época; 6 237 000 px, maxDiff 255):
 
 | Página | Diferentes | % |
 | --- | ---: | ---: |

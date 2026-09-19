@@ -14,7 +14,8 @@ Dois binários, em toolchains diferentes:
 ## Backend gráfico oficial: Impeller (decisão R05a, 2026-09-19)
 
 O lado de referência (`resvg` + `tiny-skia`) é fixo; o que muda com o backend
-é só o lado da cena. Medição R05a (tolerância 32, 6 237 000 px, Flutter
+é só o lado da cena. Medição R05a (tolerância 32 na época — hoje o padrão é
+128; 6 237 000 px, Flutter
 3.47.4; tempos incluem startup sob xvfb):
 
 | Página (perfil) | Impeller | Skia | Tempo Imp / Skia |

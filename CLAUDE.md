@@ -15,8 +15,10 @@ anima/colore notas individualmente, endereçadas por `xml:id`.
 Requisitos herdados do projeto anterior, inegociáveis:
 
 1. **Paridade visual** — o render do Flutter deve bater com o SVG do Verovio
-   em **mais de 99,9% dos pixels** (tolerância 32/255 por canal, mesma
-   metodologia do `verovio_lottie`).
+   em **mais de 99,99% dos pixels** (tolerância 128/255 por canal, decisão do
+   usuário em 2026-09-19: afrouxa de um lado — ignora diferenças de
+   antialiasing — para restringir do outro, 99,9% → 99,99%; mesma
+   metodologia do `verovio_lottie`, que media a 32/255).
 2. **Animação individual por nota** — N notas acesas ao mesmo tempo, cada uma
    com sua curva/fade, sem agrupamento forçado por instante.
 3. **Controle de cor individual** por `xml:id`, em runtime, pelo host.

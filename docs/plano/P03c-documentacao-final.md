@@ -22,7 +22,7 @@ Mapa requisito → evidência, que é o esqueleto do fechamento:
 
 | Requisito (`CLAUDE.md`) | Evidência |
 | --- | --- |
-| Paridade visual > 99,9% | `docs/relatorio-paridade.md` (R06c) |
+| Paridade visual > 99,99% | `docs/relatorio-paridade.md` (R06c) |
 | Animação individual por nota | critério 1 de A02c (frames com fases distintas) |
 | Cor individual em runtime | critérios 2, 3 e 5 de A01c e A02b |
 | Virada de página + overlays | A03b (frames da virada) e A04b (overlay alinhado) |

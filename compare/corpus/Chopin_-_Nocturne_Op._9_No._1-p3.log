@@ -5,8 +5,8 @@ PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Cho
 ==> Cena -> PNG (backend impeller)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Chopin_-_Nocturne_Op._9_No._1-p3-scene.png (página 3).
 ==> Lendo dimensões dos PNGs
-==> Diff (tolerância 32)
+==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 41821 (0.6705%)
+Pixels diferentes: 952 (0.015264%)
 Maior diferença de canal observada: 255
-Chopin_-_Nocturne_Op._9_No._1;3;2100;2970;41821;6237000;0.6705
+Chopin_-_Nocturne_Op._9_No._1;3;2100;2970;952;6237000;0.015264

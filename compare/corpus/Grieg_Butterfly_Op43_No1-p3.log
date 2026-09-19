@@ -5,8 +5,8 @@ PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Gri
 ==> Cena -> PNG (backend impeller)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Grieg_Butterfly_Op43_No1-p3-scene.png (página 3).
 ==> Lendo dimensões dos PNGs
-==> Diff (tolerância 32)
+==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 10138 (0.1625%)
+Pixels diferentes: 247 (0.003960%)
 Maior diferença de canal observada: 255
-Grieg_Butterfly_Op43_No1;3;2100;2970;10138;6237000;0.1625
+Grieg_Butterfly_Op43_No1;3;2100;2970;247;6237000;0.003960

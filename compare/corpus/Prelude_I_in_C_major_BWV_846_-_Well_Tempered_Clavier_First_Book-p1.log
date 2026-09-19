@@ -5,8 +5,8 @@ PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Pre
 ==> Cena -> PNG (backend impeller)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book-p1-scene.png (página 1).
 ==> Lendo dimensões dos PNGs
-==> Diff (tolerância 32)
+==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 21817 (0.3498%)
+Pixels diferentes: 492 (0.007888%)
 Maior diferença de canal observada: 255
-Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book;1;2100;2970;21817;6237000;0.3498
+Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book;1;2100;2970;492;6237000;0.007888

@@ -5,8 +5,9 @@ MEI/MusicXML → SVG) que adiciona um **exportador de formato intermediário de
 cena** (`.vsb` — *Verovio Score Bridge*), mais um **pacote Flutter que lê esse
 formato e desenha a partitura** com `CustomPaint`, permitindo:
 
-- **Renderização idêntica** à saída SVG do próprio Verovio (critério: > 99,9%
-  dos pixels iguais na comparação SVG→PNG vs. Flutter→PNG).
+- **Renderização idêntica** à saída SVG do próprio Verovio (critério: > 99,99%
+  dos pixels iguais na comparação SVG→PNG vs. Flutter→PNG, tolerância 128/255
+  por canal — decisão do usuário em 2026-09-19, ignorando AA).
 - **Animação individual por nota**, sem limite de quantas notas animam ao mesmo
   tempo e com curvas independentes por nota.
 - **Controle de cor individual** por `xml:id`, em tempo real, pelo app host.

@@ -36,7 +36,8 @@ O corpus e o tamanho de cada peça (medido em S08, `compare/out/s08/`):
 Outros fatos úteis:
 
 - Todas as peças geram `timemap.json` no pacote.
-- Tolerância sempre **32/255 por canal**.
+- Tolerância sempre **128/255 por canal** (decisão do usuário em 2026-09-19;
+  antes 32/255).
 - Tempo: cada página passa por Verovio (2×), `resvg` e Flutter; no projeto
   anterior a varredura inteira levava alguns minutos. Se estiver levando
   muito mais, provavelmente você está regerando o `.vsb` por página em vez de
@@ -79,7 +80,7 @@ Outros fatos úteis:
 ## Notas de execução
 
 Executado em 2026-09-19. Comando: `./compare/scripts/compare-corpus.sh`
-(tolerância padrão 32). Backend: **Impeller** (oficial, R05a confirmado).
+(tolerância padrão 32 na época; hoje 128). Backend: **Impeller** (oficial, R05a confirmado).
 Tempo total: **187s** (run 1) e **188s** (run 2 de reprodutibilidade).
 Verovio **6.3.0-b971951**. Commit `5aefc6b` com a árvore suja das mudanças
 ainda não commitadas de R05 (compare-page.sh, widget_vs_harness_test.dart,

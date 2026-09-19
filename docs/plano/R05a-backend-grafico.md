@@ -28,8 +28,8 @@ mesmas páginas, leve os dois números ao usuário e **não decida sozinho**.
 - O lado de referência (`resvg` + `tiny-skia`) é **fixo**: não muda com o
   backend do Flutter. O que muda é o lado da cena.
 - A diferença esperada entre backends é de **antialiasing de borda**, que a
-  tolerância 32/255 absorve em boa parte — mas "em boa parte" não é "sempre",
-  e o alvo do projeto é 0,1%, uma margem estreita.
+  tolerância da época (32/255) absorvia em boa parte — mas "em boa parte" não
+  é "sempre", e o alvo do projeto era 0,1%, uma margem estreita.
 - Como forçar Skia no app `compare` (Linux desktop): variável de ambiente
   `FLUTTER_ENABLE_IMPELLER=0` na execução, ou `flutter build linux
   --no-enable-impeller`. Registre **exatamente** o mecanismo que funcionou na
@@ -43,7 +43,7 @@ mesmas páginas, leve os dois números ao usuário e **não decida sozinho**.
    nota, muito texto, com tracejado, com rotação/arpejo, e uma página de
    pouco conteúdo).
 2. Para cada uma, gerar o PNG da cena com Impeller e com Skia e diffar contra
-   o mesmo PNG do SVG (tolerância 32).
+   o mesmo PNG do SVG (tolerância 32 na época; hoje 128).
 3. Montar uma tabela: página × backend × % divergente × tempo de execução.
 4. Levar a tabela ao usuário com uma pergunta objetiva e registrar a
    resposta, com data, nas notas.
@@ -74,7 +74,7 @@ mesmas páginas, leve os dois números ao usuário e **não decida sozinho**.
 
 Executado em 2026-09-19 (Flutter 3.47.4 / Dart 3.13.3). 5 páginas de 5 peças
 distintas, perfis conforme o passo (muita nota, muito texto, tracejado,
-rotação/arpejo, pouco conteúdo); tolerância 32, 6 237 000 px (2100×2970 em
+rotação/arpejo, pouco conteúdo); tolerância 32 (da época; 6 237 000 px, 2100×2970 em
 todas). SVG e `.vsb` gerados do mesmo fonte com flags padrão; `.vsb` sempre
 com todas as páginas. Artefatos descartáveis em `/tmp/opencode/r05a/` (os
 PNGs de referência da decisão ficam nos logs abaixo, não no repo).

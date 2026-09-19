@@ -121,7 +121,7 @@ ponto pelo `RemoveExtension`, como no `compare-page.sh`):
 
 Sobreposição (critério 3, quantitativo em vez de olho nu; scripts Python
 com PIL+numpy, limiar de tinta <128):
-- `diff --tolerance 32`: Satie 126 977/6 237 000 = **2,0359%**, Scarlatti
+- `diff --tolerance 32` (tolerância da época): Satie 126 977/6 237 000 = **2,0359%**, Scarlatti
   122 333 = **1,9614%**, maxDiff 255 (diferenças esperadas: glifos e texto
   ausentes em R02d). Diffs em `r02d-*-p1-diff32.png`.
 - Teste de deslocamento ±3px: a cobertura "tinta da cena sobre tinta do

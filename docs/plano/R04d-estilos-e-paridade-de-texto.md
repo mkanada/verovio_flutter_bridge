@@ -7,7 +7,7 @@
 Fechar o texto comum: os quatro estilos desenhando com a TTF certa (não com
 itálico ou negrito **sintético**), e a medição de paridade na peça com mais
 texto do corpus. Historicamente este é o passo que decide se o projeto bate o
-requisito de 99,9%.
+requisito de paridade (na época 99,9% a 32/255; hoje 99,99% a 128/255).
 
 ## Ler antes (só isto)
 
@@ -98,7 +98,7 @@ repetiram). `flutter analyze` limpo, `dart format` limpo, `flutter test`
 diferentes por bytes; largura de cada estilo contra a TTF daquele arquivo
 a <1% — itálico sintético preservaria a largura da regular e falharia).
 
-Paridade (`compare diff --tolerance 32`, 6 237 000 px, Impeller, artefatos
+Paridade (`compare diff --tolerance 32` — tolerância da época; 6 237 000 px, Impeller, artefatos
 em `compare/out/r04b/`):
 
 | Página | Diferentes | % |

@@ -124,7 +124,7 @@ antes de pintar. Armadilha de build: mexer no pubspec do `score_bridge`
 exige `flutter clean` no `compare`, senão o bundle sai sem as fontes
 (FontManifest só com MaterialIcons).
 
-Visual (Gymnopédie p1, `compare/out/r04b/`, Impeller): diff tol 32 =
+Visual (Gymnopédie p1, `compare/out/r04b/`, Impeller): diff tol 32 (tolerância da época) =
 **0,5153%** (31 138 px; R03c sem texto: 0,4806% — o resto da diferença é
 o deslocamento horizontal provisório de `center`/`right`, R04c).
 Recorte `satie-p1-tempo-side.png` (SVG × cena, 2×): "Lent et douloureux"

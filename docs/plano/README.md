@@ -54,8 +54,11 @@ Contexto de por que este projeto existe:
 - **Unidades**: tudo que chega ao `DeviceContext` está em unidades de definição
   (`DEFINITION_FACTOR = 10`), com o eixo y já apontando para baixo.
 - **Corpus de teste**: `corpus/mei/*.mei` e `corpus/musicxml/*.mxl`.
-- **Tolerância de diff**: 32/255 por canal, a mesma do `verovio_lottie` — todo
-  número de paridade citado no plano usa essa tolerância.
+- **Tolerância de diff**: 128/255 por canal, percentuais com 6 casas
+  (decisão do usuário em 2026-09-19; antes era 32/255 como no
+  `verovio_lottie` — números antigos continuam citados como "medidos a 32"
+  e não são comparáveis aos novos) — todo
+  número de paridade citado no plano a partir de R06b usa a nova tolerância.
 
 ## Arquitetura alvo
 
@@ -197,8 +200,8 @@ no [`CLAUDE.md`](../../CLAUDE.md).
    os dois querem dizer Liberation Serif (ver R04a).
 2. **Backend gráfico** — Impeller e Skia antialiasam diferente do `tiny-skia`
    (do `resvg`). **Mitigação:** R05a mede os dois e registra o escolhido; a
-   tolerância 32/255 absorve diferença de AA de borda, que é o que o projeto
-   anterior já observava.
+   tolerância 128/255 ignora diferença de AA de borda por decisão do usuário
+   (antes 32/255, que é o que o projeto anterior observava).
 3. **Desempenho com página inteira em `CustomPaint`** — uma página do corpus
    tem 1 345 formas na mediana (máximo 2 463) e produz ~196 segmentos
    alternados (máximo 545). **Mitigação:** A01a/A01b separam estático

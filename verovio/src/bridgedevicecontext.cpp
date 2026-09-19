@@ -717,6 +717,62 @@ void BridgeDeviceContext::DrawText(
     }
     if (chars.empty()) return;
 
+    // Espaços como o SVG os mostra (R06b): o Verovio nunca emite xml:space nem
+    // textLength, então o resvg aplica o colapso padrão — MAS SvgDeviceContext::DrawText
+    // (L1107-1114) troca antes o primeiro/último ' ' (0x20) de cada run por NBSP (0xA0,
+    // "IE does not support xml:space=preserve"), e NBSP não é colapsável: ele vira
+    // avanço garantido. Réplica literal, na ordem em que as duas regras se aplicam:
+    // 1. primeiro/último ' ' lateral vira sentinela de avanço (0xA0);
+    // 2. remove [ \t\n\r] das bordas (as sentinelas sobrevivem) e colapsa cada
+    //    sequência interna num ' ' só;
+    // 3. converte as sentinelas de volta para ' ' (mesmo avanço no Liberation Serif
+    //    usado dos dois lados, R04a).
+    // Sem o passo 1, "Lent et douloureux " (Satie) perdia o avanço final e "ca. 76"
+    // deslocava ~30 px; sem o passo 2, "(dim. -     - ...)" (Nocturne) saía espalhado
+    // na cena e colado no SVG. Aplica antes de medir (GetTextExtent) e de ramificar,
+    // para que âncora, avanços e bbox usem a mesma cadeia que a referência mede.
+    {
+        constexpr char32_t kSentinel = 0xA0;
+        const std::size_t n = chars.size();
+        auto isBlank = [](char32_t c) { return (c == U' ') || (c == U'\t') || (c == U'\n') || (c == U'\r'); };
+        // Passo 1: sentinelas de avanço nas bordas (só ' ' vira NBSP no SVG).
+        bool hasSentinel = false;
+        if ((n > 0) && (chars[0] == U' ')) {
+            chars[0] = kSentinel;
+            hasSentinel = true;
+        }
+        if ((n > 1) && (chars[n - 1] == U' ')) {
+            chars[n - 1] = kSentinel;
+            hasSentinel = true;
+        }
+        // Passo 2: bordas (sentinelas sobrevivem) + colapso interno.
+        std::size_t i = 0;
+        while ((i < n) && isBlank(chars[i])) ++i;
+        std::size_t end = n;
+        while ((end > i) && isBlank(chars[end - 1])) --end;
+        std::u32string collapsed;
+        collapsed.reserve(end - i + 2);
+        bool pendingSpace = false;
+        for (std::size_t k = i; k < end; ++k) {
+            if (isBlank(chars[k])) {
+                pendingSpace = true;
+            }
+            else {
+                if (pendingSpace) collapsed.push_back(U' ');
+                pendingSpace = false;
+                collapsed.push_back(chars[k] == kSentinel ? U' ' : chars[k]);
+            }
+        }
+        // Sentinela que sobrou numa borda (run só de brancos com ' ' lateral, ex. " ")
+        // vira avanço. Sem sentinela (só tab/newline, ex. "\t"), o resvg remove tudo
+        // e a run some — avanço zero, como abaixo.
+        if (collapsed.empty() && hasSentinel) {
+            collapsed.push_back(U' ');
+        }
+        chars.swap(collapsed);
+    }
+    if (chars.empty()) return;
+
     const int letterSpacing = font->GetLetterSpacing();
 
     if (font->GetSmuflFont() != SMUFL_NONE) {

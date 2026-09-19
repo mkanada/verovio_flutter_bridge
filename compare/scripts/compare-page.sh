@@ -31,7 +31,7 @@ fi
 
 INPUT_FILE=$1
 PAGE=$2
-TOLERANCE=${3:-32}
+TOLERANCE=${3:-128}
 COMPARE_BACKEND="${COMPARE_BACKEND:-impeller}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

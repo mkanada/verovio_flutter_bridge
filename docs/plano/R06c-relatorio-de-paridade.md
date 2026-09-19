@@ -6,7 +6,8 @@ portão: sem ele, a fase A não começa)
 ## Objetivo
 
 Declarar, por escrito e com evidência, que o requisito nº 1 do projeto está
-atendido: **mais de 99,9% dos pixels iguais** ao SVG do Verovio. É o
+atendido: **mais de 99,99% dos pixels iguais** ao SVG do Verovio (tolerância
+128/255 por canal, decisão do usuário em 2026-09-19). É o
 documento que o usuário vai ler para decidir se o projeto está de pé.
 
 ## Ler antes (só isto)
@@ -18,11 +19,12 @@ documento que o usuário vai ler para decidir se o projeto está de pé.
 
 ## Contexto que você precisa (não vá procurar, está aqui)
 
-- Alvo: **média do corpus < 0,1%** e **nenhuma página acima de 0,5%**.
-- Linha de base do `verovio_lottie` (mesma tolerância 32/255, mesmo corpus,
-  34 páginas): **0,0135% – 0,3946%, média 0,1251%**. O relatório tem que
-  comparar lado a lado — é a única forma de mostrar que a mudança de
-  arquitetura não custou qualidade visual.
+- Alvo: **média do corpus < 0,01%** e **nenhuma página acima de 0,05%**.
+- Linha de base do `verovio_lottie` (tolerância 32/255, mesmo corpus,
+  34 páginas): **0,0135% – 0,3946%, média 0,1251%** — medida na tolerância
+  antiga, **não diretamente comparável** aos números a 128/255; o relatório
+  mostra as duas lado a lado com a ressalva. É a única forma de mostrar que
+  a mudança de arquitetura não custou qualidade visual.
 - "Nenhuma divergência estrutural" é uma afirmação **visual**, declarada
   explicitamente: nenhuma nota, clave ou haste em posição errada, nenhuma cor
   errada, nada faltando ou sobrando. Não se deduz da percentagem.
@@ -53,10 +55,11 @@ documento que o usuário vai ler para decidir se o projeto está de pé.
 
 ## Critérios de aceite
 
-1. **Média do corpus < 0,1%** de pixels divergentes (tolerância 32/255). Se
+1. **Média do corpus < 0,01%** de pixels divergentes (tolerância 128/255,
+   percentuais com 6 casas). Se
    não bater, o passo não está concluído e a fase A **não começa**: volte a
    R06b com a causa dominante.
-2. Nenhuma página acima de **0,5%**.
+2. Nenhuma página acima de **0,05%**.
 3. Declaração explícita, no relatório, de que não há divergência estrutural,
    com a metodologia da verificação.
 4. `docs/relatorio-paridade.md` existe e contém tabela completa, médias,

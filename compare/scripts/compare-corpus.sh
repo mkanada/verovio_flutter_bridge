@@ -22,7 +22,7 @@
 # repassado ao compare-page.sh.
 set -euo pipefail
 
-TOLERANCE=${1:-32}
+TOLERANCE=${1:-128}
 COMPARE_BACKEND="${COMPARE_BACKEND:-impeller}"
 export COMPARE_BACKEND
 

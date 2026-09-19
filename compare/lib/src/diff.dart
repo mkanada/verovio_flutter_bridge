@@ -25,7 +25,7 @@ class DiffResult {
   @override
   String toString() =>
       'Pixels comparados: $total\n'
-      'Pixels diferentes: $diffPixels (${pct.toStringAsFixed(4)}%)\n'
+      'Pixels diferentes: $diffPixels (${pct.toStringAsFixed(6)}%)\n'
       'Maior diferença de canal observada: $maxDiff';
 }
 

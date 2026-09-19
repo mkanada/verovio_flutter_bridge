@@ -228,8 +228,8 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [S07](S07-pacote-vsb.md) | Pacote `.vsb` (zip) com timemap embutido | S06 | — | concluído |
 | [S08](S08-corrigir-bbox-de-glifo.md) | **Corrigir a escala e o eixo da bbox de glifo** | S04, S07 | — | concluído |
 | [R01](R01-pacote-dart-e-parser.md) | Pacote `score_bridge`: modelo + parser | S05 | — | concluído |
-| [R02a](R02a-geometria-para-path.md) | Geometria: `v`/`i`/`o` → `ui.Path` | R01 | — | a fazer |
-| [R02b](R02b-percurso-e-ajuste-de-pagina.md) | Percurso da árvore, ajuste de página e cor herdada | R02a | — | a fazer |
+| [R02a](R02a-geometria-para-path.md) | Geometria: `v`/`i`/`o` → `ui.Path` | R01 | — | concluído |
+| [R02b](R02b-percurso-e-ajuste-de-pagina.md) | Percurso da árvore, ajuste de página e cor herdada | R02a | — | concluído |
 | [R02c](R02c-formas-traco-e-preenchimento.md) | Formas: traço, opacidade, cap/join, tracejado | R02b | — | a fazer |
 | [R02d](R02d-primeira-imagem.md) | Primeira imagem: `scene-to-png` mínimo e sobreposição | R02c, F02 | — | a fazer |
 | [R03a](R03a-cache-de-glifos.md) | `GlyphCache`: `glyphId` → `ui.Path` | R02a, S03 | — | a fazer |

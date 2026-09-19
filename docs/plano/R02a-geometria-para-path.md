@@ -110,4 +110,15 @@ pontos de controle iguais aos extremos), mas vale um teste dedicado porque é
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Criado `score_bridge/lib/src/geometry.dart`
+(`pathFromBeziers`, `pathForRect`, `pathForEllipse`, sem `Offset`
+intermediários) e exportado em `score_bridge/lib/score_bridge.dart`.
+Cache por objeto via `Expando<ui.Path>` em `geometry.dart` — modelo de R01
+inalterado, construtores seguem `const`. `flutter analyze` sem avisos,
+`dart format --set-exit-if-changed .` limpo, `flutter test` 27/27 (6 novos
+em `test/geometry_test.dart`). Desvios: (1) teste de Bézier usa escala 10
+em vez de 100 — o erro absoluto de flattening do Skia (~2e-8/unidade)
+estourava 1e-6 em escala 100 (medido 1,9e-6); (2) teste de fechamento usa
+lente de 2 vértices com volta em lombada inferior em vez de triângulo —
+`Path.contains` fecha implicitamente paths abertos, então triângulo de
+tangentes zero contém o mesmo ponto nas duas versões.

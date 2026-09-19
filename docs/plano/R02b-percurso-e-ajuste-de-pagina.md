@@ -137,4 +137,20 @@ qualquer reordenação vira divergência visual onde há sobreposição.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Criado `score_bridge/lib/src/scene_painter.dart`
+(`ScenePainter`: ajuste de página na ordem `translate→scale→translate` com
+valores prontos do arquivo, cor corrente por parâmetro — uma conversão
+`#rrggbb`→`Color` por nó —, `hidden` poda a subárvore, `rotate` com
+`save/translate/rotate/translate/restore`, só preenchimento de `p`/`r`/`e`;
+`u`/`t` ignorados sem `throw`) e `test/support/recording_canvas.dart`
+(`RecordingCanvas implements Canvas`: grava `drawPath` com `Paint` efetiva
+e snapshot da afim 2D composta por pós-multiplicação; resto no-op).
+`flutter analyze` sem avisos, `dart format --set-exit-if-changed .` limpo,
+`flutter test` 34/34 (7 novos em `test/scene_painter_test.dart`).
+DESVIO MEDIDO no critério 2: o canto `(viewBox.right, viewBox.bottom)` da
+página 1 do fixture (`viewBox=[0,0,21000,29700]`, `fit={0.1,0,0}`,
+`origin=[500,500]`) cai em `(2150, 3020)` — 50px além de `widthPx×heightPx`
+`(2100×2970)` — porque a margem `origin` é somada depois da escala (§3);
+o teste fixa os valores exatos `(50,50)` e `(2150,3020)` calculados com
+literais. O conteúdo real fica dentro (bbox mais à direita do corpus:
+20008.5 → 2050.85px).

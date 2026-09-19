@@ -236,7 +236,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [R03b](R03b-instancias-de-glifo.md) | Instâncias `u`: transformação, traço e herança | R03a, R02c | — | concluído |
 | [R03c](R03c-paridade-de-glifos.md) | Paridade parcial só com formas e glifos | R03b, R02d | — | concluído |
 | [R04a](R04a-fontes-e-familia.md) | Fontes: carregar as TTFs e resolver `family` | R02b | — | concluído |
-| [R04b](R04b-baseline-e-tamanho.md) | Run de texto: linha de base, tamanho e cor | R04a | — | a fazer |
+| [R04b](R04b-baseline-e-tamanho.md) | Run de texto: linha de base, tamanho e cor | R04a | — | concluído |
 | [R04c](R04c-alinhamento.md) | Alinhamento e `letterSpacing` | R04b | — | a fazer |
 | [R04d](R04d-estilos-e-paridade-de-texto.md) | Bold/itálico e paridade do texto | R04c, R03c | — | a fazer |
 | [R05a](R05a-backend-grafico.md) | Decisão: backend gráfico (Impeller × Skia) | R03c | backend gráfico | a fazer |

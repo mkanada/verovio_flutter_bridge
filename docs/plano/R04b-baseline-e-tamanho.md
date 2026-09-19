@@ -97,4 +97,37 @@ principal fonte de divergência do projeto anterior.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Criado `lib/src/text_run.dart` (`painterForRun`,
+testável sem `Canvas`) e ligado o ramo `SceneText` no `ScenePainter`
+(`_drawText`: cor explícita ou herdada, `paint` em `(x, run.y - dy)` com
+`dy` da baseline alfabética). Só `left` implementado; `center`/`right`
+caem provisoriamente como `left` com `TODO(R04c)` explícito. `flutter
+analyze` limpo, `dart format` limpo, `flutter test` 60/60 (5 novos em
+`test/text_run_test.dart`; `RecordingCanvas` agora grava `drawParagraph`).
+
+Medido: `dy` a 405 = 321,33 viewBox = fórmula `(hheaAsc + gap/2) /
+(hheaAsc - hheaDesc + hheaGap) × size` (1825, −443, 87; sem `height` o
+Skia reparte meio `gap` acima do ascendente, com `height: 1.0` o Flutter
+reescala ao em — verificado linear em 324/405/810). Não é `capHeight`
+(1341u) nem ascendente puro (360,90). Dobro de `size` dobra a largura;
+`noScaling` imune a `linear(2.0)`; cor herdada/vermelha e explícita/verde
+conferidas por raster.
+
+Desvios do snippet, ambos sondados: (1) família **sem** `package:` —
+`package:` + fonte de `FontLoader` cai em fallback silencioso (8910 px vs
+3588 px na string de prova); (2) `loadScoreFonts` mudou de
+`test/support` para `lib/src/text_font.dart` (o `compare` não pode
+importar de `test/` via `package:`; o support virou re-export) e os TTFs
+entraram também em `assets:` do pubspec — `fonts:` sozinho não expõe os
+bytes ao `rootBundle` no release. `scene_to_png` chama `loadScoreFonts()`
+antes de pintar. Armadilha de build: mexer no pubspec do `score_bridge`
+exige `flutter clean` no `compare`, senão o bundle sai sem as fontes
+(FontManifest só com MaterialIcons).
+
+Visual (Gymnopédie p1, `compare/out/r04b/`, Impeller): diff tol 32 =
+**0,5153%** (31 138 px; R03c sem texto: 0,4806% — o resto da diferença é
+o deslocamento horizontal provisório de `center`/`right`, R04c).
+Recorte `satie-p1-tempo-side.png` (SVG × cena, 2×): "Lent et douloureux"
+`left` com **topo da tinta idêntico (linha 119, 41 linhas)** — sem
+deslocamento vertical. Título/`Pno.`/números (`center`/`right`) dobram na
+horizontal, como esperado até R04c.

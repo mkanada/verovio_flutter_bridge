@@ -2,10 +2,9 @@
 /// JSON único `-t vsb-json`) num PNG, com o mesmo fundo branco opaco e as
 /// mesmas dimensões do PNG de referência do `svg_render`.
 ///
-/// É o render mínimo de conferência visual: só formas `p`/`r`/`e` (o que o
-/// `ScenePainter` desenha até R02c); glifos (R03) e texto (R04) ainda não
-/// aparecem, então a divergência contra o SVG é de vários por cento e isso
-/// é esperado — o critério aqui é alinhamento, não percentual.
+/// É o render mínimo de conferência visual: formas `p`/`r`/`e`, glifos `u`
+/// (R03) e runs de texto `t` (R04b, só `left`; `center`/`right` caem como
+/// `left` até R04c). O critério aqui é alinhamento, não percentual.
 library;
 
 import 'dart:io';
@@ -40,6 +39,9 @@ Future<void> sceneToPng(
     throw ArgumentError('dimensões inválidas: ${w}x$h');
   }
 
+  // Texto comum (R04b) precisa das TTFs do pacote registradas no motor;
+  // sem isto o Flutter cai em fallback silencioso (R04a).
+  await loadScoreFonts();
   final recorder = ui.PictureRecorder();
   final canvas = ui.Canvas(recorder);
   // Fundo branco opaco, como o `svg_render` compõe (senão o diff acusa a

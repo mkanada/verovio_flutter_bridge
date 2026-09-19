@@ -92,4 +92,57 @@ as linhas que existem têm que cair exatamente sobre as do SVG.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. `compare/pubspec.yaml` ganhou a dependência de
+caminho `score_bridge: path: ../score_bridge`; criado
+`compare/lib/src/scene_to_png.dart` (`sceneToPng`: fundo branco opaco em
+pixels de saída + `ScenePainter.paint` via `PictureRecorder` →
+`toImage(W, H)` → PNG; `--page` 1-based como o `-p` do Verovio, `--width`/
+`--height` omitidos viram `widthPx`/`heightPx`) e o subcomando
+`scene-to-png` em `compare/lib/main.dart` (ajuda lista `diff, scene-to-png`;
+página fora do intervalo e inteiro inválido dão erro legível, sem throw
+cru). `flutter analyze` limpo, `dart format` limpo, `flutter test` 4/4,
+`flutter build linux --release` ok (critério 1).
+
+Peças (página 1, comandos exatos a partir da raiz; nomes temporários sem
+ponto pelo `RemoveExtension`, como no `compare-page.sh`):
+- `corpus/musicxml/Erik_Satie_-_Gymnopedie_No.1.mxl` (Satie) e
+  `corpus/mei/Scarlatti_Sonata_in_C-major.mei` (Scarlatti).
+- SVG: `verovio/tools/verovio -t svg -p 1 -o compare/out/_r02d-tmp
+  --resource-path verovio/data <peça>` → `r02d-{satie,scarlatti}-p1.svg`;
+  PNG: `svg_render` com as 8 fontes + `--pin-serif-family "Liberation Serif"`
+  → `r02d-*-p1-svg.png` (2100×2970).
+- Cena: `verovio -t vsb -p 1 ...` → `r02d-*-p1.vsb`; `xvfb-run -a
+  compare/build/linux/x64/release/bundle/compare scene-to-png
+  <...>.vsb <...>-scene.png --page 1` → `r02d-*-p1-scene.png` (2100×2970
+  exatos nas duas peças — critério 2).
+- Backend ativo (log do embedder sob xvfb): **Impeller
+  (OpenGLES-SDF)** — `Using the Impeller rendering backend (OpenGLESSDF)`;
+  Flutter 3.47.4. A decisão Impeller×Skia continua em R05a.
+
+Sobreposição (critério 3, quantitativo em vez de olho nu; scripts Python
+com PIL+numpy, limiar de tinta <128):
+- `diff --tolerance 32`: Satie 126 977/6 237 000 = **2,0359%**, Scarlatti
+  122 333 = **1,9614%**, maxDiff 255 (diferenças esperadas: glifos e texto
+  ausentes em R02d). Diffs em `r02d-*-p1-diff32.png`.
+- Teste de deslocamento ±3px: a cobertura "tinta da cena sobre tinta do
+  SVG" é máxima em (0,0) nas duas peças (Satie 87,62%, Scarlatti 95,68%) —
+  **nenhum deslocamento constante** (erro de transformação de R02b
+  descartado).
+- Picos de pauta (faixa x 400..1700): 102/102 (Satie) e 146/148
+  (Scarlatti) picos da cena casados com picos do SVG a ≤5px, de y≈185 até
+  y≈2906; offset médio −0,11px / −0,05px e inclinação offset×y de
+  +4,6e-05 / −2,5e-05 px/px (≈0,1px na página inteira) — **sem erro de
+  escala** (critério 3: deslocamento que cresce com a posição descartado).
+- Espessura (critério 4): perfil de escuridão de uma linha de pauta em
+  janela limpa de 200 colunas é idêntico nos dois (`[2.2 2.2 2.2 128.1
+  192.5 ...]` vs `[2.2 2.2 2.2 129.3 191.3 ...]` — a linha cai entre as
+  mesmas duas fileiras de pixels, com o mesmo peso); a contagem binária
+  <128 oscila 1↔2px porque o núcleo está exatamente sobre o limiar 128,
+  igual nos dois renderizadores — **sem borda dupla nem erro sistemático
+  de `strokeWidth`**. Recortes lado a lado (SVG à esquerda, cena à direita,
+  ampliados 2×, NEAREST) em `r02d-{satie,scarlatti}-p1-staff-side.png`.
+OBSERVAÇÃO fora de escopo (para R05b/R06a): `verovio -t vsb -p 1` **ignora
+o `-p`** — `tools/main.cpp` L552 chama `RenderToBridgeFile` sem intervalo
+de páginas (só `vsb-json` honra `from/to`, L568-569); os `.vsb` acima têm
+todas as páginas (Satie 2, Scarlatti 3) e o `--page 1` selecionou o índice
+0 corretamente.

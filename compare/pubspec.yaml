@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   image: ^4.5.4
   args: ^2.7.0
+  score_bridge:
+    path: ../score_bridge
 
 dev_dependencies:
   flutter_test:

@@ -1,7 +1,8 @@
 /// Ponto de entrada da ferramenta `compare` (Flutter/Linux).
 ///
-/// Nesta etapa o binário expõe somente o comando `diff`; o renderizador SVG
-/// continua no binário Rust `compare/svg_render/`.
+/// Comandos: `diff` (comparação pixel a pixel entre PNGs) e `scene-to-png`
+/// (R02d: renderiza uma página de um `.vsb` num PNG). O renderizador SVG de
+/// referência continua no binário Rust `compare/svg_render/`.
 library;
 
 import 'dart:io';
@@ -10,6 +11,7 @@ import 'package:args/args.dart';
 import 'package:flutter/widgets.dart';
 
 import 'src/diff.dart';
+import 'src/scene_to_png.dart';
 
 ArgParser _commands() {
   final parser = ArgParser();
@@ -30,14 +32,99 @@ ArgParser _commands() {
       help: 'Exibe ajuda do diff.',
     );
   parser.addCommand('diff', diffParser);
+  final sceneToPngParser = ArgParser()
+    ..addOption('page', defaultsTo: '1', help: 'Número da página (1-based).')
+    ..addOption('width', help: 'Largura do PNG (padrão: widthPx da página).')
+    ..addOption('height', help: 'Altura do PNG (padrão: heightPx da página).')
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      defaultsTo: false,
+      negatable: false,
+      help: 'Exibe ajuda do scene-to-png.',
+    );
+  parser.addCommand('scene-to-png', sceneToPngParser);
   return parser;
 }
 
 void _usage(ArgParser parser) {
-  stderr.writeln('Uso: compare diff <a.png> <b.png> <saida.png> [opções]');
+  stderr.writeln('Uso: compare <comando> [opções]');
   stderr.writeln('');
-  stderr.writeln('Comandos: diff.');
+  stderr.writeln('Comandos: diff, scene-to-png.');
   stderr.writeln(parser.usage);
+}
+
+int _parseIntOption(String name, String? raw) {
+  if (raw == null || raw.isEmpty) {
+    throw FormatException('opção --$name exige um valor inteiro');
+  }
+  final value = int.tryParse(raw);
+  if (value == null) {
+    throw FormatException('opção --$name: "$raw" não é um inteiro');
+  }
+  return value;
+}
+
+Future<void> _runDiff(ArgResults command) async {
+  if (command['help'] as bool) {
+    stdout.writeln(
+      'Uso: compare diff <a.png> <b.png> <saida.png> '
+      '[--tolerance N] [--help]',
+    );
+    return;
+  }
+  if (command.rest.length != 3) {
+    stderr.writeln('Erro: diff <a.png> <b.png> <saida.png>');
+    exit(2);
+  }
+  try {
+    final result = diffPngFiles(
+      command.rest[0],
+      command.rest[1],
+      command.rest[2],
+      tolerance: int.parse(command['tolerance'] as String),
+    );
+    stdout.writeln(result);
+  } on FormatException catch (e) {
+    stderr.writeln('Erro: ${e.message}');
+    exit(2);
+  } catch (e) {
+    stderr.writeln('Erro: $e');
+    exit(1);
+  }
+}
+
+Future<void> _runSceneToPng(ArgResults command) async {
+  if (command['help'] as bool) {
+    stdout.writeln(
+      'Uso: compare scene-to-png <entrada.vsb|json> <saida.png> '
+      '[--page N] [--width W] [--height H] [--help]',
+    );
+    return;
+  }
+  if (command.rest.length != 2) {
+    stderr.writeln('Erro: scene-to-png <entrada.vsb|json> <saida.png>');
+    exit(2);
+  }
+  try {
+    final page = _parseIntOption('page', command['page'] as String?);
+    final widthRaw = command['width'] as String?;
+    final heightRaw = command['height'] as String?;
+    await sceneToPng(
+      command.rest[0],
+      command.rest[1],
+      page1Based: page,
+      width: widthRaw == null ? null : _parseIntOption('width', widthRaw),
+      height: heightRaw == null ? null : _parseIntOption('height', heightRaw),
+    );
+    stdout.writeln('Gravado ${command.rest[1]} (página $page).');
+  } on FormatException catch (e) {
+    stderr.writeln('Erro: ${e.message}');
+    exit(2);
+  } catch (e) {
+    stderr.writeln('Erro: $e');
+    exit(1);
+  }
 }
 
 Future<void> main(List<String> args) async {
@@ -55,42 +142,24 @@ Future<void> main(List<String> args) async {
   if (results['help'] as bool) {
     stdout.writeln('Uso: compare <comando> [opções]');
     stdout.writeln('');
-    stdout.writeln('Comandos: diff.');
+    stdout.writeln('Comandos: diff, scene-to-png.');
     stdout.writeln(parser.usage);
     exit(0);
   }
 
   final command = results.command;
-  if (command == null || command.name != 'diff') {
+  if (command == null) {
     _usage(parser);
     exit(2);
   }
-  if (command['help'] as bool) {
-    stdout.writeln(
-      'Uso: compare diff <a.png> <b.png> <saida.png> '
-      '[--tolerance N] [--help]',
-    );
-    exit(0);
-  }
-  if (command.rest.length != 3) {
-    stderr.writeln('Erro: diff <a.png> <b.png> <saida.png>');
-    exit(2);
-  }
-
-  try {
-    final result = diffPngFiles(
-      command.rest[0],
-      command.rest[1],
-      command.rest[2],
-      tolerance: int.parse(command['tolerance'] as String),
-    );
-    stdout.writeln(result);
-  } on FormatException catch (e) {
-    stderr.writeln('Erro: ${e.message}');
-    exit(2);
-  } catch (e) {
-    stderr.writeln('Erro: $e');
-    exit(1);
+  switch (command.name) {
+    case 'diff':
+      await _runDiff(command);
+    case 'scene-to-png':
+      await _runSceneToPng(command);
+    default:
+      _usage(parser);
+      exit(2);
   }
   exit(0);
 }

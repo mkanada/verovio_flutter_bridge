@@ -108,4 +108,32 @@ depois (é a ordem do SVG), com duas `Paint` separadas, ambas
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Criado `score_bridge/lib/src/dash.dart`
+(`applyDash` via `PathMetric.extractPath` por contorno, fase reiniciada por
+contorno; `totalPathLength`; guarda `length/gap <= 0` devolvendo o caminho
+original) e completado `scene_painter.dart` (`_drawShape`: fill primeiro,
+traço depois, duas `Paint` com `isAntiAlias: true`; cor por canal via
+`_resolveChannelColor` com alfa `base.a × opacity` e `withValues`;
+`strokeWidth ?? 1.0` em unidades de viewBox; `default→butt/miter`,
+`arcs→miter`, `miter-clip→miter`; traço tracejado só no caminho do traço).
+`dash.dart` exportado em `score_bridge.dart`. `flutter analyze` limpo,
+`dart format` limpo, `flutter test` 41/41 (7 novos em
+`test/stroke_style_test.dart`: 9 combinações fill×stroke, largura 18 sem
+`fit.scale`, opacidade 0.5→alfa 128, tracejado sintético 1000→10 traços/352,
+caso real octave do Chopin Étude, default→butt/miter, caps/joins explícitos).
+DESVIOS MEDIDOS: (1) `computeMetrics` mede comprimento por flattening do
+Skia com erro ≈ 0.05% (0.18 em 352; 0.78 em 1836; 0.11 num traço de 36), por
+isso os testes de tracejado usam tolerância 0.5/2.0 em vez de igualdade
+exata — é o "ceil/floor do esperado" do critério 5. (2) `arcs`/`miter-clip`
+mapeados para `miter` sem caso real no corpus (zero ocorrências, como
+previsto). (3) `test/scene_painter_test.dart` atualizado para R02c: helper
+`_fillRect` agora usa `stroke: none` (antes `inherit`, irrelevante quando só
+o fill era desenhado) e o teste de página real conta os dois canais via
+`_countDraws` (página 0 do erik-satie: 102 fills + 912 strokes = 1014
+`drawPath`). (4) Caso real: primeira forma tracejada do
+`compare/out/s08/Chopin_Etude_Op10_No9.vsb` (página 1, `octave`,
+`v=[1236,6033,6675,6033]`, len 5439, `dash=[36,72]` → 51 traços, 1836
+acesos pela fórmula `ceil(len/108)`); o texto do passo diz "único tracejado
+do corpus" mas há 5 no Chopin Étude + 3 no Clair de Lune (8 no total,
+conforme o próprio §Contexto). Arredondamento de opacidade: metade para
+cima (`127.5→128`).

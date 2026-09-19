@@ -108,4 +108,35 @@ unidades de viewBox (226 × 194 px), quando a cabeça de nota desenhada mede
 
 ## Notas de execução
 
-(a preencher por quem executar)
+- 2026-09-18: `GlyphBBox` passou a dividir os quatro valores por `DEFINITION_FACTOR`
+  e inverter Y antes de aplicar `use.sx`/`use.sy`. O parser Dart passou a representar
+  `glyphs[].bbox` com `GlyphBBox(x, y, width, height)` e a especificação foi atualizada
+  com a escala e a conversão para o sistema dos contornos.
+- **Critério 1**: `cmake ../cmake && make -j4` concluiu sem avisos na unidade alterada.
+  O rebuild completo mantém avisos `-Warray-bounds` em `iohumdrum.cpp:16475`; a worktree
+  S07 usada na prova visual emitiu os mesmos avisos, portanto não são novos neste passo.
+- **Corpus**: regenerados 10 pacotes (`-t vsb -a -x 42`), 34 páginas; `unzip -t`
+  10/10 e os 40 membros JSON dos pacotes foram parseados com sucesso. Os manifestos
+  batem com as páginas e os membros dos zips.
+- **Critério 2**: na Gymnopédie p.1, o primeiro `notehead` mudou de
+  `[4164, 1393.6, 6424.8, 3337.6]` (2260.8 × 1944) para
+  `[4164, 2244.64, 4390.08, 2439.04]` (226.08 × 194.4 unidades de viewBox).
+- **Critério 3**: 20 nós com um único uso de glifo, sorteados deterministicamente em
+  Gymnopédie, Chopin Étude e Maple Leaf Rag (7/7/6), batem com a fórmula do passo com
+  erro máximo `0` na tolerância `1e-6`.
+- **Critério 4**: nas 34 páginas, 50.544 nós e 44.859 bboxes, a contenção
+  pai ⊇ filho teve **0 violações**.
+- **Critério 5**: a ressalva da bbox da raiz continua: 2/34 páginas estão contidas no
+  `viewBox`; 32/34 ainda estouram, tipicamente 441 unidades à esquerda e cerca de 990
+  à direita, com Y normalmente em 0/-0,5 e máximo estouro vertical de 181,5. A causa
+  não era apenas a escala do glifo.
+- **Critério 6**: os 10 `scene.json` são idênticos entre S07 e S08 ao remover apenas os
+  campos `bbox`, confirmando que a geometria desenhada não mudou. Renderizei as páginas 1
+  da Chopin Étude e da Gymnopédie com o binário S07 em uma worktree temporária e comparei
+  os PNGs com a saída atual via `cmp`: ambos são byte-idênticos
+  (`sha256 2bac18dca1cdfd287c61001528d2c49833d4abcd73efefcdf8cc5ecf3da813cb` e
+  `sha256 b398b037881949930cb7a368884adbeb8c79c2750f908d8767e4e6e28a916476`,
+  respectivamente).
+- **Dart**: `dart format`, `flutter analyze` e `flutter test` passaram; 21 testes
+  verdes. O fixture real foi regenerado a partir do corpus S08.
+- Bloqueios: nenhum.

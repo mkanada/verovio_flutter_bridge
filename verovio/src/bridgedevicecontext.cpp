@@ -226,13 +226,17 @@ namespace {
             return {};
         }
         const int *glyphBBox = glyphIt->second.bbox;
-        // use.sx/sy already are the same "translate(x,y) scale(sx,sy)" factors SvgDeviceContext
-        // applies to the <use> element (font units -> viewBox units), so no further division by
-        // DEFINITION_FACTOR is needed here.
-        const double x0 = use.x + glyphBBox[0] * use.sx;
-        const double y0 = use.y + glyphBBox[1] * use.sy;
-        const double x1 = use.x + (glyphBBox[0] + glyphBBox[2]) * use.sx;
-        const double y1 = use.y + (glyphBBox[1] + glyphBBox[3]) * use.sy;
+        // Glyph::SetBoundingBox stores [x, y, width, height] in font units multiplied by
+        // DEFINITION_FACTOR and with Y pointing up, while glyph paths are already in the
+        // viewBox scale with Y pointing down. Convert before applying the <use> transform.
+        const double bx = glyphBBox[0] / static_cast<double>(DEFINITION_FACTOR);
+        const double by = glyphBBox[1] / static_cast<double>(DEFINITION_FACTOR);
+        const double bw = glyphBBox[2] / static_cast<double>(DEFINITION_FACTOR);
+        const double bh = glyphBBox[3] / static_cast<double>(DEFINITION_FACTOR);
+        const double x0 = use.x + bx * use.sx;
+        const double x1 = use.x + (bx + bw) * use.sx;
+        const double y0 = use.y - (by + bh) * use.sy;
+        const double y1 = use.y - by * use.sy;
         if ((x1 - x0 <= 0.0) || (y1 - y0 <= 0.0)) {
             return {};
         }

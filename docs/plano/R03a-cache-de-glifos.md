@@ -66,15 +66,11 @@ Exemplo real (`Leipzig:E050`, clave de sol): `bbox = [-10, -6550, 6470,
 17380]`; os vértices do contorno vão de x −1 a 646 e de y −1083 a 655 — que é
 exatamente o resultado da fórmula acima.
 
-**Consequência**: R01 leu esse campo com `Rect.fromLTRB` (`parser.dart`,
-`_asRect`), o que produz um `Rect` sem sentido para glifos, e o exportador
-usa o `bbox` cru ao calcular a bbox dos nós (ver o passo
-[S08](S08-corrigir-bbox-de-glifo.md), que corrige o lado C++). Neste passo,
-**não** conserte o C++: só documente a conversão, use-a no critério 2 e
-registre nas notas se o `Rect` de `GlyphDef.bbox` continua sendo entregue
-como veio (recomendado: trocar o tipo de `GlyphDef.bbox` para uma classe
-`GlyphBBox(x, y, w, h)` explícita, para o campo nunca mais ser confundido com
-um `Rect` de tela).
+**Consequência**: o lado C++ foi corrigido no S08, mas R01 ainda lia esse campo com
+`Rect.fromLTRB` (`parser.dart`, `_asRect`), o que produz um `Rect` sem sentido para
+glifos. Neste passo, **não** altere o formato nem a IR: represente `GlyphDef.bbox` com
+um tipo explícito `GlyphBBox(x, y, width, height)` e use a conversão acima somente ao
+comparar com os contornos (recomendado: expor `toContourRect()`).
 
 ## O que fazer
 

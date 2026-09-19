@@ -147,10 +147,16 @@ arredondamento.
   `i` = tangente de entrada relativa ao vértice, `o` = tangente de saída
   relativa ao vértice. Os três arrays têm o mesmo comprimento e cada um tem
   comprimento par.
-- `font`, `codepoint`, `unitsPerEm`, `horizAdvX` e `bbox` vêm dos metadados do
-  `Glyph` do Verovio. Eles permitem um segundo caminho de render por TTF no
-  futuro. O caminho canônico — e o único que precisa bater a paridade — é o dos
-  contornos.
+- `bbox` é `[x, y, largura, altura]`, vindo de `Glyph::GetBoundingBox()`. Ele
+  usa a escala interna do Verovio: os valores são 10 vezes a escala dos
+  contornos (`DEFINITION_FACTOR = 10`) e o eixo Y aponta para cima, conforme a
+  convenção SMuFL. Portanto, `bbox` **não** é um `Rect` no sistema dos
+  contornos. Para compará-lo com `paths`, converta para:
+  `left = x / 10`, `top = -(y + altura) / 10`, `right = (x + largura) / 10`,
+  `bottom = -y / 10`.
+- `font`, `codepoint`, `unitsPerEm` e `horizAdvX` vêm dos metadados do `Glyph`
+  do Verovio e permitem um segundo caminho de render por TTF no futuro. O
+  caminho canônico — e o único que precisa bater a paridade — é o dos contornos.
 
 ### 4.1 Conversão para `Path` (normativo)
 
@@ -387,7 +393,7 @@ explicitamente.
 | `BridgeGlyphDef.codepoint` | `glyphs[...].codepoint` | metade da chave do dicionário |
 | `BridgeGlyphDef.unitsPerEm` | `glyphs[...].unitsPerEm` | metadado de `Glyph`, futuro caminho TTF |
 | `BridgeGlyphDef.horizAdvX` | `glyphs[...].horizAdvX` | metadado de `Glyph`, futuro caminho TTF |
-| `BridgeGlyphDef.bbox` | `glyphs[...].bbox` | bbox do glifo em unidades de fonte |
+| `BridgeGlyphDef.bbox` | `glyphs[...].bbox` | `[x, y, width, height]` em escala interna do Verovio (10× os contornos), com Y para cima; não é uma bbox no sistema dos caminhos |
 | `BridgeGlyphDef.paths` | `glyphs[...].paths` | contorno em unidades de fonte (S03) |
 | `BridgeGlyphUse.glyphId` | `u.g` | chave no dicionário `glyphs`, `"<fonte>:<codepoint hex maiúsculo>"` (S03) |
 | `BridgeGlyphUse.x` | `u.x` | posição horizontal em unidades de viewBox |
@@ -455,3 +461,4 @@ explicitamente.
 | 2026-09-17 | S01: formato nomeado Verovio Score Bridge (`.vsb`), flags `-t vsb`/`-t vsb-json`, timemap embutido quando disponível, exemplo mínimo, schema v1 e correspondência completa da IR. |
 | 2026-09-17 | Correção pós-S04: `pages[].elements` (§5.5) definido para o índice plano de elementos endereçáveis que `BridgeDeviceContext` já constrói (`BridgePage::index`) mas que nunca tinha ganhado forma na especificação/schema; tabela de §8 atualizada de `Lottie*` para os nomes atuais `Bridge*` (renomeados em S02) e completada com as linhas de `BridgeGlyphUse`/`BridgeChild.glyphUse` (S03) e `BridgeNode.bbox`/`BridgeIndexEntry` (S04), que tinham ficado como placeholders de uma linha só. |
 | 2026-09-17 | Correção durante S05: a tabela de §8 previa `t.family` vindo de "`FontInfo` ativo (fora de `BridgeTextRun`)", mas nenhuma estrutura da IR carregava essa informação até a árvore ser serializada, e o `BridgeWriter` não tem acesso ao `FontInfo` do `DeviceContext` (que só existe durante o `DrawText`). Adicionado `BridgeTextRun::family` (`bridgegeometry.h`), populado em `BridgeDeviceContext::DrawText` a partir de `FontInfo::GetFaceName()` (com o mesmo fallback que a raiz do SVG usa quando vazia); tabela corrigida para refletir a IR real. |
+| 2026-09-18 | Correção do S08: especificado que `glyphs[].bbox` é `[x, y, width, height]` na escala interna do Verovio (10× os contornos) e com Y para cima, incluindo a conversão normativa para o sistema dos contornos; tabela de §8 e parser Dart atualizados para o tipo explícito `GlyphBBox`. |

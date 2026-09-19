@@ -81,7 +81,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 "andou", localize o símbolo com `grep -rn "<símbolo>" verovio/src` ou
 `score_bridge/lib`.
 
-### Lado C++ (exportador, fases F e S — concluído até S07)
+### Lado C++ (exportador, fases F e S — concluído até S08)
 
 | Conceito | Onde |
 | --- | --- |
@@ -89,7 +89,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | IR de cena | `include/vrv/bridgegeometry.h` (`BridgeVec`, `BridgeBezier`, `BridgeShape`, `BridgeGlyphDef`, `BridgeGlyphUse`, `BridgeTextRun`, `BridgeNode`, `BridgePage`, `BridgeIndexEntry`) |
 | Serializador JSON | `src/bridgewriter.cpp`, `include/vrv/bridgewriter.h` (S05): `ApplyClassStyleRule` L166 (CSS por classe), `ComputePageMetrics` L202 (ajuste `meet` de §3) |
 | Uso de glifo e dicionário | `src/bridgedevicecontext.cpp` `MakeGlyphUse` L616 (fórmula de `sx`/`sy`), `GetGlyphAdvance` L670 |
-| Bbox de nó e índice | `src/bridgedevicecontext.cpp` `GlyphBBox` L221, `CalculateNodeBBox` L269, `BuildIndex` L309 (**`GlyphBBox` contém o defeito que S08 corrige**) |
+| Bbox de nó e índice | `src/bridgedevicecontext.cpp` `GlyphBBox` L221, `CalculateNodeBBox` L269, `BuildIndex` L309 (S08: bbox de glifo convertida de `Glyph::SetBoundingBox` para a escala/eixo dos contornos) |
 | Toolkit | `include/vrv/toolkit.h`: `RenderToBridgeJson` L460, `RenderToBridgeJsonFile` L472, `RenderToBridgeFile` L486 |
 | CLI | `tools/main.cpp` L286 (lista de formatos), L552 (`vsb`), L566 (`vsb-json`); `include/vrv/toolkitdef.h` L35-L36 (`VSB`, `VSB_JSON`) |
 | Escrita de zip | `ZipFileWriter` em `include/vrv/filereader.h` / `src/filereader.cpp` (header-only com miniz: só pode ser incluído nessa unidade) |
@@ -112,7 +112,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Conceito | Onde |
 | --- | --- |
 | Modelo imutável | `score_bridge/lib/src/model.dart` (R01): `VsbDocument`, `ScenePage`, `SceneNode`, `ScenePath`/`SceneRect`/`SceneEllipse`/`SceneGlyphUse`/`SceneText`, `ScenePaint`, `GlyphDef`, `TimemapEntry`, `IndexEntry` |
-| Parser | `score_bridge/lib/src/parser.dart` (R01): `parseVsbDocumentBytes`, `parseSceneDocument`, `_asRect` (o ponto que S08 corrige para a bbox de glifo) |
+| Parser | `score_bridge/lib/src/parser.dart` (R01): `parseVsbDocumentBytes`, `parseSceneDocument`, `_asRect` para bboxes da cena e `_parseGlyphBBox` para os metadados brutos de glifo (S08) |
 | API pública | `score_bridge/lib/score_bridge.dart` (só o que o app pode importar) |
 | Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`; fixture real em `test/fixtures/erik-satie.vsb` |
 | Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
@@ -125,7 +125,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | App de diff (Flutter/Linux) | `compare/lib/main.dart` (comando `diff`; `scene-to-png` entra em R02d), `compare/lib/src/diff.dart` |
 | SVG → PNG de referência | `compare/svg_render/src/main.rs` (resvg 0.48 + tiny-skia): fontes em L100-L125, `set_serif_family` L119 |
 | Scripts | `compare/scripts/compare-page.sh` (R05b reescreve), `compare/scripts/compare-corpus.sh` (R06a reescreve) |
-| Pacotes `.vsb` já gerados | `compare/out/s07/*.vsb` (10 peças, 34 páginas) — é deles que saem os números desta página |
+| Pacotes `.vsb` já gerados | `compare/out/s08/*.vsb` (10 peças, 34 páginas) — é deles que saem os números desta página |
 
 ## Fatos do corpus
 
@@ -140,7 +140,7 @@ Medidos no projeto anterior, sobre a saída SVG:
 - `data/text/Times*.xml` só tem métricas: **não há contornos de texto comum**
   no Verovio. Texto comum depende de TTF no lado do renderizador.
 
-### Fatos medidos nos `.vsb` do corpus (S07, `compare/out/s07/*.vsb`)
+### Fatos medidos nos `.vsb` do corpus (S08, `compare/out/s08/*.vsb`)
 
 Estes números vêm dos pacotes gerados pelo próprio projeto e orientam quase
 todos os passos das fases R e A. Cada passo repete os que lhe interessam, para
@@ -211,12 +211,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 5. **`zip_file.hpp` é header-only com o miniz embutido** — incluí-lo em mais de
    uma unidade de tradução gera símbolos duplicados no link. O escritor de zip
    fica em `src/filereader.cpp`, que já o inclui.
-6. **Bbox de glifo errada no exportador** (defeito confirmado, não hipótese) —
-   `Glyph::GetBoundingBox` devolve `[x, y, w, h]` multiplicado por 10 e com o
-   eixo Y para cima, e o exportador a usa crua: toda bbox de nó com glifo sai
-   10× maior e espelhada em Y. **Mitigação:** [S08](S08-corrigir-bbox-de-glifo.md)
-   corrige antes de A04a, que é quem depende dela. Enquanto S08 não rodar,
-   nenhum número de bbox do corpus vale.
+6. **Bbox de glifo** — `Glyph::GetBoundingBox()` devolve `[x, y, w, h]` multiplicado por 10 e com o eixo Y para cima, enquanto os contornos SMuFL estão divididos por 10 e com Y para baixo. O exportador agora faz essa conversão (S08) e o parser Dart representa o campo com `GlyphBBox`, evitando confundi-lo com um `Rect` de contorno.
 
 ## Passos
 
@@ -231,7 +226,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [S05](S05-writer-json.md) | `BridgeWriter`: IR → `scene.json`/`glyphs.json` | S01, S02, S03, S04 | — | concluído |
 | [S06](S06-toolkit-e-cli.md) | `Toolkit` + CLI (`-t vsb-json`, todas as páginas) | S05 | D-NOME resolvida | concluído |
 | [S07](S07-pacote-vsb.md) | Pacote `.vsb` (zip) com timemap embutido | S06 | — | concluído |
-| [S08](S08-corrigir-bbox-de-glifo.md) | **Corrigir a escala e o eixo da bbox de glifo** | S04, S07 | — | a fazer |
+| [S08](S08-corrigir-bbox-de-glifo.md) | **Corrigir a escala e o eixo da bbox de glifo** | S04, S07 | — | concluído |
 | [R01](R01-pacote-dart-e-parser.md) | Pacote `score_bridge`: modelo + parser | S05 | — | concluído |
 | [R02a](R02a-geometria-para-path.md) | Geometria: `v`/`i`/`o` → `ui.Path` | R01 | — | a fazer |
 | [R02b](R02b-percurso-e-ajuste-de-pagina.md) | Percurso da árvore, ajuste de página e cor herdada | R02a | — | a fazer |
@@ -271,7 +266,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P03b](P03b-app-de-exemplo.md) | App de exemplo | P03a | — | a fazer |
 | [P03c](P03c-documentacao-final.md) | Documentação final e fechamento dos requisitos | P03b | — | a fazer |
 
-Ordem sugerida, a partir de onde o projeto está (S07 e R01 concluídos):
+Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
 ```
 S08  →  R02a → R02b → R02c → R02d → R03a → R03b → R03c

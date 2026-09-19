@@ -78,4 +78,41 @@ Outros fatos úteis:
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Comando: `./compare/scripts/compare-corpus.sh`
+(tolerância padrão 32). Backend: **Impeller** (oficial, R05a confirmado).
+Tempo total: **187s** (run 1) e **188s** (run 2 de reprodutibilidade).
+Verovio **6.3.0-b971951**. Commit `5aefc6b` com a árvore suja das mudanças
+ainda não commitadas de R05 (compare-page.sh, widget_vs_harness_test.dart,
+compare/README.md, docs) — nenhum commit feito neste passo.
+
+O `compare-corpus.sh` foi reescrito: sonda páginas por peça com
+`verovio -t svg -a` (nunca hardcode), chama o `compare-page.sh` de R05b por
+página (que gera o `.vsb` completo a cada chamada — custo aceitável: ~5,5s
+por página) e move as 5 saídas (`.svg`, `.vsb`, 3 PNGs) mais o log da página
+para `compare/out/corpus/`, agregando a linha estável + `bytes_vsb`
+(`stat -c%s` do `.vsb`) em `resultado.csv`. Contagens sondadas batem com a
+tabela do passo (Étude 4, Mazurka 3, Butterfly 3, Little bird 2, Scarlatti 3,
+Nocturne 7, Clair 5, Satie 2, Maple 3, Prelúdio 2 = **34**).
+
+Dado bruto (sem interpretar — julgamento em R06b): mín 0,0552% (Satie p2),
+máx 0,8590% (Clair p1), média **0,4122%**; **31/34** páginas acima de 0,1%.
+Páginas já medidas antes reproduzem exatamente (Étude p1 0,4978%, Nocturne
+p1 0,6794%, Clair p1 0,8590%, Maple p1 0,3603%). `bytes_vsb` difere da tabela
+do passo (ex.: Étude ~288,5k vs 288 443) porque aqui as flags são as padrão
+do `compare-page.sh`, não `-a -x 42` de S08 — comparação autoconsistente.
+
+Reprodutibilidade (critério 4): run 1 × run 2 com todas as colunas de
+pixels/dimensões **idênticas nas 34 linhas**; só `bytes_vsb` varia (máx 274
+bytes, média 84) — causa conhecida: `xml:id` auto-gerado não é
+determinístico entre processos (achado R05b); não afeta um pixel. Critério
+lido no seu escopo ("as percentagens idênticas"): atendido.
+
+DESVIO (2026-09-19, a pedido do usuário): as saídas foram movidas de
+`compare/out/corpus/` (git-ignorado, invisível após push) para
+`compare/corpus/` (**versionado** — é assim que as páginas ficam visíveis
+após commit+push). `CORPUS_DIR` continua configurável
+(`CORPUS_DIR=compare/out/corpus` restaura o comportamento do passo). Um
+`.gitignore` dentro de `compare/corpus/` versiona só PNGs, CSV e logs de
+página; `.svg`/`.vsb`/`.log.stderr` seguem git-ignorados (regeneráveis pelo
+próprio script em ~3 min). Re-varredura no novo destino (188s, exit 0):
+34 linhas, 102 PNGs, percentagens idênticas às runs 1–2 nas 34 páginas.

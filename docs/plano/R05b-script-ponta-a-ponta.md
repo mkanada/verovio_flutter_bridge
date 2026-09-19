@@ -87,4 +87,30 @@ Mais duas coisas específicas deste fluxo:
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. `compare-page.sh` reescrito (ramo Lottie comentado
+removido; 102+/73-): SVG da página pedida + `.vsb` de todas as páginas
+(`-t vsb` ignora `-p`, achado R02d — documentado no cabeçalho) + `scene-to-png
+--page N` + `diff` + linha estável `peça;página;largura;altura;divergentes;
+total;pct` como última linha do stdout (ruído do embedder vai para stderr).
+Guarda de backend via `COMPARE_BACKEND` (padrão `impeller`): confere o log do
+embedder em `diff --help` e aborta com instrução de rebuild se divergir;
+`COMPARE_BACKEND` inválido também aborta. Lista de 8 fontes +
+`--pin-serif-family` intacta.
+
+Critérios, todos executados:
+1. 3 peças (2 `.mxl` com ponto no nome + 1 `.mei`): Satie p1 →
+   `Erik_Satie_-_Gymnopedie_No.1;1;2100;2970;21221;6237000;0.3402` (3 PNGs);
+   Scarlatti p1 → `...;0.2658` (16 579); Maple p1 → `...;0.3603` (22 475,
+   idêntico à medição manual R05a — o script reproduz o fluxo à mão).
+   (Números com flags padrão; diferem dos de R03c/R04d porque aqueles `.vsb`
+   usavam `-a -x 42` — o script é autoconsistente: SVG e cena saem das mesmas
+   flags.)
+2. Dims cena == SVG nas peças medidas (2100×2970; divergência aborta o script
+   com mensagem própria).
+3. Determinismo: Scarlatti p1 2× → sha256 `ae166cef…` idêntico (`cmp` limpo).
+4. Falhas claras, exit 1: binário ausente (simulado; "não encontrado… Compile
+   com: …"), página 99 inexistente (mensagem do Verovio com o máximo),
+   arquivo inexistente. (`exit=0` aparente em teste com pipe era o `head` —
+   sem pipe os códigos são 1.)
+5. Linha estável é a última do stdout com stderr descartado (verificado).
+6. `compare/README.md` criado (fluxo + backend + tabela R05a).

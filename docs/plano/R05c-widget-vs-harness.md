@@ -65,4 +65,19 @@ no aparelho.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Teste em
+`score_bridge/test/widget_vs_harness_test.dart` (cabeçalho declara que é
+critério de aceite recorrente de A01–A03): página 0 do fixture
+`erik-satie.vsb` (Gymnopédie p1 — 1379 nós, 842 paths, 70 elipses, 348 usos
+de glifo, 18 runs de texto; cobre texto e glifos), fundo branco opaco nos
+dois lados, `RepaintBoundary` em tamanho fixo exato 2100×2970,
+`boundary.toImage(pixelRatio: 1.0)`, fontes via `loadScoreFonts` no
+`setUpAll`, comparação de `ByteData` RGBA cru com contagem de pixels
+divergentes — **0 pixels** (`flutter test
+test/widget_vs_harness_test.dart` verde; suite cheia 66/66,
+`flutter analyze`/`dart format` limpos).
+
+Prova de não-vacuidade (critério 3): com o fundo do `_PagePainter` mutado
+para vermelho num só lado, o teste **falha**; revertido, volta ao verde
+(`git diff` do teste sem a mutação). Detalhe: mutar os dois fundos juntos
+mantém o verde — a mutação válida é num lado só.

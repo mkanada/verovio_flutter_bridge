@@ -180,7 +180,7 @@ que ninguém precise ler este README inteiro para executar um passo.
 | D-NOME | Nome do formato, extensão e flags de CLI | — | Resolvida em S01 (2026-09-17): `.vsb`, `-t vsb`, `-t vsb-json`; timemap embutido quando disponível |
 | D-BIN | Vale trocar JSON por encoding binário? | P01b | medir primeiro (P01a); só decidir com números reais na mão |
 | D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02a | depende do zywny; perguntar antes de compilar qualquer coisa |
-| D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | medir os dois e levar os números ao usuário |
+| D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): **Impeller** (média 0,49% × 0,60% Skia, padrão do Flutter 3.47); ver `compare/README.md` |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
 no [`CLAUDE.md`](../../CLAUDE.md).
@@ -239,10 +239,10 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [R04b](R04b-baseline-e-tamanho.md) | Run de texto: linha de base, tamanho e cor | R04a | — | concluído |
 | [R04c](R04c-alinhamento.md) | Alinhamento e `letterSpacing` | R04b | — | concluído |
 | [R04d](R04d-estilos-e-paridade-de-texto.md) | Bold/itálico e paridade do texto | R04c, R03c | — | concluído |
-| [R05a](R05a-backend-grafico.md) | Decisão: backend gráfico (Impeller × Skia) | R03c | backend gráfico | a fazer |
-| [R05b](R05b-script-ponta-a-ponta.md) | `compare-page.sh` no fluxo `.vsb`, ponta a ponta | R05a, R04d | — | a fazer |
-| [R05c](R05c-widget-vs-harness.md) | Prova widget-vs-harness (0 pixels) | R05b | — | a fazer |
-| [R06a](R06a-varredura-do-corpus.md) | Varredura do corpus: CSV das 34 páginas | R05b, R05c, S06 | — | a fazer |
+| [R05a](R05a-backend-grafico.md) | Decisão: backend gráfico (Impeller × Skia) | R03c | backend gráfico | concluído |
+| [R05b](R05b-script-ponta-a-ponta.md) | `compare-page.sh` no fluxo `.vsb`, ponta a ponta | R05a, R04d | — | concluído |
+| [R05c](R05c-widget-vs-harness.md) | Prova widget-vs-harness (0 pixels) | R05b | — | concluído |
+| [R06a](R06a-varredura-do-corpus.md) | Varredura do corpus: CSV das 34 páginas | R05b, R05c, S06 | — | concluído |
 | [R06b](R06b-investigacao-de-divergencias.md) | Investigação das páginas acima de 0,1% | R06a | — | a fazer |
 | [R06c](R06c-relatorio-de-paridade.md) | Relatório de paridade e mesa de prova (**portão**) | R06b | — | a fazer |
 | [A01a](A01a-segmentacao.md) | Segmentação da página por ordem de documento | R06c | — | a fazer |

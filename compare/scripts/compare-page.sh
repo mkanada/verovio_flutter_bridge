@@ -1,6 +1,27 @@
 #!/usr/bin/env bash
-# Gera, para uma página de uma partitura, o PNG do SVG, o PNG do Lottie e a
-# imagem de diferença — ver compare/README.md.
+# Compara uma página de uma partitura no fluxo `.vsb`, de ponta a ponta (R05b):
+#
+#   compare-page.sh <arquivo> <página> [tolerância]
+#     → compare/out/<peça>-p<N>-svg.png      (referência: verovio -t svg + svg_render)
+#     → compare/out/<peça>-p<N>-scene.png    (cena: verovio -t vsb + compare scene-to-png)
+#     → compare/out/<peça>-p<N>-diff.png     (imagem de diferença)
+#     → estatística no stdout + linha final estável para R06a agregar em CSV
+#
+# Páginas: o `-p` do Verovio é 1-based e o `page.index` no `.vsb` é 0-based.
+# O `.vsb` é SEMPRE gerado com todas as páginas (`-t vsb` ignora `-p`; achado
+# de R02d em tools/main.cpp) e a página é selecionada no `scene-to-png`
+# (`--page` 1-based, como o `-p` do Verovio). O SVG é gerado só da página
+# pedida (`-t svg -p N`).
+#
+# Backend gráfico (R05a): o Flutter 3.47 usa Impeller por padrão no Linux e o
+# backend é decidido em tempo de compilação
+# (fl_dart_project_set_enable_impeller em compare/linux/runner/my_application.cc;
+# sem a linha = Impeller). `COMPARE_BACKEND` diz qual backend este script
+# espera (`impeller`, padrão, ou `skia`) e o script ABORTA se o binário
+# `compare` estiver rodando outro — para ninguém medir com o backend errado
+# por acidente. Para medir com Skia: adicione a linha FALSE ao runner,
+# `cd compare && flutter build linux --release`, e rode com
+# `COMPARE_BACKEND=skia`.
 set -euo pipefail
 
 if [[ $# -lt 2 || $# -gt 3 ]]; then
@@ -11,6 +32,7 @@ fi
 INPUT_FILE=$1
 PAGE=$2
 TOLERANCE=${3:-32}
+COMPARE_BACKEND="${COMPARE_BACKEND:-impeller}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -52,71 +74,35 @@ if [[ ! -f "$INPUT_FILE" ]]; then
     exit 1
 fi
 
+# Guarda de backend (R05a): o log do embedder diz qual backend está ativo.
+# `diff --help` inicializa o motor e imprime a linha no stderr.
+BACKEND_LOG="$("${COMPARE_RUN[@]}" diff --help 2>&1 >/dev/null || true)"
+if [[ "$COMPARE_BACKEND" == "impeller" ]]; then
+    if ! grep -q "Using the Impeller rendering backend" <<<"$BACKEND_LOG"; then
+        echo "Backend inesperado: COMPARE_BACKEND=impeller, mas o binário não" >&2
+        echo "está usando Impeller. Recompile sem a linha" >&2
+        echo "fl_dart_project_set_enable_impeller(project, FALSE):" >&2
+        echo "  cd $REPO_ROOT/compare && flutter build linux --release" >&2
+        exit 1
+    fi
+elif [[ "$COMPARE_BACKEND" == "skia" ]]; then
+    if grep -q "Using the Impeller rendering backend" <<<"$BACKEND_LOG"; then
+        echo "Backend inesperado: COMPARE_BACKEND=skia, mas o binário está" >&2
+        echo "usando Impeller. Adicione" >&2
+        echo "  fl_dart_project_set_enable_impeller(project, FALSE);" >&2
+        echo "em compare/linux/runner/my_application.cc, recompile e rode de novo." >&2
+        exit 1
+    fi
+else
+    echo "COMPARE_BACKEND inválido: $COMPARE_BACKEND (use impeller ou skia)" >&2
+    exit 1
+fi
+
 mkdir -p "$OUT_DIR"
 
 BASENAME="$(basename "$INPUT_FILE")"
 NAME="${BASENAME%.*}"
-EXT="${BASENAME##*.}"
 PREFIX="$OUT_DIR/${NAME}-p${PAGE}"
-
-: <<'LOTTIE_BRANCH_COMENTADA'
-if [[ "$EXT" == "lottie" ]]; then
-    # O arquivo já é um pacote dotLottie pronto (ex.: gerado com `-t dotlottie`
-    # para a música inteira). Não há partitura de origem aqui, então não dá
-    # pra (re)gerar o SVG — reaproveita o PNG do SVG já gerado por uma
-    # execução anterior deste script sobre o arquivo de partitura original
-    # (mesmo prefixo, já que NAME ignora a extensão) e só extrai a página
-    # pedida do pacote.
-    if [[ ! -f "$PREFIX-svg.png" ]]; then
-        echo "PNG do SVG não encontrado em $PREFIX-svg.png." >&2
-        echo "Rode antes: $0 <arquivo-de-partitura-original> $PAGE [tolerância]" >&2
-        exit 1
-    fi
-
-    echo "==> Lendo dimensões do PNG do SVG existente"
-    read -r WIDTH HEIGHT < <(python3 - "$PREFIX-svg.png" <<'PYEOF'
-import struct
-import sys
-
-with open(sys.argv[1], "rb") as f:
-    header = f.read(24)
-width, height = struct.unpack(">II", header[16:24])
-print(width, height)
-PYEOF
-)
-
-    # Frame de repouso da câmera pra página $PAGE (docs/plano/C04-paginas-virada.md):
-    # pacotes multi-página gerados a partir de C04 têm um marker "page<N-1>" em
-    # a/score.json indicando o frame em que a câmera fica parada exatamente na
-    # página N (a trilha horizontal + câmera substituiu a suposição antiga
-    # "frame == página - 1"). Pacotes sem essa trilha (dotlottie-highlight, ou
-    # um .lottie de antes de C04) não têm esse marker — nesse caso volta pra
-    # suposição antiga.
-    FRAME=$(python3 - "$INPUT_FILE" "$PAGE" <<'PYEOF'
-import json
-import subprocess
-import sys
-
-lottie_path, page = sys.argv[1], int(sys.argv[2])
-raw = subprocess.run(["unzip", "-p", lottie_path, "a/score.json"], capture_output=True, check=True).stdout
-data = json.loads(raw)
-marker_name = f"page{page - 1}"
-for marker in data.get("markers", []):
-    if marker.get("cm") == marker_name:
-        print(marker["tm"])
-        sys.exit(0)
-print(page - 1)
-PYEOF
-)
-    echo "==> Lottie -> PNG (pacote dotLottie existente, frame $FRAME, ${WIDTH}x${HEIGHT})"
-    "${COMPARE_RUN[@]}" lottie-to-png "$INPUT_FILE" "$PREFIX-lottie.png" --width "$WIDTH" --height "$HEIGHT" --frame "$FRAME"
-
-    echo "==> Diff (tolerância $TOLERANCE)"
-    "${COMPARE_RUN[@]}" diff "$PREFIX-svg.png" "$PREFIX-lottie.png" "$PREFIX-diff.png" --tolerance "$TOLERANCE"
-
-    exit 0
-fi
-LOTTIE_BRANCH_COMENTADA
 
 # Renderiza com um prefixo sem pontos: o `-o` do verovio trunca tudo a partir
 # do último "." do caminho (RemoveExtension em tools/main.cpp), o que
@@ -124,6 +110,8 @@ LOTTIE_BRANCH_COMENTADA
 # (ex.: alguns .mxl do corpus). Renderiza num nome temporário e move depois.
 TMP_PREFIX="$OUT_DIR/_compare-page-tmp"
 
+# NÃO mexa nesta lista sem revalidar todos os números antigos: ela define o
+# PNG de referência (4 SMuFL + 4 Liberation Serif, serif fixado).
 FONTS=(
     "$REPO_ROOT/verovio/fonts/Leipzig/Leipzig.ttf"
     "$REPO_ROOT/verovio/fonts/Bravura/Bravura.otf"
@@ -141,17 +129,29 @@ done
 
 echo "==> Renderizando SVG (página $PAGE)"
 "$VEROVIO_BIN" -t svg -p "$PAGE" -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" "$INPUT_FILE"
+if [[ ! -f "$TMP_PREFIX.svg" ]]; then
+    echo "Falha ao gerar o SVG da página $PAGE (ver mensagem do Verovio acima;" >&2
+    echo "página inexistente na peça também falha aqui)." >&2
+    exit 1
+fi
 mv "$TMP_PREFIX.svg" "$PREFIX.svg"
 
-# echo "==> Renderizando Lottie (página $PAGE)"
-# "$VEROVIO_BIN" -t lottie -p "$PAGE" -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" "$INPUT_FILE"
-# mv "$TMP_PREFIX.json" "$PREFIX.json"
+echo "==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)"
+"$VEROVIO_BIN" -t vsb -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" "$INPUT_FILE"
+if [[ ! -f "$TMP_PREFIX.vsb" ]]; then
+    echo "Falha ao gerar o .vsb (ver mensagem do Verovio acima)." >&2
+    exit 1
+fi
+mv "$TMP_PREFIX.vsb" "$PREFIX.vsb"
 
-echo "==> SVG -> PNG"
+echo "==> SVG -> PNG (referência)"
 "$SVG_RENDER_BIN" "$PREFIX.svg" "$PREFIX-svg.png" "${FONT_ARGS[@]}" --pin-serif-family "Liberation Serif"
 
-echo "==> Lendo dimensões do PNG do SVG"
-read -r WIDTH HEIGHT < <(python3 - "$PREFIX-svg.png" <<'PYEOF'
+echo "==> Cena -> PNG (backend $COMPARE_BACKEND)"
+"${COMPARE_RUN[@]}" scene-to-png "$PREFIX.vsb" "$PREFIX-scene.png" --page "$PAGE"
+
+echo "==> Lendo dimensões dos PNGs"
+read -r SVG_W SVG_H < <(python3 - "$PREFIX-svg.png" <<'PYEOF'
 import struct
 import sys
 
@@ -161,9 +161,38 @@ width, height = struct.unpack(">II", header[16:24])
 print(width, height)
 PYEOF
 )
+read -r SCENE_W SCENE_H < <(python3 - "$PREFIX-scene.png" <<'PYEOF'
+import struct
+import sys
 
-# echo "==> Lottie -> PNG (${WIDTH}x${HEIGHT})"
-# "${COMPARE_RUN[@]}" lottie-to-png "$PREFIX.json" "$PREFIX-lottie.png" --width "$WIDTH" --height "$HEIGHT"
-#
-# echo "==> Diff (tolerância $TOLERANCE)"
-# "${COMPARE_RUN[@]}" diff "$PREFIX-svg.png" "$PREFIX-lottie.png" "$PREFIX-diff.png" --tolerance "$TOLERANCE"
+with open(sys.argv[1], "rb") as f:
+    header = f.read(24)
+width, height = struct.unpack(">II", header[16:24])
+print(width, height)
+PYEOF
+)
+if [[ "$SVG_W" != "$SCENE_W" || "$SVG_H" != "$SCENE_H" ]]; then
+    echo "Dimensões diferentes: SVG ${SVG_W}x${SVG_H} vs cena ${SCENE_W}x${SCENE_H}." >&2
+    echo "O PNG da cena deveria ter exatamente as dimensões do PNG do SVG." >&2
+    exit 1
+fi
+
+echo "==> Diff (tolerância $TOLERANCE)"
+DIFF_OUT="$("${COMPARE_RUN[@]}" diff "$PREFIX-svg.png" "$PREFIX-scene.png" "$PREFIX-diff.png" --tolerance "$TOLERANCE")"
+echo "$DIFF_OUT"
+
+# Linha final estável para R06a agregar em CSV sem reprocessar texto livre:
+# peça;página;largura;altura;divergentes;total;pct. É a ÚLTIMA linha do stdout.
+STABLE="$(python3 - "$DIFF_OUT" <<'PYEOF'
+import re
+import sys
+
+out = sys.argv[1]
+total = re.search(r"Pixels comparados:\s+(\d+)", out)
+diff = re.search(r"Pixels diferentes:\s+(\d+)\s+\(([0-9.]+)%\)", out)
+if not total or not diff:
+    sys.exit("não foi possível extrair as estatísticas do diff")
+print(f"{diff.group(1)};{total.group(1)};{diff.group(2)}")
+PYEOF
+)"
+echo "${NAME};${PAGE};${SCENE_W};${SCENE_H};${STABLE}"

@@ -72,8 +72,9 @@ Trate como fixas — não reabra sem confirmar com o usuário:
   Bridge**), `-t vsb` para o pacote zip e `-t vsb-json` para o JSON único;
   resolvido em S01 em 2026-09-17.
 - Encoding binário (P01a mede, P01b decide) — só após medição real.
-- Backend gráfico do Flutter para a comparação (Impeller vs. Skia) — decidido
-  por medição em R05a, registre o resultado.
+- Backend gráfico do Flutter para a comparação (Impeller vs. Skia) — resolvido
+  em R05a (2026-09-19): **Impeller** (média 0,49% × 0,60% Skia); ver
+  `compare/README.md`.
 - Estratégia de geração em runtime no app (FFI com `libverovio.so` vs. `.vsb`
   pré-gerado no servidor) — ver P02a (perguntar antes de compilar).
 

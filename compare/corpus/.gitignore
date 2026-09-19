@@ -1,0 +1,8 @@
+# compare/corpus/ é VERSIONADO (ver cabeçalho de scripts/compare-corpus.sh):
+# é assim que as páginas da varredura ficam visíveis após commit+push.
+# Só PNGs, CSV e logs de página entram no git; o resto é intermediário
+# regenerável pelo próprio script (~3 min) e fica fora.
+*.svg
+*.vsb
+*.log.stderr
+_probe-tmp*

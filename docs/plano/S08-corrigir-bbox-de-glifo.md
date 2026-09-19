@@ -126,10 +126,17 @@ unidades de viewBox (226 × 194 px), quando a cabeça de nota desenhada mede
   erro máximo `0` na tolerância `1e-6`.
 - **Critério 4**: nas 34 páginas, 50.544 nós e 44.859 bboxes, a contenção
   pai ⊇ filho teve **0 violações**.
-- **Critério 5**: a ressalva da bbox da raiz continua: 2/34 páginas estão contidas no
+- **Critério 5**: ~~a ressalva da bbox da raiz continua: 2/34 páginas estão contidas no
   `viewBox`; 32/34 ainda estouram, tipicamente 441 unidades à esquerda e cerca de 990
   à direita, com Y normalmente em 0/-0,5 e máximo estouro vertical de 181,5. A causa
-  não era apenas a escala do glifo.
+  não era apenas a escala do glifo.~~ **Reavaliado em 2026-09-19 (ver correção em
+  [S04](S04-bboxes-e-indice.md)):** a comparação estava no referencial errado
+  (bbox direta vs. `viewBox`, sem somar `origin`). No referencial correto
+  (`abs = bbox + origin` vs. `viewBox`, especificação §3), **34/34 estão
+  contidas**. O `-441` é a envoltória de controle conservadora do brace
+  (`grpSym`, `x=-72`, tangente até `-432`, mais `strokeWidth/2`) — geometria
+  real e permitida pelo passo, que em coordenadas absolutas dá `x=59`, dentro
+  do viewBox. Ressalva encerrada, sem mudança de código.
 - **Critério 6**: os 10 `scene.json` são idênticos entre S07 e S08 ao remover apenas os
   campos `bbox`, confirmando que a geometria desenhada não mudou. Renderizei as páginas 1
   da Chopin Étude e da Gymnopédie com o binário S07 em uma worktree temporária e comparei

@@ -160,3 +160,79 @@ geometria, e o que permite rolar até um compasso.
   não bater.
 - Bloqueios: nenhum. Ressalva registrada acima (critério 2, bbox do nó raiz vs.
   viewBox) não impede seguir para S05.
+
+## Correção das ressalvas (2026-09-19, binário pós-S08, corpus regenerado `-t vsb -a -x 42`, 10 peças / 34 páginas)
+
+Reexecutei os critérios 2–4 do zero contra o código atual. Resultado: **não há
+bug de cálculo — as duas ressalvas eram erro de metodologia/teste**, mais uma
+imprecisão real (degeneradas) que corrijo abaixo. Nenhuma linha de C++ precisou
+mudar.
+
+### Ressalva 1 (critério 2, raiz vs. viewBox): RESOLVIDA — referencial errado
+
+O teste comparava a bbox da raiz **direto** contra o `viewBox`. Mas a bbox é
+gravada no referencial de conteúdo, **antes** do `translate(originX,
+originY)` (especificação §3: o renderizador aplica `translate(origin)` uma vez
+por página). A comparação correta é `abs = bbox + origin` vs. `viewBox`:
+
+- direto (errado): 2/34 contidas — foi o que S08 registrou como "32/34 ainda
+  estouram, tipicamente 441 à esquerda";
+- `abs` (certo): **34/34 contidas**, com folga (ex.: Etude p1:
+  `bbox=[-441, 0, 20009.5, 28629]`, `origin=[500, 500]` →
+  `abs=[59, 500, 20509.5, 29129]` dentro de `[0, 0, 21000, 29700]`).
+
+O `x0 = -441` tem causa identificada e legítima: é o `grpSym` da chave de
+piano (curva de brace), cujo vértice está em `x = -72` com tangente de controle
+até `-432`, mais `strokeWidth/2 = 9` (`-72 - 360 - 9 = -441`) — exatamente a
+envoltória de controle conservadora + expansão de traço que o próprio passo
+manda usar. Em coordenadas absolutas dá `x = 59`, dentro do viewBox. Os
+micro-estouros verticais (`-0.24`, `-0.5`, máx. `-181.5` no Nocturne p6) são da
+mesma família (expansão de traço / envoltória conservadora) e também ficam
+dentro do viewBox após `+origin`. Já os "5–15%" da nota original eram o bug de
+bbox de glifo 10× (pré-S08), que não existe mais.
+
+### Correção 2 (critério 2, degeneradas): o "0 ocorrências" estava errado
+
+A nota original afirma 0 nós com `id` sem bbox. O teste só enxergava nós
+**com** a chave `bbox` — nós com `id` sem nenhum conteúdo desenhável nem têm a
+chave (e no índice valem `[0, 0, 0, 0]`, conforme §5.5 da especificação). No
+corpus atual são **5 653 de 39 290** entradas do índice, por classe: `accid`
+4 711 · `pedal` 284 · `space` 150 · `note` 116 · `keySig` 82 · `sb` 79 ·
+`section systemMilestone` 27 · `clef` 24 · `pb` 20 · `layer`/`mSpace`/`rend`/
+`text` 12–14 cada · milestones (`mdiv`/`score`/`page`/`system…End`) ~10 cada ·
+resto (hairpin, chord, tempo, tuplet, dots, tie, lb, barLine, mNum…) 1–9 cada.
+Verifiquei contra o SVG de referência (mesma sessão, `-x 42`): os `<g>`
+correspondentes também saem vazios — ex. `<g id="of3x1gw" class="accid" />`,
+`<g id="w1306cdp" class="hairpin" />`, `<g id="f3zlhy0" class="keySig" />` — e
+os 116 `note` sem bbox têm `hidden: true` (não contribuem por regra do passo).
+Ou seja: transcrição fiel, não bug. A frase "nenhum caso assim foi observado"
+em §5.5 da especificação passa a valer a tabela acima.
+
+### Precisão 3 (critério 2, contenção): subárvores `hidden` ficam de fora
+
+Contenção pai ⊇ filho (tolerância `1e-6`) em caminhos visíveis: **0 violações**
+nas 34 páginas (50 544 nós, 44 859 com bbox) — confirma o número de S08. Quem
+reexecutar o teste à mão: desça só por filhos não-`hidden` ao comparar contra o
+ancestral (nós `hidden` não contribuem para a bbox do pai por regra do passo,
+mas seus filhos mantêm bbox própria — 173 contenções "aparentes" assim são
+esperadas, todas dentro de subárvores `hidden`, ex. `notehead` dentro de
+`note hidden` sob `beam`).
+
+### Precisão 4 (critério 4, timemap): sufixo `-rendN`
+
+Comparando `timemap.json` embutido contra o índice **do mesmo `.vsb`** (mesma
+sessão, como a nota original exige): 0 ids-base ausentes nas 10 peças. A
+diferença bruta precisa antes remover o sufixo `-rendN` de repetição/expansão
+(Gymnopédie 180, Maple Leaf Rag 883 — os mesmos números do README) — esses ids
+são rendições de repetição sem nó próprio na cena, caso já documentado, não
+bug.
+
+### Critério 3 refeito pós-S08
+
+O PNG antigo foi gerado com as bboxes 10× (pré-S08) e estava desatualizado.
+Refiz com as mesmas 5 notas da Etude p1 (`d414233e38`, `d414233e62`,
+`d414233e89`, `d414233e110`, `d414233e148` — o seed `-x 42` reproduz os mesmos
+ids): caixas vermelhas (nota) justas sobre cabeça + haste, caixas verdes
+(`notehead`/`stem` filhos) dentro. PNG regravado em
+`compare/out/s04-bbox-overlay-chopin-etude-p1.png` (conversão
+`(bbox + origin) * fit.scale + fit.t`, `fit = {scale: 0.1, tx: 0, ty: 0}`).

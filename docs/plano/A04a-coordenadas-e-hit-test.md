@@ -82,7 +82,8 @@ A04b e o app fazem por cima depende destas duas funções estarem certas.
 5. Nenhum id com bbox `[0,0,0,0]` é devolvido por `idAt`.
 6. Conferência visual: as bboxes de 5 notas desenhadas sobre o render caem
    em volta das cabeças de nota (anexe a imagem — e compare com a imagem
-   equivalente de S04, que foi feita com a bbox errada).
+   equivalente de S04, `compare/out/s04-bbox-overlay-chopin-etude-p1.png`,
+   refeita com as bboxes corrigidas em 2026-09-19).
 7. `flutter analyze` limpo, `flutter test` verde.
 
 ## Notas de execução

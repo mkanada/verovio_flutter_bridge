@@ -227,7 +227,10 @@ elementos endereçáveis (`BridgePage::index`, ver §5.5).
   graus e pivô em unidades de viewBox, na convenção do SVG
   `rotate(a, ox, oy)`.
 - `bbox` — união das bboxes dos filhos em unidades de viewBox, depois das
-  transformações locais. É emitida para todo nó com `id` e para nós de classe
+  transformações locais, **no referencial de conteúdo, antes do
+  `translate(origin)`** (o renderizador soma `origin` uma vez por página, ver
+  §3 — portanto a comparação correta contra o `viewBox` é `bbox + origin`).
+  É emitida para todo nó com `id` e para nós de classe
   `measure`, `staff`, `system` e `page`; é opcional nos demais.
 - `children` — ordem de documento: o último pinta por cima.
 
@@ -327,10 +330,13 @@ com o que já está na árvore (`g.id`/`g.class`/`g.bbox`).
   nem é um índice no array `children`); serve de posição pronta para o host
   guardar em memória.
 - `bbox` é idêntico ao `bbox` do nó indexado (§5.1), nas mesmas unidades de
-  viewBox. Como todo nó com `id` sempre emite bbox por §5.1, `bbox` está
-  sempre presente aqui — exceto no caso teórico de um nó com `id` sem nenhum
-  conteúdo desenhável (`hidden`, por exemplo), em que o valor gravado é
-  `[0, 0, 0, 0]`; nenhum caso assim foi observado no corpus de teste do S04.
+  viewBox (referencial de conteúdo, antes do `translate(origin)` — ver §5.1).
+  Como todo nó com `id` sempre emite bbox por §5.1, `bbox` está
+  sempre presente aqui — exceto no caso de um nó com `id` sem nenhum
+  conteúdo desenhável (`hidden`, grupos `<g>` vazios que o Verovio emite sem
+  filhos — ex. `accid` fantasma — milestones), em que o valor gravado é
+  `[0, 0, 0, 0]`; no corpus de 10 peças / 34 páginas são 5 653 de 39 290
+  entradas (tabela por classe nas notas de S04).
 
 ## 6. Ordem de pintura e estado herdado
 
@@ -462,3 +468,4 @@ explicitamente.
 | 2026-09-17 | Correção pós-S04: `pages[].elements` (§5.5) definido para o índice plano de elementos endereçáveis que `BridgeDeviceContext` já constrói (`BridgePage::index`) mas que nunca tinha ganhado forma na especificação/schema; tabela de §8 atualizada de `Lottie*` para os nomes atuais `Bridge*` (renomeados em S02) e completada com as linhas de `BridgeGlyphUse`/`BridgeChild.glyphUse` (S03) e `BridgeNode.bbox`/`BridgeIndexEntry` (S04), que tinham ficado como placeholders de uma linha só. |
 | 2026-09-17 | Correção durante S05: a tabela de §8 previa `t.family` vindo de "`FontInfo` ativo (fora de `BridgeTextRun`)", mas nenhuma estrutura da IR carregava essa informação até a árvore ser serializada, e o `BridgeWriter` não tem acesso ao `FontInfo` do `DeviceContext` (que só existe durante o `DrawText`). Adicionado `BridgeTextRun::family` (`bridgegeometry.h`), populado em `BridgeDeviceContext::DrawText` a partir de `FontInfo::GetFaceName()` (com o mesmo fallback que a raiz do SVG usa quando vazia); tabela corrigida para refletir a IR real. |
 | 2026-09-18 | Correção do S08: especificado que `glyphs[].bbox` é `[x, y, width, height]` na escala interna do Verovio (10× os contornos) e com Y para cima, incluindo a conversão normativa para o sistema dos contornos; tabela de §8 e parser Dart atualizados para o tipo explícito `GlyphBBox`. |
+| 2026-09-19 | Correção pós-S04: §5.1 explicita que `bbox` é no referencial de conteúdo (antes do `translate(origin)`; comparar contra o `viewBox` somando `origin`, §3) — era o que sustentava a ressalva da bbox da raiz, agora encerrada; §5.5 corrige "nenhum caso observado" para os 5 653 casos reais de `[0, 0, 0, 0]` (tabela por classe nas notas de S04). |

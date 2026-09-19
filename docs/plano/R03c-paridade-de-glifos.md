@@ -71,4 +71,48 @@ pentagrama.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Peças (1 MEI + 1 MusicXML, 2 páginas cada):
+`corpus/mei/Scarlatti_Sonata_in_C-major.mei` (p1-p2 de 3) e
+`corpus/musicxml/Erik_Satie_-_Gymnopedie_No.1.mxl` (p1-p2 de 2). Cena dos
+`.vsb` de `compare/out/s08/` (inalterados desde S08); `compare` rebuildado
+com o pintor de R03b (`flutter build linux --release` ok). Backend ativo
+(log do embedder sob xvfb): **Impeller (OpenGLES-SDF)**, Flutter 3.47.4 —
+a decisão Impeller×Skia continua em R05a. Artefatos em `compare/out/r03c/`
+(`*-svg.png`, `*-scene.png`, `*-diff32.png`, todos 2100×2970).
+
+Percentuais (`compare diff --tolerance 32`, 6 237 000 px, maxDiff 255):
+
+| Página | Diferentes | % |
+| --- | ---: | ---: |
+| Satie p1 | 29 977 | **0,4806%** |
+| Satie p2 | 4 462 | **0,0715%** |
+| Scarlatti p1 | 18 652 | **0,2991%** |
+| Scarlatti p2 | 13 029 | **0,2089%** |
+
+(Em R02d, sem glifos, as mesmas p1 davam 2,04%/1,96%: a queda para <0,5%
+é a tinta dos glifos entrando.)
+
+Classificação do resíduo (inspeção dos 4 `*-diff32.png` + análise por
+componentes conexos com PIL/numpy, caixas de texto vindas dos runs `t` do
+`.vsb` mapeadas a pixels por `px = (x+500)*0.1`):
+- **Todo componente sólido de diff (>100 px) toca um run de texto**: 74/74
+  (Satie p1), 8/8 (Satie p2), 16/16 (Scarlatti p1), 11/11 (Scarlatti p2).
+  São título ("Gymnopédie No.1", "Suite I"), "Lent et douloureux = ca. 76",
+  "con pedale", "cresc.", dinâmicas (`pp`, `ppp`, `mp`, `f`, `p`),
+  etiquetas "Piano"/"Pno.", números de compasso (8, 17, 26, 34, 42 / 6,
+  12, 16, 20, 26, 31, 37, 43, 48, 52), marcas de repetição "(1)", "(2)",
+  "1", "2" e o rodapé "MEI engraved with Verovio" — **declaro: o resíduo
+  restante é visivelmente texto** (R04), como esperado.
+- Todo o resto do diff são componentes de ≤100 px (≈99% com ≤5 px, ~75%
+  pixels isolados), espalhados uniformemente por todas as faixas-y:
+  **antialiasing de borda Impeller vs tiny-skia**, esperado e dentro da
+  tolerância (sintoma "divergência só nas bordas, uniforme" da tabela).
+- **Nenhuma divergência dentro dos pentagramas**: cabeças, hastes, claves,
+  acidentes, pausas, barras e ligaduras aparecem em cinza (coincidem);
+  nenhum glifo espelhado, invertido ou fora de escala (tabela de sintomas:
+  nada de S03/R02b/R03a/R03b a corrigir).
+
+`Path` construídos por página (pintura via `ScenePainter` com `GlyphCache`
+fresco, conferido em teste temporário depois removido): Satie p1 **15**,
+Satie p2 **8**, Scarlatti p1 **20**, Scarlatti p2 **18** — iguais aos
+distintos `u.g` usados na página (348/69 e 388/521 usos), não aos usos.

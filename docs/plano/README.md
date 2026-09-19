@@ -233,8 +233,8 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [R02c](R02c-formas-traco-e-preenchimento.md) | Formas: traço, opacidade, cap/join, tracejado | R02b | — | concluído |
 | [R02d](R02d-primeira-imagem.md) | Primeira imagem: `scene-to-png` mínimo e sobreposição | R02c, F02 | — | concluído |
 | [R03a](R03a-cache-de-glifos.md) | `GlyphCache`: `glyphId` → `ui.Path` | R02a, S03 | — | concluído |
-| [R03b](R03b-instancias-de-glifo.md) | Instâncias `u`: transformação, traço e herança | R03a, R02c | — | a fazer |
-| [R03c](R03c-paridade-de-glifos.md) | Paridade parcial só com formas e glifos | R03b, R02d | — | a fazer |
+| [R03b](R03b-instancias-de-glifo.md) | Instâncias `u`: transformação, traço e herança | R03a, R02c | — | concluído |
+| [R03c](R03c-paridade-de-glifos.md) | Paridade parcial só com formas e glifos | R03b, R02d | — | concluído |
 | [R04a](R04a-fontes-e-familia.md) | Fontes: carregar as TTFs e resolver `family` | R02b | — | a fazer |
 | [R04b](R04b-baseline-e-tamanho.md) | Run de texto: linha de base, tamanho e cor | R04a | — | a fazer |
 | [R04c](R04c-alinhamento.md) | Alinhamento e `letterSpacing` | R04b | — | a fazer |

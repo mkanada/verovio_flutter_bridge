@@ -95,4 +95,15 @@ Fatos medidos no corpus (15 413 usos de glifo):
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-19. Ligado o ramo `SceneGlyphUse` em
+`score_bridge/lib/src/scene_painter.dart` (`_drawGlyphUse`: `save` /
+`translate(x, y)` / `scale(sx, sy)` / 2× `drawPath` / `restore`, com
+`strokeWidth` 1,0 no espaço do glifo ou `strokeWidth/sy` quando explícito;
+`dash` em `u` ignorado — zero ocorrências no corpus). `ScenePainter` agora
+aceita `GlyphCache?` injetável (por defeito constrói do mapa, mantendo os
+chamadores) e reusa `Paint` de fill/traço entre usos consecutivos com os
+mesmos parâmetros. `flutter analyze` limpo, `dart format` limpo,
+`flutter test` 52/52 (6 novos em `test/glyph_use_test.dart`; atualizado o
+`_countDraws` de `scene_painter_test.dart` para somar os 2 canais de `u`).
+Medido no fixture `erik-satie.vsb`: **417 chamadas a `pathFor` para 16
+`Path` construídos** (348 usos na página 0 + 69 na página 1; fator 26×).

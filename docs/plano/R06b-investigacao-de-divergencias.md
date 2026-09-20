@@ -459,3 +459,96 @@ individuais continuem acima de 0,01% — todas já causalmente classificadas
 via `TextPainter`, sem causa corrigível adicional identificada. R06c decide
 se a média agregada abaixo do portão, com o residual individual explicado
 e sem causa corrigível restante, é suficiente para fechar o passo.
+
+---
+
+Sexta investigação (2026-09-20, pedido do usuário: "Chopin — Étude Op. 10
+No. 9 — página 2, bem no topo, tem um problema de posicionamento do número
+da página"). Achado: **bug real de agrupamento de âncora de texto**,
+independente das duas causas já catalogadas (halo de AA / `letterSpacing`).
+
+**Sintoma medido:** no número de página "– 2 –" (linha `y viewBox 219`,
+`text-anchor="middle" x="10000"`), o SVG de referência mostra os dois traços
+equidistantes do "2" (gap 10 px de um lado, 11 px do outro; grupo inteiro
+centrado em x=1049,5, praticamente o centro da página em 1050); a cena
+mostrava os dois traços com gaps assimétricos (15 px × 7 px) e o grupo
+inteiro deslocado ~20 px para a direita (centro em 1070). Medido em
+`Chopin_Etude_Op10_No9-p2` (recortes `/tmp/etude-p2-{svg,scene}-pagenum.png`,
+não versionados).
+
+**Causa raiz:** o SVG emite este número de página como **três `<tspan>`
+irmãos sem `x` próprio** dentro de um único `<tspan text-anchor="middle">`
+— `"– "` (texto comum), `"2"` (dentro de `<tspan class="num">`, também
+texto comum) e `" –"` — que o `resvg`/CSS trata como **um único "text
+chunk"**: a âncora centraliza a largura combinada dos três, não cada um
+isoladamente (semântica padrão de `text-anchor` em SVG/CSS). No
+`View::DrawRunningChildren` (`view_page.cpp:1178`) o Verovio chama
+`dc->StartText(x, y, alignment)` **uma vez** para todo o `pgHead`, e
+`DrawTextChildren` visita os três nós de texto em sequência, cada um
+gerando uma chamada a `DrawText` — exatamente o mesmo padrão de "chunk"
+compartilhado que já existe para glifos SMuFL/PUA (`m_textChunkGlyphUses`
++ `FinalizeTextChunk`, A10). O problema é que o ramo de **texto comum**
+(`BridgeTextRun`, ramo final de `DrawText` em
+`verovio/src/bridgedevicecontext.cpp`) nunca participava desse
+agrupamento: cada chamada calculava seu próprio `x0` centralizando **só a
+própria largura** (`x0 = origin.x - extend.m_width/2`) e chamava
+`AddTextRun` na hora, ignorando `m_textChunkWidth`/`FinalizeTextChunk`.
+Do lado do `score_bridge`, `alignment`/`origin` são exportados **sem**
+`x0` pré-calculado — `scene_painter.dart:264` centraliza cada run em
+runtime usando a própria medida do `TextPainter`
+(`SceneTextAlign.center => -painter.width / 2`), pensado para um único run
+por âncora (mesmo espírito de "o motor de texto do renderer decide a forma
+final", como o `resvg` faz do lado da referência). Com 3 runs por âncora,
+cada um se autocentralizava sobre sua própria fatia do texto em vez do
+grupo inteiro — daí a assimetria e o deslocamento.
+
+**Correção (passo de origem: exportador,
+`verovio/src/bridgedevicecontext.cpp`/`.h`):** o ramo de texto comum de
+`DrawText` agora empilha o `BridgeTextRun` pendente em
+`m_textChunkTextRuns` (novo membro, paralelo a `m_textChunkGlyphUses`) em
+vez de finalizá-lo na hora; `m_textChunkWidth` já acumulava a largura de
+cada run (não precisou mudar). `FinalizeTextChunk` ganhou o caso geral: com
+mais de uma peça no chunk (vários runs de texto comum e/ou runs misturados
+com usos de glifo), aplica **um só** deslocamento — a mesma fórmula já
+usada para glifos, com a largura somada do chunk inteiro — em cada
+`origin.x` e força `alignment = left` (o `score_bridge` só desenha onde
+mandado, sem recentralizar). O caso de **um só** run de texto comum sem
+glifos (título, marca de tempo, dinâmica isolada — o caso mais comum, de
+longe) continua **sem** essa correção: mantém `origin`/`alignment`
+originais para o `score_bridge` centralizar sozinho com a própria medida
+do `TextPainter`, que é mais fiel que a estimativa de `GetTextExtent` do
+Verovio (por isso o formato foi desenhado assim). A `bbox` exportada
+(metadado, não usada para desenhar) passou a ser sempre corrigida pelo
+mesmo deslocamento de grupo, single ou multi-run — antes ela só recebia a
+centralização local por run, coerente por acidente no caso single-run e
+errada no caso multi-run.
+
+**Revalidação:**
+- `flutter test` (score_bridge): **66/66 verde**, incluindo o
+  widget-vs-harness (R05c, 0 px); `flutter analyze` limpo.
+- Página isolada (`compare-page.sh`): "– 2 –" agora com gaps 11×11 (SVG:
+  10×11) e centro do grupo em 1049,0 (SVG: 1049,5) — a olho nu, idêntico à
+  referência; a mancha de diff que sobra é só 1 pixel no topo do "2",
+  ruído de AA. Étude p2: 1892 → **1681 px** (0,030335% → **0,026952%**).
+- Varredura completa do corpus refeita (34 páginas, 191s): a correção
+  atinge **toda página com número autogerado** ("– N –", páginas 2+ de
+  cada peça no corpus), não só o caso relatado — **10 páginas melhoraram**,
+  **zero regrediram**: Étude p2 −211px, p3 347→**130** (−62%), p4
+  419→**182** (−57%); Mazurka p2 552→**341** (−38%), p3 278→**61** (−78%);
+  Grieg Butterfly p2 301→**90** (−70%), p3 247→**30** (−88%); Grieg
+  Little Bird p2 267→**56** (−79%); Scarlatti p2 259→**48** (−81%), p3
+  273→**56** (−79%). As demais 24 páginas (inclusive Nocturne, Clair de
+  Lune, Satie, Maple Leaf Rag e Prelude — cujo número de página não usa
+  esta composição de 3 `<tspan>`) deram delta 0 nos PNGs.
+- **Corpus inteiro: média 0,009475% → 0,008456%.** Continuam 7/34 páginas
+  acima de 0,01% — exatamente o mesmo conjunto da terceira investigação
+  (Clair p1, Étude p1, Satie p1, Étude p2, Nocturne p3/p4, Mazurka p1),
+  nenhuma delas tocada por este bug (são página 1 — sem número de página —
+  ou dominadas pelo piso de AA já catalogado); nenhuma página cruzou o
+  portão para cima ou para baixo por causa desta correção.
+
+Diferente das investigações anteriores (halo de AA = ruído sem correção;
+`letterSpacing` = bug isolado em 1 página), esta é uma categoria nova no
+catálogo do passo: **agrupamento de âncora multi-run em texto comum**,
+generalizável a qualquer composição futura de "texto comum + texto comum"
+ou "texto comum + glifo" sob a mesma âncora (não só números de página).

@@ -7,6 +7,6 @@ Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Chopin_E
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 419 (0.006718%)
+Pixels diferentes: 182 (0.002918%)
 Maior diferença de canal observada: 255
-Chopin_Etude_Op10_No9;4;2100;2970;419;6237000;0.006718
+Chopin_Etude_Op10_No9;4;2100;2970;182;6237000;0.002918

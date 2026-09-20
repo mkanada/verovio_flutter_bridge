@@ -7,6 +7,6 @@ Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Scarlatt
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 273 (0.004377%)
+Pixels diferentes: 56 (0.000898%)
 Maior diferença de canal observada: 255
-Scarlatti_Sonata_in_C-major;3;2100;2970;273;6237000;0.004377
+Scarlatti_Sonata_in_C-major;3;2100;2970;56;6237000;0.000898

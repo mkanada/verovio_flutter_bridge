@@ -75,8 +75,10 @@ Trate como fixas — não reabra sem confirmar com o usuário:
   resolvido em S01 em 2026-09-17.
 - Encoding binário (P01a mede, P01b decide) — só após medição real.
 - Backend gráfico do Flutter para a comparação (Impeller vs. Skia) — resolvido
-  em R05a (2026-09-19): **Impeller** (média 0,49% × 0,60% Skia); ver
-  `compare/README.md`.
+  em R05a (2026-09-19) como Impeller, **revisto em 2026-09-20 para Skia**
+  (decisão do usuário: o Impeller no Linux não aplica antialiasing). O runner
+  do `compare` desliga o Impeller; re-medição do corpus: média 0,008800% Skia ×
+  0,008456% Impeller (praticamente igual); ver `compare/README.md`.
 - **Geração em runtime no app:** o app **gera o `.vsb` no dispositivo**, via
   FFI com `libverovio.so` (D-RUNTIME, opção (a), decisão do usuário em
   2026-09-20). Consequência: a `libverovio.so` e os dados de `verovio/data`

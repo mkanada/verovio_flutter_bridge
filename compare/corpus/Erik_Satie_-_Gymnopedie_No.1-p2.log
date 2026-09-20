@@ -2,11 +2,11 @@
 ==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)
 ==> SVG -> PNG (referência)
 PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Erik_Satie_-_Gymnopedie_No.1-p2-svg.png (2100x2970)
-==> Cena -> PNG (backend impeller)
+==> Cena -> PNG (backend skia)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Erik_Satie_-_Gymnopedie_No.1-p2-scene.png (página 2).
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 40 (0.000641%)
+Pixels diferentes: 41 (0.000657%)
 Maior diferença de canal observada: 255
-Erik_Satie_-_Gymnopedie_No.1;2;2100;2970;40;6237000;0.000641
+Erik_Satie_-_Gymnopedie_No.1;2;2100;2970;41;6237000;0.000657

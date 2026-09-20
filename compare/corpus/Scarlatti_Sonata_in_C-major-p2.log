@@ -2,11 +2,11 @@
 ==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)
 ==> SVG -> PNG (referência)
 PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Scarlatti_Sonata_in_C-major-p2-svg.png (2100x2970)
-==> Cena -> PNG (backend impeller)
+==> Cena -> PNG (backend skia)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Scarlatti_Sonata_in_C-major-p2-scene.png (página 2).
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 48 (0.000770%)
-Maior diferença de canal observada: 196
-Scarlatti_Sonata_in_C-major;2;2100;2970;48;6237000;0.000770
+Pixels diferentes: 54 (0.000866%)
+Maior diferença de canal observada: 193
+Scarlatti_Sonata_in_C-major;2;2100;2970;54;6237000;0.000866

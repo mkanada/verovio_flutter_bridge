@@ -2,11 +2,11 @@
 ==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)
 ==> SVG -> PNG (referência)
 PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book-p2-svg.png (2100x2970)
-==> Cena -> PNG (backend impeller)
+==> Cena -> PNG (backend skia)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book-p2-scene.png (página 2).
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 154 (0.002469%)
+Pixels diferentes: 169 (0.002710%)
 Maior diferença de canal observada: 255
-Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book;2;2100;2970;154;6237000;0.002469
+Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book;2;2100;2970;169;6237000;0.002710

@@ -13,15 +13,16 @@
 # (`--page` 1-based, como o `-p` do Verovio). O SVG é gerado só da página
 # pedida (`-t svg -p N`).
 #
-# Backend gráfico (R05a): o Flutter 3.47 usa Impeller por padrão no Linux e o
-# backend é decidido em tempo de compilação
-# (fl_dart_project_set_enable_impeller em compare/linux/runner/my_application.cc;
-# sem a linha = Impeller). `COMPARE_BACKEND` diz qual backend este script
-# espera (`impeller`, padrão, ou `skia`) e o script ABORTA se o binário
-# `compare` estiver rodando outro — para ninguém medir com o backend errado
-# por acidente. Para medir com Skia: adicione a linha FALSE ao runner,
+# Backend gráfico: Skia (decisão de 2026-09-20, revendo R05a). O Impeller no
+# Linux não aplica antialiasing, o que contamina a comparação; por isso o
+# runner (compare/linux/runner/my_application.cc) chama
+# fl_dart_project_set_enable_impeller(project, FALSE). O backend é decidido em
+# tempo de compilação. `COMPARE_BACKEND` diz qual backend este script espera
+# (`skia`, padrão, ou `impeller`) e o script ABORTA se o binário `compare`
+# estiver rodando outro — para ninguém medir com o backend errado por
+# acidente. Para medir com Impeller: remova a linha FALSE do runner,
 # `cd compare && flutter build linux --release`, e rode com
-# `COMPARE_BACKEND=skia`.
+# `COMPARE_BACKEND=impeller`.
 set -euo pipefail
 
 if [[ $# -lt 2 || $# -gt 3 ]]; then
@@ -32,7 +33,7 @@ fi
 INPUT_FILE=$1
 PAGE=$2
 TOLERANCE=${3:-128}
-COMPARE_BACKEND="${COMPARE_BACKEND:-impeller}"
+COMPARE_BACKEND="${COMPARE_BACKEND:-skia}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -77,24 +78,25 @@ fi
 # Guarda de backend (R05a): o log do embedder diz qual backend está ativo.
 # `diff --help` inicializa o motor e imprime a linha no stderr.
 BACKEND_LOG="$("${COMPARE_RUN[@]}" diff --help 2>&1 >/dev/null || true)"
-if [[ "$COMPARE_BACKEND" == "impeller" ]]; then
-    if ! grep -q "Using the Impeller rendering backend" <<<"$BACKEND_LOG"; then
-        echo "Backend inesperado: COMPARE_BACKEND=impeller, mas o binário não" >&2
-        echo "está usando Impeller. Recompile sem a linha" >&2
-        echo "fl_dart_project_set_enable_impeller(project, FALSE):" >&2
+if [[ "$COMPARE_BACKEND" == "skia" ]]; then
+    if grep -q "Using the Impeller rendering backend" <<<"$BACKEND_LOG"; then
+        echo "Backend inesperado: COMPARE_BACKEND=skia, mas o binário está" >&2
+        echo "usando Impeller. Confirme que o runner tem" >&2
+        echo "  fl_dart_project_set_enable_impeller(project, FALSE);" >&2
+        echo "em compare/linux/runner/my_application.cc, recompile e rode de novo:" >&2
         echo "  cd $REPO_ROOT/compare && flutter build linux --release" >&2
         exit 1
     fi
-elif [[ "$COMPARE_BACKEND" == "skia" ]]; then
-    if grep -q "Using the Impeller rendering backend" <<<"$BACKEND_LOG"; then
-        echo "Backend inesperado: COMPARE_BACKEND=skia, mas o binário está" >&2
-        echo "usando Impeller. Adicione" >&2
-        echo "  fl_dart_project_set_enable_impeller(project, FALSE);" >&2
-        echo "em compare/linux/runner/my_application.cc, recompile e rode de novo." >&2
+elif [[ "$COMPARE_BACKEND" == "impeller" ]]; then
+    if ! grep -q "Using the Impeller rendering backend" <<<"$BACKEND_LOG"; then
+        echo "Backend inesperado: COMPARE_BACKEND=impeller, mas o binário não" >&2
+        echo "está usando Impeller. Remova a linha" >&2
+        echo "fl_dart_project_set_enable_impeller(project, FALSE) do runner e" >&2
+        echo "recompile: cd $REPO_ROOT/compare && flutter build linux --release" >&2
         exit 1
     fi
 else
-    echo "COMPARE_BACKEND inválido: $COMPARE_BACKEND (use impeller ou skia)" >&2
+    echo "COMPARE_BACKEND inválido: $COMPARE_BACKEND (use skia ou impeller)" >&2
     exit 1
 fi
 

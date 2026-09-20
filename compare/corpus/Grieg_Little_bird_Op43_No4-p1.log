@@ -2,11 +2,11 @@
 ==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)
 ==> SVG -> PNG (referência)
 PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Grieg_Little_bird_Op43_No4-p1-svg.png (2100x2970)
-==> Cena -> PNG (backend impeller)
+==> Cena -> PNG (backend skia)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Grieg_Little_bird_Op43_No4-p1-scene.png (página 1).
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 85 (0.001363%)
-Maior diferença de canal observada: 206
-Grieg_Little_bird_Op43_No4;1;2100;2970;85;6237000;0.001363
+Pixels diferentes: 100 (0.001603%)
+Maior diferença de canal observada: 214
+Grieg_Little_bird_Op43_No4;1;2100;2970;100;6237000;0.001603

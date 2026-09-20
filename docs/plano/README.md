@@ -184,7 +184,7 @@ que ninguém precise ler este README inteiro para executar um passo.
 | D-NOME | Nome do formato, extensão e flags de CLI | — | Resolvida em S01 (2026-09-17): `.vsb`, `-t vsb`, `-t vsb-json`; timemap embutido quando disponível |
 | D-BIN | Vale trocar JSON por encoding binário? | P01b | medir primeiro (P01a); só decidir com números reais na mão |
 | D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02a | Resolvida em P02a (2026-09-20): **(a) gera no dispositivo**, via FFI com `libverovio.so`; empacotar a `.so` + `verovio/data` é obrigatório (P02b) |
-| D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): **Impeller** (média 0,49% × 0,60% Skia, padrão do Flutter 3.47); ver `compare/README.md` |
+| D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
 no [`CLAUDE.md`](../../CLAUDE.md).

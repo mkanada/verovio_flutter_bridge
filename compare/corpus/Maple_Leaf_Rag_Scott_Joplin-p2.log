@@ -2,11 +2,11 @@
 ==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)
 ==> SVG -> PNG (referência)
 PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Maple_Leaf_Rag_Scott_Joplin-p2-svg.png (2100x2970)
-==> Cena -> PNG (backend impeller)
+==> Cena -> PNG (backend skia)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Maple_Leaf_Rag_Scott_Joplin-p2-scene.png (página 2).
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 391 (0.006269%)
+Pixels diferentes: 411 (0.006590%)
 Maior diferença de canal observada: 255
-Maple_Leaf_Rag_Scott_Joplin;2;2100;2970;391;6237000;0.006269
+Maple_Leaf_Rag_Scott_Joplin;2;2100;2970;411;6237000;0.006590

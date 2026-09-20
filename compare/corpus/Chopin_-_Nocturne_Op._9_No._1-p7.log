@@ -2,11 +2,11 @@
 ==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)
 ==> SVG -> PNG (referência)
 PNG salvo em /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Chopin_-_Nocturne_Op._9_No._1-p7-svg.png (2100x2970)
-==> Cena -> PNG (backend impeller)
+==> Cena -> PNG (backend skia)
 Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Chopin_-_Nocturne_Op._9_No._1-p7-scene.png (página 7).
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 426 (0.006830%)
+Pixels diferentes: 448 (0.007183%)
 Maior diferença de canal observada: 255
-Chopin_-_Nocturne_Op._9_No._1;7;2100;2970;426;6237000;0.006830
+Chopin_-_Nocturne_Op._9_No._1;7;2100;2970;448;6237000;0.007183

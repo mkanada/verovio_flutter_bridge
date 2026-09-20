@@ -112,3 +112,19 @@ Flutter 3.47, e o opt-out Skia será removido em versão futura (reverter para
 Skia é 1 linha + rebuild + `COMPARE_BACKEND=skia`, documentado em
 `compare/README.md` e no cabeçalho do `compare-page.sh`). Registrada em
 `compare/README.md`, no README do plano e no `CLAUDE.md`.
+
+### Revisão (2026-09-20): Skia passa a ser o backend da comparação
+
+O usuário descobriu que o Impeller no Linux não aplica antialiasing e pediu
+para a comparação deixar de usá-lo. `compare/linux/runner/my_application.cc`
+agora chama `fl_dart_project_set_enable_impeller(project, FALSE)`;
+`compare-page.sh` e `compare-corpus.sh` têm `COMPARE_BACKEND=skia` como padrão
+(a guarda de backend continua abortando se o binário não bate). Corpus de 34
+páginas re-medido a tolerância 128: média 0,008800% (Skia) × 0,008456%
+(Impeller), max 0,039330% × 0,038624%, 27/34 páginas ≤ 0,01% nos dois — Skia
+pior em 32/34 páginas por 1 a ~73 px. Determinismo do Skia confirmado por
+`cmp` (Étude p1 e Clair de Lune p1, duas execuções cada). Observação: nos PNGs
+do `scene-to-png` o Impeller tinha antialiasing (mesmos tons intermediários da
+referência), então o defeito relatado provavelmente está no caminho de tela,
+não neste pipeline — não investigado. Detalhes em
+[`docs/relatorio-paridade.md`](../relatorio-paridade.md).

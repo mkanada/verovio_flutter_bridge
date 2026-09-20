@@ -18,12 +18,12 @@
 # O número de páginas de cada peça é sondado com `verovio -t svg -a` — nunca
 # hardcode (muda com versão/flags do Verovio). A varredura aborta se o total
 # não for 34 páginas (o tamanho do corpus em S08/R06a) ou se qualquer página
-# falhar. Backend via COMPARE_BACKEND (padrão: impeller, o oficial de R05a),
-# repassado ao compare-page.sh.
+# falhar. Backend via COMPARE_BACKEND (padrão: skia — o Impeller no Linux não
+# aplica antialiasing; ver compare-page.sh), repassado ao compare-page.sh.
 set -euo pipefail
 
 TOLERANCE=${1:-128}
-COMPARE_BACKEND="${COMPARE_BACKEND:-impeller}"
+COMPARE_BACKEND="${COMPARE_BACKEND:-skia}"
 export COMPARE_BACKEND
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

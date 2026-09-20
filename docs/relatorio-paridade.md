@@ -1,8 +1,8 @@
 # Relatório de paridade visual — SVG vs. `score_bridge` (`.vsb`)
 
-**Data:** 2026-09-20 · **Commit:** `e81b6e1` · **Backend gráfico:** Impeller
-(decisão R05a) · **Tolerância:** 128/255 por canal, portão 99,99%/0,01%
-(decisão do usuário em 2026-09-19).
+**Data:** 2026-09-20 · **Commit:** `e81b6e1` (Impeller) · **Backend gráfico
+atual:** Skia (ver "Atualização de 2026-09-20") · **Tolerância:** 128/255 por
+canal, portão 99,99%/0,01% (decisão do usuário em 2026-09-19).
 
 **Versões:** Verovio 6.3.0 (build local a partir deste commit) · Flutter
 3.47.4 stable · `resvg` 0.48.1 + `tiny-skia` 0.12.0 (referência).
@@ -13,6 +13,47 @@ Gerado por `compare/scripts/compare-corpus.sh 128` contra os 10 arquivos de
 página a página direto no GitHub. CSV bruto em
 `compare/corpus/resultado.csv`. Amostra curada por categoria em
 [`docs/mesa-de-prova/`](mesa-de-prova/README.md).
+
+## Atualização de 2026-09-20 — re-medição com Skia
+
+O usuário descobriu que o Flutter com Impeller no Linux não está aplicando
+antialiasing e pediu para a comparação deixar de usar o Impeller. O runner do
+`compare` agora chama `fl_dart_project_set_enable_impeller(project, FALSE)`
+(**backend gráfico: Skia**) e o corpus inteiro foi re-medido, mesmo comando,
+mesma tolerância (128/255), mesmos 34 arquivos; `compare/corpus/resultado.csv`
+e os PNGs de `compare/corpus/` são agora **Skia**. A coluna "Impeller" da
+tabela abaixo é a medição anterior (commit `e81b6e1`), mantida para
+comparação.
+
+| | Impeller (e81b6e1) | Skia (atual) |
+| --- | --- | --- |
+| Páginas | 34/34 | 34/34 |
+| Min | 0,000481% | 0,000497% |
+| Max | 0,038624% | 0,039330% |
+| Média | 0,008456% | 0,008800% |
+| Páginas ≤ 0,01% | 27/34 | 27/34 |
+| Páginas ≤ 0,05% | 34/34 | 34/34 |
+
+- **Skia ficou marginalmente pior**: média +0,000344 pp (0,008456% →
+  0,008800%), pior em 32 das 34 páginas; melhor em 2 (Étude p4 e Butterfly
+  p2, por 1 pixel cada). A diferença por página vai de 1 a ~73 pixels em
+  6 237 000 — o ranking das páginas
+  e as conclusões do relatório não mudam: as mesmas 7 páginas ficam acima de
+  0,01%, nenhuma passa de 0,05%, o portão de 99,99% segue satisfeito na média.
+- **O Impeller, neste pipeline, antialiasava**: o `scene-to-png` rasteriza
+  offscreen (`Picture.toImage`) e os PNGs antigos têm a mesma quantidade de
+  tons intermediários (bordas suavizadas) que a referência do `resvg` —
+  Étude p1: 289 990 px (Impeller) × 289 842 (referência) × 284 290 (Skia);
+  Clair de Lune p1: 293 216 × 295 173 × 291 201. O defeito observado pelo
+  usuário pode estar no caminho de tela (janela), que a comparação não usa;
+  não foi investigado.
+- **Determinismo do Skia**: duas execuções da mesma página (Étude p1, Clair
+  de Lune p1) geram PNG byte-idêntico (`cmp`), e idêntico ao da varredura.
+- Os textos abaixo desta seção (comparação com o `verovio_lottie`, causas
+  categorizadas, contagens de pixel das correções) são da medição em Impeller
+  e ficam como registro histórico; as porcentagens por página estão nas duas
+  colunas da tabela. As imagens de `docs/mesa-de-prova/` também são do
+  Impeller.
 
 ## Resumo
 
@@ -36,42 +77,42 @@ página a página direto no GitHub. CSV bruto em
 
 ## Tabela: peça, página, % divergente
 
-| Peça | Pág. | % divergente |
-| --- | --- | --- |
-| Chopin Étude Op.10 No.9 | 1 | 0,031698% |
-| Chopin Étude Op.10 No.9 | 2 | 0,026952% |
-| Chopin Étude Op.10 No.9 | 3 | 0,002084% |
-| Chopin Étude Op.10 No.9 | 4 | 0,002918% |
-| Chopin Mazurka Op.6 No.1 | 1 | 0,013115% |
-| Chopin Mazurka Op.6 No.1 | 2 | 0,005467% |
-| Chopin Mazurka Op.6 No.1 | 3 | 0,000978% |
-| Grieg Butterfly Op.43 No.1 | 1 | 0,001908% |
-| Grieg Butterfly Op.43 No.1 | 2 | 0,001443% |
-| Grieg Butterfly Op.43 No.1 | 3 | 0,000481% |
-| Grieg Little bird Op.43 No.4 | 1 | 0,001363% |
-| Grieg Little bird Op.43 No.4 | 2 | 0,000898% |
-| Scarlatti Sonata in C major | 1 | 0,003030% |
-| Scarlatti Sonata in C major | 2 | 0,000770% |
-| Scarlatti Sonata in C major | 3 | 0,000898% |
-| Chopin Nocturne Op.9 No.1 | 1 | 0,009299% |
-| Chopin Nocturne Op.9 No.1 | 2 | 0,004441% |
-| Chopin Nocturne Op.9 No.1 | 3 | 0,015264% |
-| Chopin Nocturne Op.9 No.1 | 4 | 0,019593% |
-| Chopin Nocturne Op.9 No.1 | 5 | 0,008594% |
-| Chopin Nocturne Op.9 No.1 | 6 | 0,008193% |
-| Chopin Nocturne Op.9 No.1 | 7 | 0,006830% |
-| Clair de Lune (Debussy) | 1 | 0,038624% |
-| Clair de Lune (Debussy) | 2 | 0,007728% |
-| Clair de Lune (Debussy) | 3 | 0,003976% |
-| Clair de Lune (Debussy) | 4 | 0,006991% |
-| Clair de Lune (Debussy) | 5 | 0,007472% |
-| Gymnopédie No.1 (Satie) | 1 | 0,028171% |
-| Gymnopédie No.1 (Satie) | 2 | 0,000641% |
-| Maple Leaf Rag (Joplin) | 1 | 0,008642% |
-| Maple Leaf Rag (Joplin) | 2 | 0,006269% |
-| Maple Leaf Rag (Joplin) | 3 | 0,002421% |
-| Prelúdio BWV 846 No.1 | 1 | 0,007888% |
-| Prelúdio BWV 846 No.1 | 2 | 0,002469% |
+| Peça | Pág. | Impeller (e81b6e1) | **Skia (atual)** |
+| --- | --- | --- | --- |
+| Chopin Étude Op.10 No.9 | 1 | 0,031698% | **0,032516%** |
+| Chopin Étude Op.10 No.9 | 2 | 0,026952% | **0,028122%** |
+| Chopin Étude Op.10 No.9 | 3 | 0,002084% | **0,002277%** |
+| Chopin Étude Op.10 No.9 | 4 | 0,002918% | **0,002902%** |
+| Chopin Mazurka Op.6 No.1 | 1 | 0,013115% | **0,013917%** |
+| Chopin Mazurka Op.6 No.1 | 2 | 0,005467% | **0,005788%** |
+| Chopin Mazurka Op.6 No.1 | 3 | 0,000978% | **0,001299%** |
+| Grieg Butterfly Op.43 No.1 | 1 | 0,001908% | **0,001988%** |
+| Grieg Butterfly Op.43 No.1 | 2 | 0,001443% | **0,001427%** |
+| Grieg Butterfly Op.43 No.1 | 3 | 0,000481% | **0,000497%** |
+| Grieg Little bird Op.43 No.4 | 1 | 0,001363% | **0,001603%** |
+| Grieg Little bird Op.43 No.4 | 2 | 0,000898% | **0,000946%** |
+| Scarlatti Sonata in C major | 1 | 0,003030% | **0,003335%** |
+| Scarlatti Sonata in C major | 2 | 0,000770% | **0,000866%** |
+| Scarlatti Sonata in C major | 3 | 0,000898% | **0,000978%** |
+| Chopin Nocturne Op.9 No.1 | 1 | 0,009299% | **0,009540%** |
+| Chopin Nocturne Op.9 No.1 | 2 | 0,004441% | **0,004922%** |
+| Chopin Nocturne Op.9 No.1 | 3 | 0,015264% | **0,016017%** |
+| Chopin Nocturne Op.9 No.1 | 4 | 0,019593% | **0,020314%** |
+| Chopin Nocturne Op.9 No.1 | 5 | 0,008594% | **0,009299%** |
+| Chopin Nocturne Op.9 No.1 | 6 | 0,008193% | **0,008850%** |
+| Chopin Nocturne Op.9 No.1 | 7 | 0,006830% | **0,007183%** |
+| Clair de Lune (Debussy) | 1 | 0,038624% | **0,039330%** |
+| Clair de Lune (Debussy) | 2 | 0,007728% | **0,007985%** |
+| Clair de Lune (Debussy) | 3 | 0,003976% | **0,004457%** |
+| Clair de Lune (Debussy) | 4 | 0,006991% | **0,007744%** |
+| Clair de Lune (Debussy) | 5 | 0,007472% | **0,007504%** |
+| Gymnopédie No.1 (Satie) | 1 | 0,028171% | **0,028219%** |
+| Gymnopédie No.1 (Satie) | 2 | 0,000641% | **0,000657%** |
+| Maple Leaf Rag (Joplin) | 1 | 0,008642% | **0,008786%** |
+| Maple Leaf Rag (Joplin) | 2 | 0,006269% | **0,006590%** |
+| Maple Leaf Rag (Joplin) | 3 | 0,002421% | **0,002453%** |
+| Prelúdio BWV 846 No.1 | 1 | 0,007888% | **0,008177%** |
+| Prelúdio BWV 846 No.1 | 2 | 0,002469% | **0,002710%** |
 
 Médias por peça (min–max): Étude 0,0159% (0,0021–0,0317), Mazurka 0,0065%
 (0,0010–0,0131), Butterfly 0,0013% (0,0005–0,0019), Little bird 0,0011%
@@ -233,8 +274,8 @@ Não é bug de exportador nem de renderizador — é dado de entrada.
 compare/scripts/compare-corpus.sh 128
 ```
 
-rodado a partir da raiz do repositório, com `COMPARE_BACKEND=impeller`
-(padrão do script, decisão R05a), contra `corpus/mei/*.mei` +
+rodado a partir da raiz do repositório, com `COMPARE_BACKEND=skia`
+(padrão do script desde 2026-09-20; a medição de `e81b6e1` foi com `impeller`), contra `corpus/mei/*.mei` +
 `corpus/musicxml/*.mxl` (34 páginas). Pré-requisitos: `verovio/tools/verovio`
 compilado (`cd verovio/tools && cmake ../cmake && make -j4`),
 `compare/build/linux/x64/release/bundle/compare` e

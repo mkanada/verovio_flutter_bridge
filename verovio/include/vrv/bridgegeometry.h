@@ -118,13 +118,6 @@ struct BridgeNode {
     std::vector<BridgeChild> children; // document order: later entries paint on top
 };
 
-struct BridgeIndexEntry {
-    std::string id;
-    std::string className;
-    int nodePath = -1;
-    double bbox[4] = { 0, 0, 0, 0 };
-};
-
 struct BridgePage {
     std::unique_ptr<BridgeNode> root;
     int width = 0, height = 0, contentHeight = 0;
@@ -132,7 +125,6 @@ struct BridgePage {
     double userScaleX = 1.0, userScaleY = 1.0;
     double viewBoxFactor = 10.0;
     int originX = 0, originY = 0;
-    std::vector<BridgeIndexEntry> index;
 };
 
 } // namespace vrv

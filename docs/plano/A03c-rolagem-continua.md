@@ -26,9 +26,10 @@ o que o host usa para "levar a tela até esta nota".
   de `heightPx` por página (as páginas podem ter alturas diferentes; use
   `itemExtentBuilder` ou um delegate que consulte a página).
 - `scrollToId` precisa de: a **página** onde o id está e a **bbox** dele. O
-  índice de S04 (`pages[].elements`) dá os dois, mas ele é por página — monte
-  um mapa `id → (página, bbox)` **uma vez** ao carregar o documento (R01 já
-  monta `byId` por página; agregue).
+  índice de §5.5 (`ScenePage.elements`, derivado no parse desde 2026-09-20 —
+  não vem mais do arquivo) dá os dois, mas ele é por página — monte um mapa
+  `id → (página, bbox)` **uma vez** ao carregar o documento (R01 já monta
+  `byId` por página; agregue).
 - A bbox está em unidades de viewBox **antes** do `translate(origin)`: para
   virar posição de tela é `(bbox + origin) * fit.scale + (fit.tx, fit.ty)` —
   a mesma conversão de A04a. Faça num lugar só, compartilhado pelos dois

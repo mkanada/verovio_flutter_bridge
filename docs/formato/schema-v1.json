@@ -296,23 +296,6 @@
     "manifestDocument": {
       "$ref": "#/$defs/manifest"
     },
-    "indexEntry": {
-      "type": "object",
-      "required": ["id", "class", "nodePath", "bbox"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "class": { "type": "string" },
-        "nodePath": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "bbox": { "$ref": "#/$defs/bbox" }
-      },
-      "additionalProperties": false
-    },
     "page": {
       "type": "object",
       "required": [
@@ -330,8 +313,7 @@
         "heightPx",
         "fit",
         "origin",
-        "root",
-        "elements"
+        "root"
       ],
       "properties": {
         "index": {
@@ -390,11 +372,7 @@
           "additionalProperties": false
         },
         "origin": { "$ref": "#/$defs/vec2" },
-        "root": { "$ref": "#/$defs/node" },
-        "elements": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/indexEntry" }
-        }
+        "root": { "$ref": "#/$defs/node" }
       },
       "additionalProperties": false
     },

@@ -71,3 +71,15 @@ no total) e agrega em `compare/corpus/resultado.csv`
 de `compare/out/`, `compare/corpus/` é **versionado** (só PNGs, CSV e logs;
 `.svg`/`.vsb` são regeneráveis) — dá para ver cada página e sua história no
 próprio git.
+
+### Pendência conhecida: um `.vsb` por página, cada um com a peça inteira
+
+O `compare-page.sh` gera um `.vsb` por página comparada
+(`<peça>-p1.vsb`, `<peça>-p2.vsb`, …), mas **`-t vsb` sempre exporta a peça
+inteira** — a seleção de página é do `scene-to-png`. Ou seja, os N arquivos
+de uma peça são cópias quase idênticas do mesmo conteúdo, e a coluna
+`bytes_vsb` do CSV é o tamanho da **peça**, não o da página (foi isso que
+induziu ao erro de ler `bytes_vsb` como custo por página). A corrigir no
+futuro: gerar o `.vsb` uma vez por peça e reusá-lo nas páginas, e deixar
+claro no CSV que o tamanho é por peça. Anotado em 2026-09-20; não mexer
+agora — mudar isso altera os nomes dos artefatos da varredura.

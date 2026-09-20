@@ -89,7 +89,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Conceito | Onde |
 | --- | --- |
 | Device context do bridge | `src/bridgedevicecontext.cpp`, `include/vrv/bridgedevicecontext.h` (renomeados de `lottie*` em S02) |
-| IR de cena | `include/vrv/bridgegeometry.h` (`BridgeVec`, `BridgeBezier`, `BridgeShape`, `BridgeGlyphDef`, `BridgeGlyphUse`, `BridgeTextRun`, `BridgeNode`, `BridgePage`, `BridgeIndexEntry`) |
+| IR de cena | `include/vrv/bridgegeometry.h` (`BridgeVec`, `BridgeBezier`, `BridgeShape`, `BridgeGlyphDef`, `BridgeGlyphUse`, `BridgeTextRun`, `BridgeNode`, `BridgePage`) |
 | Serializador JSON | `src/bridgewriter.cpp`, `include/vrv/bridgewriter.h` (S05): `ApplyClassStyleRule` L166 (CSS por classe), `ComputePageMetrics` L202 (ajuste `meet` de §3) |
 | Uso de glifo e dicionário | `src/bridgedevicecontext.cpp` `MakeGlyphUse` L616 (fórmula de `sx`/`sy`), `GetGlyphAdvance` L670 |
 | Bbox de nó e índice | `src/bridgedevicecontext.cpp` `GlyphBBox` L221, `CalculateNodeBBox` L269, `BuildIndex` L309 (S08: bbox de glifo convertida de `Glyph::SetBoundingBox` para a escala/eixo dos contornos) |

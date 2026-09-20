@@ -410,14 +410,6 @@ namespace {
         }
     }
 
-    void AppendIndexEntry(std::string &out, const BridgeIndexEntry &entry)
-    {
-        out += "{\"id\":\"" + EscapeJsonString(entry.id) + "\",\"class\":\"" + EscapeJsonString(entry.className)
-            + "\",\"nodePath\":" + std::to_string(entry.nodePath) + ",\"bbox\":[" + FormatNumber(entry.bbox[0]) + ","
-            + FormatNumber(entry.bbox[1]) + "," + FormatNumber(entry.bbox[2]) + "," + FormatNumber(entry.bbox[3])
-            + "]}";
-    }
-
     void AppendPage(std::string &out, const BridgePage &page, int index)
     {
         const PageMetrics metrics = ComputePageMetrics(page);
@@ -444,12 +436,7 @@ namespace {
         else {
             out += "null";
         }
-        out += ",\"elements\":[";
-        for (std::size_t i = 0; i < page.index.size(); ++i) {
-            if (i) out += ',';
-            AppendIndexEntry(out, page.index[i]);
-        }
-        out += "]}";
+        out += "}";
     }
 
     void AppendGlyphDef(std::string &out, const BridgeGlyphDef &def)

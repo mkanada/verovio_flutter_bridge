@@ -318,26 +318,6 @@ namespace {
         return bbox;
     }
 
-    void BuildIndex(const BridgeNode &node, int &nodePath, std::vector<BridgeIndexEntry> &index)
-    {
-        ++nodePath;
-        if (!node.id.empty()) {
-            BridgeIndexEntry entry;
-            entry.id = node.id;
-            entry.className = node.className;
-            entry.nodePath = nodePath;
-            if (node.hasBBox) {
-                std::copy(std::begin(node.bbox), std::end(node.bbox), std::begin(entry.bbox));
-            }
-            index.push_back(std::move(entry));
-        }
-        for (const BridgeChild &child : node.children) {
-            if (child.group != NULL) {
-                BuildIndex(*child.group, nodePath, index);
-            }
-        }
-    }
-
 } // namespace
 
 //----------------------------------------------------------------------------
@@ -1313,8 +1293,6 @@ void BridgeDeviceContext::EndPage()
     assert(m_nodeStack.size() == 1);
     BridgePage &page = m_pages.back();
     CalculateNodeBBox(*page.root, m_glyphs, {});
-    int nodePath = -1;
-    BuildIndex(*page.root, nodePath, page.index);
     m_nodeStack.clear();
 }
 

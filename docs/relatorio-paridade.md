@@ -55,6 +55,27 @@ comparação.
   colunas da tabela. As imagens de `docs/mesa-de-prova/` também são do
   Impeller.
 
+## Atualização de 2026-09-20 — remoção do índice `elements`
+
+`pages[].elements` (§5.5) saiu do formato: era redundância deliberada com a
+árvore e custava 20,5% do `scene.json`. O `score_bridge` passa a derivá-lo no
+mesmo percurso em que monta a árvore, com a regra agora normativa em §5.5;
+`BridgeIndexEntry` e `BridgePage::index` saíram do exportador.
+
+- **Paridade inalterada, no sentido forte**: os 102 PNGs de
+  `compare/corpus/` (34 páginas × svg/scene/diff) ficaram **byte-idênticos**
+  aos da varredura anterior — o git não vê mudança em nenhum. As 34
+  porcentagens são as mesmas dígito a dígito (média 0,008800%, max
+  0,039330%, 27/34 ≤ 0,01%). Só a coluna `bytes_vsb` do CSV mudou.
+- **Tamanho**: soma dos 34 `.vsb` de 9 880 360 → 6 814 831 bytes (−31,0%);
+  por arquivo, entre −27,0% e −35,1% (mediana −30,3%). No `scene.json` cru a
+  queda é de 20,5% — é maior no zip porque o índice comprime pior que a
+  árvore.
+- Verificação da derivação: em 11 páginas de 3 peças, o índice derivado da
+  árvore é **igual entrada a entrada** ao que o arquivo antigo gravava
+  (mesma ordem, mesmo `nodePath`, mesma bbox, incluindo os `[0,0,0,0]` dos
+  nós sem conteúdo desenhável). Os 66 testes do `score_bridge` passam.
+
 ## Resumo
 
 - **34/34 páginas** processadas sem erro (5 partituras MEI + 5 MusicXML).

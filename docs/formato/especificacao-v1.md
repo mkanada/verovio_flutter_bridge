@@ -188,8 +188,7 @@ se closed:
       "heightPx": 2970,
       "fit": { "scale": 0.1, "tx": 0.0, "ty": 0.0 },
       "origin": [500, 500],
-      "root": { "...": "nó" },
-      "elements": [{ "...": "entrada do índice, ver §5.5" }]
+      "root": { "...": "nó" }
     }
   ]
 }
@@ -197,8 +196,9 @@ se closed:
 
 Todos os campos vindos de `BridgePage` são serializados. `viewBox`,
 `widthPx`/`heightPx` e `fit` são derivados, mas também são gravados para que o
-leitor não refaça a métrica da página. `elements` é o índice plano de
-elementos endereçáveis (`BridgePage::index`, ver §5.5).
+leitor não refaça a métrica da página — são poucos números por página. O
+índice plano de elementos endereçáveis **não** é gravado: o leitor o constrói
+no mesmo percurso em que monta a árvore (§5.5).
 
 ### 5.1 Nó (grupo)
 
@@ -316,33 +316,45 @@ omitidos quando valem `1.0`.
 - Runs cujos caracteres são todos codepoints SMuFL cobertos pelas fontes do
   projeto não viram `t`: viram usos de glifo (`u`).
 
-### 5.5 Índice de elementos endereçáveis (`elements`)
+### 5.5 Índice de elementos endereçáveis (derivado, não gravado)
 
-```json
-{ "id": "note-0000001386", "class": "note", "nodePath": 42, "bbox": [x0, y0, x1, y1] }
+O formato **não** carrega o índice plano de elementos endereçáveis. Ele é
+inteiramente derivável da árvore, e o leitor o constrói no mesmo percurso em
+que monta `root` — custo desprezível, já que esse percurso acontece de
+qualquer jeito. Até 2026-09-20 ele era gravado em `pages[].elements` como
+redundância deliberada; medido no corpus, custava **20,5% do `scene.json`** e
+**29,3% do `.vsb`**, e foi removido (decisão do usuário; ver
+`docs/relatorio-paridade.md`).
+
+A regra de derivação, que o leitor deve seguir para chegar ao mesmo índice:
+
+```
+nodePath = -1
+percorrer(nó):
+    nodePath += 1
+    se nó.id existe:
+        emitir { id: nó.id, class: nó.class, nodePath, bbox: nó.bbox ?? [0,0,0,0] }
+    para cada filho do tipo "g" (só grupos, em ordem):
+        percorrer(filho)
 ```
 
-`pages[].elements` é um array plano, com uma entrada para **cada nó da árvore
-que tem `id`** — a mesma condição de §5.1 que já obriga a bbox daquele nó a
-ser emitida — em ordem de percurso em pré-ordem da árvore (a raiz é a posição
-`0`; cada nó, com ou sem `id`, consome uma posição; só nós com `id` viram
-entrada no array). Ele existe só para o host achar um nó por `xml:id` em
-O(1), sem varrer `root`; não é informação nova, é uma redundância deliberada
-com o que já está na árvore (`g.id`/`g.class`/`g.bbox`).
-
-- `id` e `class` são idênticos a `g.id`/`g.class` do nó indexado.
-- `nodePath` é a posição sequencial do nó na ordem de percurso em pré-ordem
-  descrita acima, só dentro desta exportação (não é estável entre exportações
-  nem é um índice no array `children`); serve de posição pronta para o host
-  guardar em memória.
-- `bbox` é idêntico ao `bbox` do nó indexado (§5.1), nas mesmas unidades de
-  viewBox (referencial de conteúdo, antes do `translate(origin)` — ver §5.1).
-  Como todo nó com `id` sempre emite bbox por §5.1, `bbox` está
-  sempre presente aqui — exceto no caso de um nó com `id` sem nenhum
+- Há uma entrada para **cada nó da árvore que tem `id`**, em ordem de percurso
+  em pré-ordem, emitida **antes** de descer nos filhos.
+- `nodePath` é a posição sequencial nesse percurso, contando **só nós de
+  grupo** (formas, glifos e texto não consomem posição); a raiz é `0`. Vale só
+  dentro desta exportação: não é estável entre exportações (o Verovio
+  regenera `xml:id` a cada execução para objetos sem id na fonte) nem é um
+  índice no array `children`.
+- `bbox` é o `bbox` do nó (§5.1), nas mesmas unidades de viewBox (referencial
+  de conteúdo, antes do `translate(origin)`). Um nó com `id` mas sem nenhum
   conteúdo desenhável (`hidden`, grupos `<g>` vazios que o Verovio emite sem
-  filhos — ex. `accid` fantasma — milestones), em que o valor gravado é
-  `[0, 0, 0, 0]`; no corpus de 10 peças / 34 páginas são 5 653 de 39 290
-  entradas (tabela por classe nas notas de S04).
+  filhos — ex. `accid` fantasma — milestones) não tem `bbox` na árvore e
+  entra no índice como `[0, 0, 0, 0]`; no corpus de 10 peças / 34 páginas são
+  5 653 de 39 290 entradas (tabela por classe nas notas de S04).
+
+O pacote Dart `score_bridge` expõe o resultado em `ScenePage.elements`, ao
+lado de `ScenePage.byId` (`xml:id` → nó), ambos construídos nessa passada.
+
 
 ## 6. Ordem de pintura e estado herdado
 
@@ -445,11 +457,6 @@ explicitamente.
 | `BridgePage.viewBoxFactor` | `pages[].viewBoxFactor` | fator de conversão para o viewBox |
 | `BridgePage.originX` | `pages[].origin[0]` | translação `page-margin` em X |
 | `BridgePage.originY` | `pages[].origin[1]` | translação `page-margin` em Y |
-| `BridgePage.index` (S04) | `pages[].elements` | índice plano de elementos endereçáveis, ver §5.5 |
-| `BridgeIndexEntry.id` (S04) | `elements[].id` | mesmo valor de `g.id` do nó indexado |
-| `BridgeIndexEntry.className` (S04) | `elements[].class` | mesmo valor de `g.class` do nó indexado |
-| `BridgeIndexEntry.nodePath` (S04) | `elements[].nodePath` | posição sequencial em pré-ordem, só válida dentro da mesma exportação |
-| `BridgeIndexEntry.bbox` (S04) | `elements[].bbox` | idêntico ao `bbox` do nó indexado |
 | derivado de `width/contentHeight/viewBoxFactor` | `pages[].viewBox` | `[0, 0, width * factor, contentHeight * factor]` |
 | derivado de `baseWidth/baseHeight/userScale*` | `pages[].widthPx`, `heightPx` | tamanho de saída da página |
 | derivado de todos os campos acima | `pages[].fit` | `scale`, `tx`, `ty` pré-computados |
@@ -476,3 +483,4 @@ explicitamente.
 | 2026-09-18 | Correção do S08: especificado que `glyphs[].bbox` é `[x, y, width, height]` na escala interna do Verovio (10× os contornos) e com Y para cima, incluindo a conversão normativa para o sistema dos contornos; tabela de §8 e parser Dart atualizados para o tipo explícito `GlyphBBox`. |
 | 2026-09-19 | Correção pós-S04: §5.1 explicita que `bbox` é no referencial de conteúdo (antes do `translate(origin)`; comparar contra o `viewBox` somando `origin`, §3) — era o que sustentava a ressalva da bbox da raiz, agora encerrada; §5.5 corrige "nenhum caso observado" para os 5 653 casos reais de `[0, 0, 0, 0]` (tabela por classe nas notas de S04). |
 | 2026-09-19 | Correção R06b: §5.2 ganha a exceção de pena 0 — formas desenhadas com `SetPen(0)` (só preenchimento por intenção: feixes, colchetes de pedal, pontos) saem com `"stroke": "none"` em vez do hairline de 1 unidade herdado da regra CSS global, que o Impeller alargava em um pixel inteiro nas formas finas. Medido no corpus: 24,2% das formas passam a `stroke: none` (todos os `r`/`e`, mais os `p` de feixe/polígono cheio); média de divergência 0,4122% → 0,3959% (−3,9% dos pixels divergentes). |
+| 2026-09-20 | `pages[].elements` removido do formato: o índice plano de §5.5 era redundância deliberada com a árvore e custava 20,5% do `scene.json` / 29,3% do `.vsb`. §5.5 passa a especificar a **regra de derivação** que o leitor aplica no percurso que já faz; `BridgeIndexEntry`/`BridgePage::index` saíram do exportador e o `score_bridge` constrói `ScenePage.elements` no parse. Um leitor que encontre `elements` num arquivo antigo pode ignorá-lo. |

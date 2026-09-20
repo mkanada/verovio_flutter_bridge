@@ -92,7 +92,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | IR de cena | `include/vrv/bridgegeometry.h` (`BridgeVec`, `BridgeBezier`, `BridgeShape`, `BridgeGlyphDef`, `BridgeGlyphUse`, `BridgeTextRun`, `BridgeNode`, `BridgePage`) |
 | Serializador JSON | `src/bridgewriter.cpp`, `include/vrv/bridgewriter.h` (S05): `ApplyClassStyleRule` L166 (CSS por classe), `ComputePageMetrics` L202 (ajuste `meet` de §3) |
 | Uso de glifo e dicionário | `src/bridgedevicecontext.cpp` `MakeGlyphUse` L616 (fórmula de `sx`/`sy`), `GetGlyphAdvance` L670 |
-| Bbox de nó e índice | `src/bridgedevicecontext.cpp` `GlyphBBox` L221, `CalculateNodeBBox` L269, `BuildIndex` L309 (S08: bbox de glifo convertida de `Glyph::SetBoundingBox` para a escala/eixo dos contornos) |
+| Bbox de nó | `src/bridgedevicecontext.cpp` `GlyphBBox` L221, `CalculateNodeBBox` L269 (S08: bbox de glifo convertida de `Glyph::SetBoundingBox` para a escala/eixo dos contornos). O índice de elementos não é mais gravado nem construído no exportador: é derivado no parse (`ScenePage.elements`, spec §5.5) |
 | Toolkit | `include/vrv/toolkit.h`: `RenderToBridgeJson` L460, `RenderToBridgeJsonFile` L472, `RenderToBridgeFile` L486 |
 | CLI | `tools/main.cpp` L286 (lista de formatos), L552 (`vsb`), L566 (`vsb-json`); `include/vrv/toolkitdef.h` L35-L36 (`VSB`, `VSB_JSON`) |
 | Escrita de zip | `ZipFileWriter` em `include/vrv/filereader.h` / `src/filereader.cpp` (header-only com miniz: só pode ser incluído nessa unidade) |
@@ -120,7 +120,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | API pública | `score_bridge/lib/score_bridge.dart` (só o que o app pode importar) |
 | Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`; fixture real em `test/fixtures/erik-satie.vsb` |
 | Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
-| A criar nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `segmentation.dart` (A01a), `score_page_view.dart` (A01b), `score_controller.dart` (A01c), `highlight_engine.dart` (A02a), `score_view.dart` (A03a), `hit_test.dart` (A04a), `score_player.dart` (A05a) |
+| A criar nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `score_page_view.dart` (A01b), `score_controller.dart` (A01c), `highlight_engine.dart` (A02a), `score_view.dart` (A03a), `hit_test.dart` (A04a), `score_player.dart` (A05a) |
 
 ### Comparação visual
 
@@ -249,7 +249,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [R06a](R06a-varredura-do-corpus.md) | Varredura do corpus: CSV das 34 páginas | R05b, R05c, S06 | — | concluído |
 | [R06b](R06b-investigacao-de-divergencias.md) | Investigação das páginas acima de 0,1% | R06a | — | concluído |
 | [R06c](R06c-relatorio-de-paridade.md) | Relatório de paridade e mesa de prova (**portão**) | R06b | — | concluído |
-| [A01a](A01a-segmentacao.md) | Segmentação da página por ordem de documento | R06c | — | a fazer |
+| [A01a](A01a-segmentacao.md) | Segmentação da página por ordem de documento | R06c | — | concluído |
 | [A01b](A01b-cache-de-picture.md) | `ScorePageView`: camadas e cache de `ui.Picture` | A01a | — | a fazer |
 | [A01c](A01c-score-controller.md) | `ScoreController` (cor instantânea) e medições | A01b | — | a fazer |
 | [A02a](A02a-motor-de-animacao.md) | Motor de animação: um `Ticker`, fases e curvas | A01c | — | a fazer |

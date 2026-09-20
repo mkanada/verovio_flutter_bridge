@@ -105,4 +105,118 @@ documento. Fatos do corpus:
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-20 (Flutter 3.47.4 / Dart 3.13.3). `flutter analyze`
+limpo; `flutter test` 85/85 (66 anteriores + 19 novos em
+`test/segmentation_test.dart`).
+
+**O que foi feito**
+
+- `lib/src/scene_walk.dart` (novo): `walkScene(root, initialColor, visitor,
+  {colorOverrides})` e a interface `SceneVisitor` (`enterGroup` /
+  `visitLeaf` / `exitGroup`). É o **percurso único** que o item 2 do passo
+  pede: ordem de documento, `hidden` (poda a subárvore) e cor herdada
+  (`color` do nó, com o override por `id` vencendo) vivem só ali.
+  `parseCssColor` saiu do `scene_painter.dart` para lá (público no arquivo,
+  fora do barril `score_bridge.dart`, que exporta só `SceneVisitor` e
+  `walkScene`).
+- `ScenePainter` virou um visitante desse percurso (`_CanvasVisitor`:
+  `rotate` = `save/translate/rotate/translate` na entrada e `restore` na
+  saída). A sequência de operações no `Canvas` é a mesma de antes — os testes
+  de R02b/R02c/R03b/R04 e o widget-vs-harness (R05c, 0 px) passam sem
+  alteração, e a varredura do corpus refeita depois da refatoração deu os
+  102 PNGs byte-idênticos (ver abaixo).
+- `lib/src/segmentation.dart` (novo): `segmentPage(page, animatableIds)` →
+  `List<PageSegment>` (`StaticSegment` / `DynamicSegment`), mais
+  `Transform2D` (afim 2D imutável: `rotation`, `compose`, `apply`,
+  `toMatrix4` para `Canvas.transform`), `animatableIdsFromTimemap` e a
+  extensão `PageSegmentStats` (`segmentCount`, `staticSegmentCount`,
+  `dynamicSegmentCount`, `staticItemCount`, `dynamicNodeCount`).
+
+**Desvios do esboço do passo**
+
+- O esboço tinha `DynamicSegment.nodes: List<SceneNode>`; um nó dinâmico
+  também precisa do estado herdado para ser pintado sozinho (a cor do pai e o
+  `rotate` dos ancestrais), então o segmento guarda `List<DynamicItem>`
+  (`node`, `inheritedColor`, `transform`) e `nodes` é um getter derivado. O
+  estado herdado de um `DynamicItem` é o de **antes** do nó: o `color` e o
+  `rotate` do próprio nó valem dentro dele, na pintura (A01b).
+- `StaticItem.child` nunca é um `SceneNode`: os grupos estáticos são
+  **achatados nas folhas** (forma, uso de glifo ou run de texto), cada uma
+  com a cor herdada já resolvida. Grupos `hidden` somem da segmentação, como
+  do pintor; um nó dinâmico `hidden` também não vira segmento.
+- `transform` é `Transform2D?`, com `null` = identidade — é o caso da quase
+  totalidade dos itens (no corpus há 8 nós `rotate`, em 4 das 34 páginas, no
+  máximo 4 por página; a página com mais folhas sob `rotate` é Clair de Lune
+  p2, com 116), e assim não aloca uma matriz por folha. É a composição só dos
+  `rotate` dos ancestrais, **no espaço de conteúdo**: o `translate(fit)` /
+  `scale` / `translate(origin)` da página é da camada (A01b), não do item.
+- `animatableIdsFromTimemap` considera só `on`/`off`, não `restsOn`/
+  `restsOff`. Com essa definição os números do corpus batem com o plano (ver
+  critério 6); pausas não acendem.
+- Dois nós dinâmicos se fundem mesmo com grupos vazios ou `hidden` entre eles
+  na árvore (nada é pintado entre os dois, então a ordem de pintura é a
+  mesma) — só uma **folha estática visível** os separa.
+
+**Critérios**
+
+1. `flutter analyze` sem avisos; `flutter test` 85/85.
+2. Ordem: árvore sintética com 10 elementos e 3 dinâmicos; a concatenação
+   dos itens de todos os segmentos é igual (`orderedEquals`, por identidade)
+   a um percurso de referência escrito à mão no próprio teste.
+3. Fusão: dois dinâmicos adjacentes → 1 `DynamicSegment` com 2 nós; também
+   testado em grupos irmãos separados por grupo vazio/`hidden`, e o caso
+   contrário (uma folha entre dois dinâmicos os separa).
+4. Estado herdado: cor de grupo (`#ff0000`) chega às folhas e não vaza para o
+   irmão; `rotate` produz `transform`. A matriz acumulada de **dois `rotate`
+   aninhados** (ângulos e pivôs diferentes) foi conferida ponto a ponto contra
+   o `RecordingCanvas` (oráculo que compõe `save/translate/rotate` como o
+   `Canvas`), tanto por `apply` quanto por `toMatrix4` → `Canvas.transform`.
+5. Robustez: ids inexistentes (`…-rend2`) não lançam nem criam segmento
+   vazio; o resultado é idêntico ao sem eles. No fixture da Gymnopédie, os
+   469 ids do timemap valem para a peça inteira e cada página só tem parte
+   deles — exatamente esse caso.
+6. Corpus (34 páginas, ids = `on` ∪ `off` do timemap do próprio `.vsb`):
+
+   | Medida | Mediana | Máximo | Mínimo | Plano |
+   | --- | ---: | ---: | ---: | --- |
+   | Nós dinâmicos por página | 307,5 | 719 | 44 | 308 / 719 / 44 |
+   | **Segmentos por página** | **196** | **545** | **29** | 196 / 545 / 29 |
+   | Formas desenhadas por página | 1 345,5 | 2 463 | 229 | 1 345 / 2 463 / — |
+   | ↳ segmentos estáticos | 98,5 | 273 | 15 | — |
+   | ↳ segmentos dinâmicos | 97,5 | 272 | 14 | — |
+
+   Bate com o plano: a definição de "dinâmico" é a mesma. Totais: 9 952 nós
+   dinâmicos e 6 764 segmentos nas 34 páginas; os nós dinâmicos são de classe
+   `note` em **34/34** páginas (nenhuma outra classe). Os ids que sobram: a
+   Gymnopédie tem 469 ids no timemap e 245 + 44 nas páginas (180 a mais, os
+   `-rend2`); a Maple Leaf Rag, 2 464 contra 518 + 719 + 344 (883 a mais) —
+   os mesmos números do plano. Medido com uma medição descartável sobre os
+   `.vsb` de `compare/corpus/` (não fica no repositório: esses arquivos são
+   git-ignorados e regeneráveis).
+7. `animatableIds` vazio: 1 segmento estático por página nas 2 páginas do
+   fixture, com tantos itens quanto folhas visíveis (contadas por um percurso
+   independente no teste) e `transform == null` em todos.
+
+**Refatoração sem efeito visual (conferido):** depois de trocar o percurso do
+pintor, `compare-corpus.sh 128` (backend Skia) refeito nas 34 páginas: os
+**102 PNGs** (`-svg`, `-scene`, `-diff`) ficaram **byte-idênticos** aos
+commitados (o git não vê mudança em nenhum) e as 34 porcentagens são as
+mesmas. A única coluna que mudou no CSV foi `bytes_vsb` (até 169 bytes), que é
+ruído de execução — o Verovio regenera `xml:id` aleatórios a cada rodada e o
+tamanho do JSON acompanha; o CSV foi restaurado ao commitado.
+
+**Afeta os passos seguintes**
+
+- A01b pinta um `StaticSegment` percorrendo `items`: para cada um,
+  `save`, `transform(item.transform.toMatrix4())` se não for `null`, pintar a
+  folha com `item.inheritedColor`, `restore` — sem recalcular estado. Hoje as
+  rotinas de desenho de folha (`_drawShape`, `_drawGlyphUse`, `_drawText`)
+  são privadas do `ScenePainter`; A01b precisará expô-las (por exemplo um
+  `paintLeaf(canvas, leaf, color)` público) em vez de duplicá-las.
+- Para pintar um `DynamicItem`, A01b precisa de um "pintar este subnó com
+  estas cor e transformação herdadas": é `walkScene(item.node,
+  item.inheritedColor, …)` com o mesmo `_CanvasVisitor` e `colorOverrides`,
+  depois de aplicar `item.transform`.
+- `segmentPage` recalcula tudo a cada chamada e só depende de `(page,
+  animatableIds)`: A01b deve chamá-la **uma vez por página** e guardar o
+  resultado, não a cada frame.

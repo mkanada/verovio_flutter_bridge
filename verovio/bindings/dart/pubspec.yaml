@@ -1,8 +1,9 @@
 name: verovio
 description: >
   Dart FFI bindings for the Verovio Toolkit (this fork adds a native
-  dotLottie exporter). Loads libverovio built with -DBUILD_AS_LIBRARY=ON;
-  see README.md for how to build it and for platform coverage.
+  .vsb Score Bridge exporter). Loads libverovio built with
+  -DBUILD_AS_LIBRARY=ON; see README.md for how to build it and for
+  platform coverage.
 version: 0.1.0
 publish_to: none
 

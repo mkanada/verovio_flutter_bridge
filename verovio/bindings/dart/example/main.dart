@@ -1,5 +1,5 @@
 // Run from bindings/dart/ after ./build_linux_so.sh:
-//   dart run example/main.dart <input.mei> <output.lottie> [resourcePath]
+//   dart run example/main.dart <input.mei> <output.vsb> [resourcePath]
 import 'dart:io';
 
 import 'package:verovio/verovio.dart';
@@ -7,7 +7,7 @@ import 'package:verovio/verovio.dart';
 void main(List<String> args) {
   if (args.length < 2) {
     stderr.writeln(
-        'usage: dart run example/main.dart <input.mei> <output.lottie> [resourcePath]');
+        'usage: dart run example/main.dart <input.mei> <output.vsb> [resourcePath]');
     exit(64);
   }
   final input = args[0];
@@ -24,7 +24,7 @@ void main(List<String> args) {
     }
     print('Loaded $input (${toolkit.getPageCount()} page(s))');
 
-    if (!toolkit.renderToDotLottieFile(output)) {
+    if (!toolkit.renderToBridgeFile(output)) {
       stderr.writeln('Failed to render $output');
       exit(1);
     }

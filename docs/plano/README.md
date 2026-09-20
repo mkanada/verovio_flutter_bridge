@@ -99,7 +99,8 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Timemap | `include/vrv/timemap.h`, `src/timemap.cpp`, `Toolkit::RenderToTimemap` |
 | Parser de path de glifo | `src/svgpathparser.cpp`, `include/vrv/svgpathparser.h` |
 | Glifos SMuFL (dados) | `Resources::GetGlyph` (`include/vrv/resources.h`), `Glyph::GetXML` (`src/glyph.cpp`), `Glyph::SetBoundingBox` L95 (a bbox ×10 de S08), dados em `data/<fonte>/*.xml` |
-| Bindings C (modelo para P02a) | `tools/c_wrapper.cpp` L296-L340 |
+| Bindings C | `tools/c_wrapper.cpp`: `vrvToolkit_renderToBridgeFile` L296, `vrvToolkit_renderToBridgeJson` L307 (P02a) |
+| Binding Dart FFI | `verovio/bindings/dart/`: `VerovioToolkit` (`lib/src/verovio_toolkit.dart`), assinaturas em `lib/src/verovio_bindings.dart`, builds em `build_linux_so.sh` / `build_android_so.sh` (P02a) |
 
 ### Referência de verdade (não alterar — é o que a paridade compara)
 
@@ -182,7 +183,7 @@ que ninguém precise ler este README inteiro para executar um passo.
 | --- | --- | --- | --- |
 | D-NOME | Nome do formato, extensão e flags de CLI | — | Resolvida em S01 (2026-09-17): `.vsb`, `-t vsb`, `-t vsb-json`; timemap embutido quando disponível |
 | D-BIN | Vale trocar JSON por encoding binário? | P01b | medir primeiro (P01a); só decidir com números reais na mão |
-| D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02a | depende do zywny; perguntar antes de compilar qualquer coisa |
+| D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02a | Resolvida em P02a (2026-09-20): **(a) gera no dispositivo**, via FFI com `libverovio.so`; empacotar a `.so` + `verovio/data` é obrigatório (P02b) |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): **Impeller** (média 0,49% × 0,60% Skia, padrão do Flutter 3.47); ver `compare/README.md` |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
@@ -263,7 +264,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [A05b](A05b-virada-automatica-e-evidencias.md) | Virada automática por compasso e evidências | A05a, A03b | — | a fazer |
 | [P01a](P01a-medicoes.md) | Medições: tamanho, parse, compilação e memória | R06c, A02c | — | a fazer |
 | [P01b](P01b-gate-de-encoding.md) | Gate D-BIN: decidir com o usuário | P01a | D-BIN | a fazer |
-| [P02a](P02a-libverovio-e-wrapper.md) | Decisão D-RUNTIME, `libverovio` e wrapper C | S07 | D-RUNTIME | a fazer |
+| [P02a](P02a-libverovio-e-wrapper.md) | Decisão D-RUNTIME, `libverovio` e wrapper C | S07 | D-RUNTIME resolvida | concluído |
 | [P02b](P02b-ffi-dart-e-isolate.md) | Binding FFI Dart, dados empacotados e isolate | P02a | — | a fazer |
 | [P03a](P03a-perfil-em-dispositivo.md) | Perfil em dispositivo Android | A05b, P01a | — | a fazer |
 | [P03b](P03b-app-de-exemplo.md) | App de exemplo | P03a | — | a fazer |

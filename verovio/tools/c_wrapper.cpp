@@ -293,6 +293,24 @@ const char *vrvToolkit_renderData(void *tkPtr, const char *data, const char *opt
     return tk->GetCString();
 }
 
+bool vrvToolkit_renderToBridgeFile(void *tkPtr, const char *filename)
+{
+    Toolkit *tk = static_cast<Toolkit *>(tkPtr);
+    return tk->RenderToBridgeFile(filename);
+}
+
+/**
+ * The returned pointer is owned by the Toolkit instance (SetCString / GetCString) and stays valid
+ * only until the next call returning a string on the same instance - the caller must copy it and
+ * must never free it. Same lifetime rule as every other string-returning function here.
+ */
+const char *vrvToolkit_renderToBridgeJson(void *tkPtr)
+{
+    Toolkit *tk = static_cast<Toolkit *>(tkPtr);
+    tk->SetCString(tk->RenderToBridgeJson());
+    return tk->GetCString();
+}
+
 const char *vrvToolkit_renderToExpansionMap(void *tkPtr)
 {
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);

@@ -186,26 +186,18 @@ class VerovioBindings {
                 'vrvToolkit_redoPagePitchPosLayout'),
         renderData = lib.lookupFunction<_Utf8FromPtrStrStrNative,
             _Utf8FromPtrStrStrDart>('vrvToolkit_renderData'),
-        renderToDotLottieFile =
+        renderToBridgeFile =
             lib.lookupFunction<_BoolFromPtrStrNative, _BoolFromPtrStrDart>(
-                'vrvToolkit_renderToDotLottieFile'),
-        renderToDotLottieHighlightFile = lib
-            .lookupFunction<_BoolFromPtrStrIntNative, _BoolFromPtrStrIntDart>(
-                'vrvToolkit_renderToDotLottieHighlightFile'),
+                'vrvToolkit_renderToBridgeFile'),
+        renderToBridgeJson =
+            lib.lookupFunction<_Utf8FromPtrNative, _Utf8FromPtrDart>(
+                'vrvToolkit_renderToBridgeJson'),
         renderToExpansionMap =
             lib.lookupFunction<_Utf8FromPtrNative, _Utf8FromPtrDart>(
                 'vrvToolkit_renderToExpansionMap'),
         renderToExpansionMapFile =
             lib.lookupFunction<_BoolFromPtrStrNative, _BoolFromPtrStrDart>(
                 'vrvToolkit_renderToExpansionMapFile'),
-        renderToLottie =
-            lib.lookupFunction<_Utf8FromPtrIntNative, _Utf8FromPtrIntDart>(
-                'vrvToolkit_renderToLottie'),
-        renderToLottieAnimation =
-            lib.lookupFunction<_Utf8FromPtrNative, _Utf8FromPtrDart>(
-                'vrvToolkit_renderToLottieAnimation'),
-        renderToLottieFile = lib.lookupFunction<_BoolFromPtrStrIntNative,
-            _BoolFromPtrStrIntDart>('vrvToolkit_renderToLottieFile'),
         renderToMIDI = lib.lookupFunction<_Utf8FromPtrNative, _Utf8FromPtrDart>(
             'vrvToolkit_renderToMIDI'),
         renderToMIDIFile =
@@ -299,13 +291,10 @@ class VerovioBindings {
   final _VoidFromPtrStrDart redoLayout;
   final _VoidFromPtrDart redoPagePitchPosLayout;
   final _Utf8FromPtrStrStrDart renderData;
-  final _BoolFromPtrStrDart renderToDotLottieFile;
-  final _BoolFromPtrStrIntDart renderToDotLottieHighlightFile;
+  final _BoolFromPtrStrDart renderToBridgeFile;
+  final _Utf8FromPtrDart renderToBridgeJson;
   final _Utf8FromPtrDart renderToExpansionMap;
   final _BoolFromPtrStrDart renderToExpansionMapFile;
-  final _Utf8FromPtrIntDart renderToLottie;
-  final _Utf8FromPtrDart renderToLottieAnimation;
-  final _BoolFromPtrStrIntDart renderToLottieFile;
   final _Utf8FromPtrDart renderToMIDI;
   final _BoolFromPtrStrDart renderToMIDIFile;
   final _Utf8FromPtrDart renderToPAE;

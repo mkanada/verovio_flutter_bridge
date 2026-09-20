@@ -77,8 +77,11 @@ Trate como fixas — não reabra sem confirmar com o usuário:
 - Backend gráfico do Flutter para a comparação (Impeller vs. Skia) — resolvido
   em R05a (2026-09-19): **Impeller** (média 0,49% × 0,60% Skia); ver
   `compare/README.md`.
-- Estratégia de geração em runtime no app (FFI com `libverovio.so` vs. `.vsb`
-  pré-gerado no servidor) — ver P02a (perguntar antes de compilar).
+- **Geração em runtime no app:** o app **gera o `.vsb` no dispositivo**, via
+  FFI com `libverovio.so` (D-RUNTIME, opção (a), decisão do usuário em
+  2026-09-20). Consequência: a `libverovio.so` e os dados de `verovio/data`
+  (fontes SMuFL e métricas de texto) precisam ser empacotados no app; P02a
+  produz a biblioteca e o wrapper C, P02b o empacotamento e o isolate.
 
 ## Convenções de trabalho
 

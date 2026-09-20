@@ -33,7 +33,28 @@ rodando fora da thread de UI.
   limitação.
 - Tamanho do app é o número que o usuário vai querer: biblioteca + dados +
   fontes. Meça o APK/bundle com e sem a geração em runtime, para a decisão
-  (a) × (b) ficar quantificada mesmo depois de tomada.
+  (a) × (b) ficar quantificada mesmo depois de tomada. Números já medidos em
+  P02a: `.so` com strip **17,0 MB** (Linux x86_64) e **18,5 MB**
+  (Android arm64-v8a).
+- **O passo 1 ("pacote Dart de binding") já está feito**: P02a entregou
+  `verovio/bindings/dart` funcionando (`VerovioToolkit.renderToBridgeFile` /
+  `renderToBridgeJson`, `dart test` 4/4 contra a `.so`). O que resta aqui é o
+  empacotamento dos dados, o isolate e o app de demonstração.
+- **`verovio/data` é menor do que parece**: 4,0 MB de conteúdo em 2 685
+  arquivos (os 14 MB que `du -sh` mostra são bloco de disco, não bytes). Se o
+  app não trocar de fonte musical, o obrigatório é Bravura + Leipzig +
+  `data/text` = **2,3 MB** em 1 553 arquivos (`Resources::InitFonts`,
+  `src/resources.cpp` L61, carrega os três sem opção). O diretório precisa ser
+  um caminho de arquivo real: `Resources` só aceita `SetPath`, não há API de
+  carregar o diretório de dados de memória — daí a extração na primeira
+  execução.
+- **Critério 2 (byte-identidade) já foi medido uma vez em P02a**, com Grieg e
+  `resetXmlIdSeed(42)` casando o `-x 42` da CLI: `scene.json`, `glyphs.json` e
+  `timemap.json` saíram **byte-idênticos**. O `manifest.json` **sempre** vai
+  diferir no campo `generator` quando a CLI e a `.so` forem construídas de
+  commits diferentes (o hash do commit é compilado no binário) — não conte
+  isso como falha do critério; compare os dois binários do mesmo commit ou
+  ignore o campo.
 
 ## O que fazer
 

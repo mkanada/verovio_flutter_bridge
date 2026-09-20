@@ -10,8 +10,8 @@ import 'verovio_bindings.dart';
 /// `dart:ffi` from a `libverovio` built with `-DBUILD_AS_LIBRARY=ON` (see
 /// ../../cmake/CMakeLists.txt and ../README.md).
 ///
-/// Mirrors ../swift-toolkit/VerovioToolkit.swift method-for-method so the
-/// two bindings stay easy to cross-check against c_wrapper.h.
+/// One method per `vrvToolkit_*` function, in the same order as
+/// c_wrapper.h, so a diff against that header is enough to spot drift.
 class VerovioToolkit {
   VerovioToolkit._(this._bindings, this._ptr);
 
@@ -79,8 +79,7 @@ class VerovioToolkit {
   static Iterable<String> _candidateLibraryPaths(String fileName) sync* {
     yield '${Directory.current.path}/$fileName';
     try {
-      final scriptPath =
-          Platform.script.toFilePath();
+      final scriptPath = Platform.script.toFilePath();
       var dir = File(scriptPath).parent;
       // Walk up from e.g. .dart_tool/pub/... or lib/src/ to the package root.
       for (var i = 0; i < 6; i++) {
@@ -224,38 +223,25 @@ class VerovioToolkit {
           data.toNativeUtf8(allocator: arena),
           options.toNativeUtf8(allocator: arena))));
 
-  /// Renders the whole score as a single dotLottie (`.lottie`) package: one
-  /// `score` composition, one layer per page, automatic note highlight
-  /// (`sm_highlight`) and, for multi-page scores, page-turn (`sm_page`).
-  /// This is the production format (`-t dotlottie` on the CLI).
-  bool renderToDotLottieFile(String filename) => using((arena) => _bindings
-      .renderToDotLottieFile(_tk, filename.toNativeUtf8(allocator: arena)));
+  /// Renders the whole score as a `.vsb` package (`-t vsb` on the CLI): a zip
+  /// holding manifest.json, scene.json, glyphs.json and, when the piece
+  /// produces one, timemap.json. Always the full document.
+  ///
+  /// The output is binary, so - like the CLI - it can only be written to a
+  /// file, never returned as a string. This is what `score_bridge` parses.
+  bool renderToBridgeFile(String filename) => using((arena) => _bindings
+      .renderToBridgeFile(_tk, filename.toNativeUtf8(allocator: arena)));
 
-  /// Renders a single page as a dotLottie package with a working
-  /// note-highlight state machine, no page-turn (`-t dotlottie-highlight`).
-  bool renderToDotLottieHighlightFile(String filename, {int pageNo = 1}) =>
-      using((arena) => _bindings.renderToDotLottieHighlightFile(
-          _tk, filename.toNativeUtf8(allocator: arena), pageNo));
+  /// The scene of every page as one JSON document (`-t vsb-json` on the CLI):
+  /// a single glyph dictionary shared by all pages, no zip and no timemap.
+  /// Useful for debugging; `renderToBridgeFile` is the production path.
+  String renderToBridgeJson() => _fromUtf8(_bindings.renderToBridgeJson(_tk));
 
   String renderToExpansionMap() =>
       _fromUtf8(_bindings.renderToExpansionMap(_tk));
 
   bool renderToExpansionMapFile(String filename) => using((arena) => _bindings
       .renderToExpansionMapFile(_tk, filename.toNativeUtf8(allocator: arena)));
-
-  /// Debug-only classic Lottie JSON for a single page (no dotLottie
-  /// package, no state machine, no embedded fonts). See `-t lottie`.
-  String renderToLottie({int pageNo = 1}) =>
-      _fromUtf8(_bindings.renderToLottie(_tk, pageNo));
-
-  /// Debug-only: all pages as one classic Lottie animation JSON (one layer
-  /// per page), still without a dotLottie package or state machine.
-  String renderToLottieAnimation() =>
-      _fromUtf8(_bindings.renderToLottieAnimation(_tk));
-
-  bool renderToLottieFile(String filename, {int pageNo = 1}) =>
-      using((arena) => _bindings.renderToLottieFile(
-          _tk, filename.toNativeUtf8(allocator: arena), pageNo));
 
   String renderToMIDI() => _fromUtf8(_bindings.renderToMIDI(_tk));
 
@@ -301,8 +287,8 @@ class VerovioToolkit {
   bool setOptions(String jsonOptions) => using((arena) =>
       _bindings.setOptions(_tk, jsonOptions.toNativeUtf8(allocator: arena)));
 
-  /// Selects the output format, e.g. `svg`, `midi`, `timemap`, `lottie`,
-  /// `dotlottie` or `dotlottie-highlight`.
+  /// Selects the output format, e.g. `svg`, `midi`, `timemap`, `vsb` or
+  /// `vsb-json`.
   bool setOutputTo(String output) => using((arena) =>
       _bindings.setOutputTo(_tk, output.toNativeUtf8(allocator: arena)));
 

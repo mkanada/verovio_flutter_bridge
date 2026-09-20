@@ -1,4 +1,4 @@
-/// Dart FFI bindings for the Verovio Toolkit (this fork's `dotLottie`
+/// Dart FFI bindings for the Verovio Toolkit (this fork's `.vsb` Score Bridge
 /// exporter included). See README.md for how to build the native library
 /// this package loads.
 library verovio;

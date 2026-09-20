@@ -56,7 +56,9 @@ bool vrvToolkit_loadZipDataBuffer(void *tkPtr, const unsigned char *data, int le
 void vrvToolkit_redoLayout(void *tkPtr, const char *c_options);
 void vrvToolkit_redoPagePitchPosLayout(void *tkPtr);
 const char *vrvToolkit_renderData(void *tkPtr, const char *data, const char *options);
-bool vrvToolkit_renderToExpansionMap(void *tkPtr);
+bool vrvToolkit_renderToBridgeFile(void *tkPtr, const char *filename);
+const char *vrvToolkit_renderToBridgeJson(void *tkPtr);
+const char *vrvToolkit_renderToExpansionMap(void *tkPtr);
 bool vrvToolkit_renderToExpansionMapFile(void *tkPtr, const char *filename);
 const char *vrvToolkit_renderToMIDI(void *tkPtr);
 bool vrvToolkit_renderToMIDIFile(void *tkPtr, const char *filename);

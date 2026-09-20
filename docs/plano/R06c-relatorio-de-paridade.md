@@ -15,7 +15,11 @@ documento que o usuário vai ler para decidir se o projeto está de pé.
 - `../verovio_lottie/docs/plano/relatorio-paridade.md` — o formato a imitar
   (tabela peça/página/%, médias, categorias, comparação) e os números da
   linha de base.
-- `compare/out/corpus/resultado.csv` e as classificações de R06b.
+- `compare/corpus/resultado.csv` e as classificações de R06b. (Nota: este
+  arquivo e o critério de aceite 6 abaixo ainda citavam
+  `compare/out/corpus/resultado.csv` — caminho desatualizado desde o desvio
+  já registrado em R06a, que passou a versionar as saídas em
+  `compare/corpus/`.)
 
 ## Contexto que você precisa (não vá procurar, está aqui)
 
@@ -65,9 +69,36 @@ documento que o usuário vai ler para decidir se o projeto está de pé.
 4. `docs/relatorio-paridade.md` existe e contém tabela completa, médias,
    categorias com imagem, comparação com o `verovio_lottie` e os comandos.
 5. `docs/mesa-de-prova/` com a amostra de imagens.
-6. O CSV bruto está em `compare/out/corpus/resultado.csv` e o relatório cita
-   o comando que o gerou.
+6. O CSV bruto está em `compare/corpus/resultado.csv` (caminho corrigido
+   acima — desvio já registrado em R06a) e o relatório cita o comando que o
+   gerou.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+**Passo concluído (2026-09-20).** `docs/relatorio-paridade.md` escrito a
+partir do CSV já versionado da sexta investigação de R06b
+(`compare/corpus/resultado.csv`, commit `e81b6e1`) — não foi necessário
+refazer a varredura, só recomputar os agregados (`awk`, `LC_NUMERIC=C`) para
+conferência independente.
+
+1. Média 0,008456% < 0,01%. ✓
+2. Página mais alta: Clair de Lune p1, 0,038624% < 0,05%. ✓
+3. Seção "Resumo" do relatório declara ausência de divergência estrutural,
+   com a metodologia (inspeção lado a lado + os dois testes de
+   deslocamento/luminância de R06b). ✓
+4. Relatório escrito com tabela completa (34 páginas), médias por peça,
+   5 categorias (4 corrigidas + o piso de AA restante) com recorte de
+   exemplo, comparação com o número **final** do `verovio_lottie`
+   (0,0135%–0,3946%, média 0,1251%, tolerância 32/255 — não o número
+   intermediário de A13, anterior às correções de texto comum daquele
+   projeto) e o comando exato. ✓
+5. `docs/mesa-de-prova/` criado com amostra curada de 4 páginas (não o
+   corpus inteiro — as 34 páginas já estão versionadas em
+   `compare/corpus/`, que cumpre o mesmo papel de "visível direto no
+   GitHub" que a mesa de prova tinha no projeto anterior; ver
+   `docs/mesa-de-prova/README.md` para a justificativa de cada escolha). ✓
+6. CSV em `compare/corpus/resultado.csv` (não `compare/out/corpus/`, ver
+   correção acima); relatório cita `compare/scripts/compare-corpus.sh 128`.
+   ✓
+
+**Portão aberto: fase A liberada para começar (A01a).**

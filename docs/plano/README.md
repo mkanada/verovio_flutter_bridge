@@ -246,8 +246,8 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [R05b](R05b-script-ponta-a-ponta.md) | `compare-page.sh` no fluxo `.vsb`, ponta a ponta | R05a, R04d | — | concluído |
 | [R05c](R05c-widget-vs-harness.md) | Prova widget-vs-harness (0 pixels) | R05b | — | concluído |
 | [R06a](R06a-varredura-do-corpus.md) | Varredura do corpus: CSV das 34 páginas | R05b, R05c, S06 | — | concluído |
-| [R06b](R06b-investigacao-de-divergencias.md) | Investigação das páginas acima de 0,1% | R06a | — | a fazer |
-| [R06c](R06c-relatorio-de-paridade.md) | Relatório de paridade e mesa de prova (**portão**) | R06b | — | a fazer |
+| [R06b](R06b-investigacao-de-divergencias.md) | Investigação das páginas acima de 0,1% | R06a | — | concluído |
+| [R06c](R06c-relatorio-de-paridade.md) | Relatório de paridade e mesa de prova (**portão**) | R06b | — | concluído |
 | [A01a](A01a-segmentacao.md) | Segmentação da página por ordem de documento | R06c | — | a fazer |
 | [A01b](A01b-cache-de-picture.md) | `ScorePageView`: camadas e cache de `ui.Picture` | A01a | — | a fazer |
 | [A01c](A01c-score-controller.md) | `ScoreController` (cor instantânea) e medições | A01b | — | a fazer |
@@ -284,7 +284,9 @@ R02a → R02b → R02c → R02d → R03a → R03b → R03c
 
 S08 já foi executado e o corpus em `compare/out/s08/` traz as bboxes
 corrigidas; todo número de bbox medido antes dele (S07) está errado.
-A fase A só começa depois que R06c fechar o número de paridade.
+R06c fechou o portão de paridade em 2026-09-20 (média 0,008456%, ver
+[`docs/relatorio-paridade.md`](../relatorio-paridade.md)) — a fase A está
+liberada, começando por A01a.
 
 **Passos pequenos de propósito.** Cada arquivo acima cabe numa sessão de
 trabalho e tem critérios de aceite executáveis. Não junte dois passos "porque

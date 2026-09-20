@@ -1,0 +1,258 @@
+# Relatório de paridade visual — SVG vs. `score_bridge` (`.vsb`)
+
+**Data:** 2026-09-20 · **Commit:** `e81b6e1` · **Backend gráfico:** Impeller
+(decisão R05a) · **Tolerância:** 128/255 por canal, portão 99,99%/0,01%
+(decisão do usuário em 2026-09-19).
+
+**Versões:** Verovio 6.3.0 (build local a partir deste commit) · Flutter
+3.47.4 stable · `resvg` 0.48.1 + `tiny-skia` 0.12.0 (referência).
+
+Gerado por `compare/scripts/compare-corpus.sh 128` contra os 10 arquivos de
+`corpus/mei/` + `corpus/musicxml/` (34 páginas). Saídas por página (SVG,
+`.vsb`, os três PNGs, log) em `compare/corpus/` — **versionado**, visível
+página a página direto no GitHub. CSV bruto em
+`compare/corpus/resultado.csv`. Amostra curada por categoria em
+[`docs/mesa-de-prova/`](mesa-de-prova/README.md).
+
+## Resumo
+
+- **34/34 páginas** processadas sem erro (5 partituras MEI + 5 MusicXML).
+- Divergência por página: **min 0,000481% – max 0,038624% – média
+  0,008456%** — todas as páginas abaixo do teto de 0,05% do portão, e a
+  média abaixo do alvo de 0,01%.
+- **27/34 páginas** ficam individualmente dentro do portão de 0,01%; as 7
+  restantes têm causa 100% localizada e explicada (piso de antialiasing do
+  motor de texto real, ver categoria 1 abaixo) — nenhuma delas passa de
+  0,04%.
+- **Nenhuma divergência estrutural** encontrada em nenhuma página: nenhuma
+  nota, clave, haste, feixe, ligadura ou hairpin de dinâmica em posição,
+  forma, cor ou ordem de empilhamento errada. Metodologia: inspeção visual
+  lado a lado (SVG × cena) de toda página acima de 0,01% (as 8 antes de
+  R06b, refeita nas que mudaram), célula por célula do mapa de diff nas
+  demais, mais os dois testes de correlação por deslocamento e viés de
+  luminância da quarta investigação de R06b (descartam shift de texto
+  escondido atrás do ruído). Toda divergência observada em todas as 34
+  páginas se resume às 5 categorias abaixo, quatro delas já corrigidas.
+
+## Tabela: peça, página, % divergente
+
+| Peça | Pág. | % divergente |
+| --- | --- | --- |
+| Chopin Étude Op.10 No.9 | 1 | 0,031698% |
+| Chopin Étude Op.10 No.9 | 2 | 0,026952% |
+| Chopin Étude Op.10 No.9 | 3 | 0,002084% |
+| Chopin Étude Op.10 No.9 | 4 | 0,002918% |
+| Chopin Mazurka Op.6 No.1 | 1 | 0,013115% |
+| Chopin Mazurka Op.6 No.1 | 2 | 0,005467% |
+| Chopin Mazurka Op.6 No.1 | 3 | 0,000978% |
+| Grieg Butterfly Op.43 No.1 | 1 | 0,001908% |
+| Grieg Butterfly Op.43 No.1 | 2 | 0,001443% |
+| Grieg Butterfly Op.43 No.1 | 3 | 0,000481% |
+| Grieg Little bird Op.43 No.4 | 1 | 0,001363% |
+| Grieg Little bird Op.43 No.4 | 2 | 0,000898% |
+| Scarlatti Sonata in C major | 1 | 0,003030% |
+| Scarlatti Sonata in C major | 2 | 0,000770% |
+| Scarlatti Sonata in C major | 3 | 0,000898% |
+| Chopin Nocturne Op.9 No.1 | 1 | 0,009299% |
+| Chopin Nocturne Op.9 No.1 | 2 | 0,004441% |
+| Chopin Nocturne Op.9 No.1 | 3 | 0,015264% |
+| Chopin Nocturne Op.9 No.1 | 4 | 0,019593% |
+| Chopin Nocturne Op.9 No.1 | 5 | 0,008594% |
+| Chopin Nocturne Op.9 No.1 | 6 | 0,008193% |
+| Chopin Nocturne Op.9 No.1 | 7 | 0,006830% |
+| Clair de Lune (Debussy) | 1 | 0,038624% |
+| Clair de Lune (Debussy) | 2 | 0,007728% |
+| Clair de Lune (Debussy) | 3 | 0,003976% |
+| Clair de Lune (Debussy) | 4 | 0,006991% |
+| Clair de Lune (Debussy) | 5 | 0,007472% |
+| Gymnopédie No.1 (Satie) | 1 | 0,028171% |
+| Gymnopédie No.1 (Satie) | 2 | 0,000641% |
+| Maple Leaf Rag (Joplin) | 1 | 0,008642% |
+| Maple Leaf Rag (Joplin) | 2 | 0,006269% |
+| Maple Leaf Rag (Joplin) | 3 | 0,002421% |
+| Prelúdio BWV 846 No.1 | 1 | 0,007888% |
+| Prelúdio BWV 846 No.1 | 2 | 0,002469% |
+
+Médias por peça (min–max): Étude 0,0159% (0,0021–0,0317), Mazurka 0,0065%
+(0,0010–0,0131), Butterfly 0,0013% (0,0005–0,0019), Little bird 0,0011%
+(0,0009–0,0014), Scarlatti 0,0016% (0,0008–0,0030), Nocturne 0,0103%
+(0,0044–0,0196), Clair de Lune 0,0130% (0,0040–0,0386), Gymnopédie 0,0144%
+(0,0006–0,0282), Maple Leaf Rag 0,0058% (0,0024–0,0086), Prelúdio BWV 846
+0,0052% (0,0025–0,0079).
+
+As 7 páginas acima de 0,01% (Chopin Étude p1/p2, Clair de Lune p1,
+Gymnopédie p1, Nocturne p3/p4, Mazurka p1) são as com mais texto comum por
+área de página (título, andamento, dinâmica textual, indicações
+italianas/francesas) — mesmo padrão de causa dominante já visto no projeto
+anterior (ver comparação abaixo), agora numa escala ~15× menor.
+
+## Comparação com o `verovio_lottie` (linha de base)
+
+Número final do projeto anterior (depois de D01-D01-6, todas as correções de
+texto comum aplicadas — não o número intermediário de A13/B03, anterior a
+essas correções e não comparável):
+
+| | `verovio_lottie` final (tolerância 32/255) | `score_bridge` (tolerância 128/255) |
+| --- | --- | --- |
+| Páginas | 34/34 | 34/34 |
+| Min | 0,0135% | 0,000481% |
+| Max | 0,3946% | 0,038624% |
+| Média | 0,1251% | 0,008456% |
+| Causa dominante do residual | itálico sintético/negrito em texto comum (D01-4/D01-5), piso de AA (ThorVG × `tiny-skia`) | piso de AA em texto comum via `TextPainter` (Impeller × `tiny-skia`) |
+
+As tolerâncias não são diretamente comparáveis (128/255 ignora deliberadamente
+diferença de antialiasing de borda; 32/255 não) — a decisão do usuário em
+2026-09-19 trocou uma pela outra exatamente para isolar esse ruído. Mesmo
+assim, a ordem de grandeza do resíduo caiu (média final ~15× menor, max
+~10× menor) e a causa dominante mudou de categoria: lá, texto comum exigiu
+quatro passos de correção (D01-D01-6: renderizar, depois consertar itálico
+sintético duplicado, depois cobrir bold-italic) até chegar a 0,1251%; aqui,
+com o mesmo texto comum desenhado desde R04a, o resíduo já nasce como piso
+de motor de fonte, sem bug de estilo pendente. Não há indício de regressão
+de qualidade visual entre os dois projetos.
+
+## Tamanho dos pacotes `.vsb`
+
+| Peça | Páginas | Tamanho | KB/página |
+| --- | --- | --- | --- |
+| Chopin Nocturne Op.9 No.1 | 7 | 460,0 KB | 65,7 |
+| Clair de Lune (Debussy) | 5 | 371,8 KB | 74,4 |
+| Chopin Étude Op.10 No.9 | 4 | 280,8 KB | 70,2 |
+| Maple Leaf Rag (Joplin) | 3 | 306,1 KB | 102,0 |
+| Grieg Butterfly Op.43 No.1 | 3 | 213,4 KB | 71,1 |
+| Chopin Mazurka Op.6 No.1 | 3 | 217,2 KB | 72,4 |
+| Scarlatti Sonata in C major | 3 | 166,3 KB | 55,4 |
+| Grieg Little bird Op.43 No.4 | 2 | 137,2 KB | 68,6 |
+| Prelúdio BWV 846 No.1 | 2 | 142,3 KB | 71,2 |
+| Gymnopédie No.1 (Satie) | 2 | 88,8 KB | 44,4 |
+
+Nenhum pacote passa de ~460 KB (7 páginas); a mediana fica perto de 70
+KB/página. Insumo bruto para P01a — não é medição de tempo de parse nem de
+memória, que ficam fora do escopo deste relatório.
+
+## Divergências categorizadas
+
+Catálogo consolidado das investigações de R06b (ver
+[`docs/plano/R06b-investigacao-de-divergencias.md`](plano/R06b-investigacao-de-divergencias.md)
+para o detalhe causal completo de cada uma). Das 5 categorias encontradas no
+corpus, 4 foram corrigidas no código; 1 é piso de motor sem correção
+conhecida sem mudança de arquitetura.
+
+### 1. Piso de antialiasing em texto comum (não corrigido — é o que resta nas 7 páginas acima de 0,01%)
+
+`score_bridge` desenha glifos SMuFL a partir do dicionário de contornos
+exportado (mesma geometria dos dois lados do diff — por isso batem
+pixel a pixel) mas desenha texto comum via `TextPainter`/`TextSpan`, que
+delega no *shaping* e na rasterização de fonte do motor Flutter (hinting,
+grade de pixel, blend de cobertura). O `resvg` da referência renderiza a
+mesma TTF (Liberation Serif) por um caminho diferente, sem esse hinting.
+Duas medições na quarta investigação de R06b descartam bug de
+posição/geometria: correlação por deslocamento inteiro já mínima em (0,0),
+e viés de luminância consistente (~66% dos pixels divergentes com a
+referência mais escura) — assinatura de diferença de motor, não de erro de
+posição. Um spike de viabilidade (mesma investigação) provou que o piso
+some se texto comum virar contorno vetorial como o SMuFL — mudança de
+arquitetura fora de escopo deste relatório, registrada para decisão futura.
+
+- **Exemplo:** Chopin Étude Op.10 No.9 p.1 (0,031698% — pior página do
+  corpus): divergência inteira sobre bordas de `Allegro molto agitato.`,
+  indicações italianas, dedilhados e números de compasso; notas, hastes e
+  feixes nos mesmos recortes continuam cinza puro. Imagens em
+  [`docs/mesa-de-prova/Chopin_Etude_Op10_No9/`](mesa-de-prova/Chopin_Etude_Op10_No9/).
+
+### 2. Traço fantasma em formas de só preenchimento (corrigido, S05)
+
+Colchetes de pedal, feixes e pontos de aumento (`SetPen(0)` no Verovio)
+ganhavam no exportador um `strokeWidth = 1` para reproduzir a regra CSS
+global do SVG (`rect,path{stroke:currentColor}`). O `resvg` torna esse
+traço de 0,1 px quase invisível; o Impeller o alargava em um pixel inteiro,
+dobrando a espessura visível de colchetes de pedal e engrossando hastes e
+pontos em todo o corpus.
+
+- **Correção:** `ApplyStrokeFromPen` (`bridgedevicecontext.cpp`) emite
+  `"stroke":"none"` quando `pen.GetWidth() <= 0`.
+- **Efeito medido:** varredura do corpus (então a 32/255) caiu de 874 036
+  para 839 588 px divergentes (−3,9%), média 0,4122% → 0,3959%.
+
+### 3. `letterSpacing` não somado após o último glifo de um run (corrigido)
+
+Nos dois laços de `DrawText` para glifos PUA/SMuFL, `letterSpacing` só era
+somado **entre** caracteres (guard `!first`); para um run de um único
+glifo, nunca era somado. O `resvg`/CSS soma `letter-spacing` depois de
+**cada** caractere, inclusive o único/último. O efeito só aparece quando
+algo mais lê `m_textPenX` depois, na mesma `<text>` — caso raro no corpus,
+mas real: a dinâmica "pp" combinada (glifo PUA, `letter-spacing="90px"`)
+seguida de "morendo jusqu'à la fin" em texto comum, em Clair de Lune p.4,
+deixava a frase inteira 9 px deslocada à esquerda.
+
+- **Correção:** `letterSpacing` movido para depois do avanço, sem o guard
+  `!first`, nos dois laços de `DrawText` (`bridgedevicecontext.cpp`).
+- **Efeito medido:** só Clair de Lune p4 mudou no corpus inteiro (as outras
+  33 páginas deram delta 0): 3291 → 436 px (0,052766% → 0,006991%, entrou
+  no portão). Imagens em
+  [`docs/mesa-de-prova/Clair_de_Lune__Debussy/`](mesa-de-prova/Clair_de_Lune__Debussy/).
+
+### 4. Agrupamento de âncora multi-run em texto comum (corrigido)
+
+O SVG emite números de página autogerados ("– N –") como três `<tspan>`
+irmãos sem `x` próprio sob uma única âncora `text-anchor="middle"`; o
+`resvg`/CSS centraliza a largura **combinada** dos três ("text chunk"). O
+ramo de texto comum de `DrawText` não participava do agrupamento de chunk
+que já existia para glifos SMuFL/PUA — cada run se autocentralizava sobre a
+própria fatia, produzindo gaps assimétricos e deslocamento do grupo
+inteiro.
+
+- **Correção:** o ramo de texto comum agora empilha o `BridgeTextRun`
+  pendente em `m_textChunkTextRuns`; `FinalizeTextChunk` aplica um só
+  deslocamento (largura somada do chunk) quando há mais de uma peça,
+  forçando `alignment = left`. Caso de um único run (o mais comum) não
+  muda — continua centralizado em runtime pelo `score_bridge`.
+- **Efeito medido:** atinge toda página com número de página autogerado no
+  corpus (10 páginas melhoraram, 0 regrediram): Étude p2 −211 px, p3 −62%,
+  p4 −57%; Mazurka p2 −38%, p3 −78%; Grieg Butterfly p2 −70%, p3 −88%;
+  Grieg Little bird p2 −79%; Scarlatti p2 −81%, p3 −79%. Média do corpus
+  0,009475% → 0,008456%. Imagens (antes da correção deste bug específico)
+  em [`docs/mesa-de-prova/Chopin_Etude_Op10_No9/`](mesa-de-prova/Chopin_Etude_Op10_No9/)
+  (p2).
+
+### 5. Artefato de dado do corpus — "mãos PUA" (corrigido no MEI, não no código)
+
+Clair de Lune usava, na fonte original, um glifo PUA (Leipzig `E520`,
+"mãos apontando" ☛☛) que a referência SVG não conseguia renderizar
+consistentemente. Substituído no MEI por dinâmica semântica (`<pp/>`).
+Não é bug de exportador nem de renderizador — é dado de entrada.
+
+- **Efeito medido:** varredura caiu de 27 420 para 22 947 px (−16,3%);
+  Clair p1 4671→2409, p4 5502→3291. Categoria encerrada como causa (a
+  terceira investigação de R06b confirmou 0 pixels órfãos nas páginas
+  afetadas depois da troca).
+
+## Comando exato
+
+```
+compare/scripts/compare-corpus.sh 128
+```
+
+rodado a partir da raiz do repositório, com `COMPARE_BACKEND=impeller`
+(padrão do script, decisão R05a), contra `corpus/mei/*.mei` +
+`corpus/musicxml/*.mxl` (34 páginas). Pré-requisitos: `verovio/tools/verovio`
+compilado (`cd verovio/tools && cmake ../cmake && make -j4`),
+`compare/build/linux/x64/release/bundle/compare` e
+`compare/svg_render/target/release/svg_render` compilados (ver
+`docs/plano/README.md`, seção "Convenções").
+
+## Fora de escopo
+
+- Otimização de tamanho (P01) e desempenho (P03) — este relatório é sobre
+  imagem, não sobre tempo/memória.
+- A mudança de arquitetura que zeraria a categoria 1 (texto comum como
+  contorno vetorial) — decisão explícita do usuário, não tomada aqui.
+
+## Notas de execução
+
+Relatório escrito a partir dos dados já coletados na sexta investigação de
+R06b (`compare/corpus/resultado.csv`, já versionado e commitado em
+`e81b6e1` antes deste passo — não foi necessário refazer a varredura).
+Conferido por recomputação independente do CSV (`awk`, `LC_NUMERIC=C`):
+média 0,008456%, min 0,000481% (Grieg Butterfly p3), max 0,038624% (Clair
+de Lune p1) — bate com os números citados nas notas de R06b.

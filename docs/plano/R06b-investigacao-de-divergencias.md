@@ -552,3 +552,39 @@ Diferente das investigações anteriores (halo de AA = ruído sem correção;
 catálogo do passo: **agrupamento de âncora multi-run em texto comum**,
 generalizável a qualquer composição futura de "texto comum + texto comum"
 ou "texto comum + glifo" sob a mesma âncora (não só números de página).
+
+---
+
+**Passo concluído (2026-09-20).** Conferência final dos 5 critérios de
+aceite, com os números da sexta investigação (últimos medidos):
+
+1. **Toda página acima de 0,01% tem causa registrada** — as 7 páginas
+   restantes (Clair p1, Étude p1, Satie p1, Étude p2, Nocturne p3/p4,
+   Mazurka p1) estão 100% classificadas como piso de AA do `TextPainter`
+   em texto comum (quarta investigação), com o spike de contorno vetorial
+   (mesma seção) provando que a causa é a rota de desenho, não um bug
+   corrigível sem mudança de arquitetura. Nenhuma delas cruzada por
+   `letterSpacing` (quinta) ou agrupamento de âncora (sexta).
+2. **Toda correção cita o passo de origem e foi revalidada** — as três
+   correções de código (S05: `stroke:none` em preenchimento puro;
+   `bridgedevicecontext.cpp`: `letterSpacing` pós-glifo; idem: agrupamento
+   de âncora multi-run) foram revalidadas por `flutter test` 66/66
+   (incluindo widget-vs-harness R05c em 0 px) e `flutter analyze` limpo
+   antes de cada remedição.
+3. **Varredura refeita após a última correção** — sexta investigação,
+   34 páginas, 191 s, CSV substituído.
+4. **Recortes de exemplo por categoria guardados** — `r06b-hands-*` (mãos
+   PUA, causa encerrada), `r06b-edge-*`/`r06b-dim-*` (halo de AA),
+   `Clair_de_Lune__Debussy-p4-{svg,scene}.png` (`letterSpacing`),
+   `/tmp/etude-p2-{svg,scene}-pagenum.png` (âncora multi-run, não
+   versionado — refazer se R06c precisar do PNG).
+5. **Média do corpus: 0,008456% < 0,01%** (critério satisfeito pela
+   primeira cláusula, não pela cláusula de exceção) — **27/34 páginas**
+   dentro do portão de 0,01%; das 7 restantes, a pior é Étude p1 em
+   **0,031698%**, bem abaixo do teto de 0,05% que R06c vai conferir.
+
+Todos os 5 critérios atendidos. Próximo passo: **R06c** (relatório de
+paridade + mesa de prova, o portão da fase A) — vai precisar refazer a
+varredura do corpus (`compare/out/corpus/` está git-ignorado e não
+persiste entre sessões) para gerar o CSV e as imagens que o relatório
+cita.

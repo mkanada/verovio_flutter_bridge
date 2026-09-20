@@ -196,3 +196,35 @@ artefato de fonte da referência, nenhum dos dois endereçável sem caçar
 artefato). Passo **não concluído** — segue a lista acima com os números.
 Recortes por categoria em `compare/corpus/r06b-{hands,dim,dash,arpeg,edge}-*.png`
 (versionados, para o R06c).
+
+---
+
+Terceira investigação (2026-09-20, após correção do corpus: PUA `E520` do
+Clair de Lune trocado por `<dynamics><pp/>` semântico, ver commit
+`146990d`). Varredura refeita (`compare-corpus.sh`, 34 páginas, 187 s):
+total 27 420 → **22 947 px (−16,3%)**, média 0,012930% → **0,010821%**.
+Só Clair p1 (4 671 → 2 409) e p4 (5 502 → 3 291) mudaram — as outras 32
+páginas deram delta 0, confirmando o determinismo.
+
+Morfologia das 8 páginas acima de 0,01% (limiar 128, dilatação 2 px):
+**0 pixels órfãos em todas** (antes: 1 248 só no Clair — era o conteúdo das
+mãos; agora não há nenhum conteúdo presente de um lado e ausente do outro).
+Assinatura de halo (um lado preto puro, outro cinza médio): 40–60% na
+maioria; Clair p4 17% — região densa (feixes + `morendo` bold-itálico +
+pontos), mas ainda 100% borda-adjacente. Concentração difusa: a célula
+hottest detém 9–23% dos divergentes (Clair p4 20% pelos feixes), sem um
+elemento isolado. Conferência visual dos 8 hotspots (SVG × cena lado a
+lado): idênticos — `molto agitato.`/`cresc.`, `douloureux ♩= ca. 76`,
+`a tempo`, `legato`/`rubato`, título `Clair de Lune`, `pp con sordina`,
+`pp morendo jusqu'à la fin`.
+
+Categoria "mãos PUA" **encerrada como causa**: os dois pontos agora
+convergem (`pp` via `DrawMusicText` + texto itálico comum). Evidência
+"depois" em `compare/corpus/r06b-hands-fixed-p{1,4}-{svg,scene}.png` (os
+`r06b-hands-*` antigos ficam como evidência do "antes").
+
+**Critério 5 (parada honesta, reafirmado):** média **0,010821% > 0,01%**
+(faltam ~1 740 px; só Étude p1+p2 têm 3 869 px de halo puro) e 8 páginas
+acima de 0,01%, sem nenhuma causa corrigível restante no nosso código, no
+formato ou nas peças — o resíduo é curva de AA Impeller × tiny-skia.
+Passo **não concluído** — R06c decide com estes números.

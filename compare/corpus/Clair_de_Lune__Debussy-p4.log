@@ -7,6 +7,6 @@ Gravado /home/mauricio/rust_projects/verovio_flutter_bridge/compare/out/Clair_de
 ==> Lendo dimensões dos PNGs
 ==> Diff (tolerância 128)
 Pixels comparados: 6237000
-Pixels diferentes: 3291 (0.052766%)
+Pixels diferentes: 436 (0.006991%)
 Maior diferença de canal observada: 255
-Clair_de_Lune__Debussy;4;2100;2970;3291;6237000;0.052766
+Clair_de_Lune__Debussy;4;2100;2970;436;6237000;0.006991

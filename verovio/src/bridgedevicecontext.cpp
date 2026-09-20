@@ -779,17 +779,7 @@ void BridgeDeviceContext::DrawText(
         const Resources *resources = this->GetResources();
         assert(resources);
 
-        bool first = true;
         for (char32_t c : chars) {
-            // Letter-spacing is a per-run CSS property in the SVG (set on the <tspan>), so it
-            // is applied between characters of this call only, not carried over from a
-            // previous DrawText call in the same chunk.
-            if (!first && letterSpacing != 0) {
-                m_textPenX += letterSpacing;
-                m_textChunkWidth += letterSpacing;
-            }
-            first = false;
-
             const Glyph *glyph = resources->GetGlyph(c);
             if (!glyph) continue;
 
@@ -798,6 +788,25 @@ void BridgeDeviceContext::DrawText(
             const int advance = this->GetGlyphAdvance(glyph, font);
             m_textPenX += advance;
             m_textChunkWidth += advance;
+
+            // Letter-spacing is a per-run CSS property in the SVG (set on the <tspan>): the
+            // browser/resvg adds it after every character it applies to, including the last one
+            // of a run that ends mid-<text> with more content following in a sibling tspan (R06b:
+            // confirmed with a minimal <tspan letter-spacing>X</tspan><tspan>Y</tspan> repro - "Y"
+            // shifts by the full letter-spacing value even though "X" is a single character with
+            // nothing after it in its own tspan). A "between characters only" rule here would
+            // under-advance m_textPenX by one letterSpacing whenever this call's chars are single
+            // (or whenever the trailing gap matters, i.e. another DrawText call in the same chunk
+            // reads m_textPenX afterwards) - reproduced by Clair de Lune p4's "pp" (a single merged
+            // PUA glyph, U+E52B) immediately followed by " morendo jusqu'à la fin" in the same
+            // <text>: the common-text run inherited a pen position 90 units (letterSpacing) short,
+            // shifting the entire run left by that fixed amount. Harmless in the common case (a
+            // dynamic mark with nothing else in its <text>), since nothing ever reads the trailing
+            // advance.
+            if (letterSpacing != 0) {
+                m_textPenX += letterSpacing;
+                m_textChunkWidth += letterSpacing;
+            }
         }
     }
     else {
@@ -835,20 +844,20 @@ void BridgeDeviceContext::DrawText(
         }
 
         if (allGlyphsAvailable) {
-            bool first = true;
             for (char32_t c : chars) {
-                if (!first && letterSpacing != 0) {
-                    m_textPenX += letterSpacing;
-                    m_textChunkWidth += letterSpacing;
-                }
-                first = false;
-
                 const Glyph *glyph = resources->GetGlyph(c);
                 m_textChunkGlyphUses.push_back(this->MakeGlyphUse(glyph, font, m_textPenX, m_textPenY));
 
                 const int advance = this->GetGlyphAdvance(glyph, font);
                 m_textPenX += advance;
                 m_textChunkWidth += advance;
+
+                // Trailing letter-spacing after every glyph, including the last - see the
+                // matching comment in the SMuFL branch above (R06b, Clair de Lune p4's "pp").
+                if (letterSpacing != 0) {
+                    m_textPenX += letterSpacing;
+                    m_textChunkWidth += letterSpacing;
+                }
             }
             return;
         }

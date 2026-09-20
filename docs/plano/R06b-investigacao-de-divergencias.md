@@ -228,3 +228,234 @@ convergem (`pp` via `DrawMusicText` + texto itálico comum). Evidência
 acima de 0,01%, sem nenhuma causa corrigível restante no nosso código, no
 formato ou nas peças — o resíduo é curva de AA Impeller × tiny-skia.
 Passo **não concluído** — R06c decide com estes números.
+
+---
+
+Quarta investigação (2026-09-19, regeneração completa do corpus a partir do
+zero — `verovio -t svg` + `resvg` para a referência, `verovio -t vsb` +
+`score_bridge`/Impeller para a cena — para confirmar a linha de base antes
+de aprofundar). Varredura idêntica pixel a pixel à da terceira investigação
+(`cmp` limpo em todos os 34 PNGs de svg/scene/diff; só `bytes_vsb` variou,
+por timestamp do zip): mesma média 0,010821%, mesmas 8 páginas acima de
+0,01%. Aprofundamento pedido pelo usuário nas 8 páginas restantes.
+
+**Achado: o resíduo inteiro das 8 páginas é texto comum, não notação.**
+Auditoria visual das 8 páginas (diff de página inteira, sem recorte) em 5
+peças — Étude p1/p2, Clair p1/p4, Satie p1, Nocturne p3/p4, Mazurka p1: em
+todas, **100% dos pixels divergentes caem exatamente sobre a borda de glifos
+de texto comum** desenhados por `TextPainter` em
+`score_bridge/lib/src/text_run.dart` (títulos, marcas de tempo, dinâmica
+textual, expressões — `Allegro molto agitato.`, `cresc.`, `con forza`,
+`ritard.`, `a tempo`, `sotto voce`, `Lent et douloureux ♩= ca. 76`,
+`con pedale`, `morendo jusqu'à la fin`, `piano`, `Adagio`, `poco rall.`) e
+**0% caem sobre elemento desenhado pelo dicionário de contornos SMuFL**
+(cabeças de nota, hastes, feixes, ligaduras, hairpins de dinâmica, ou `pp`
+via `DrawMusicText`/glifo Leipzig — o caminho que já bateu paridade em
+R03c). Notas, feixes e ligaduras nos mesmos recortes onde o texto vizinho
+está vermelho continuam cinza puro. Evidência:
+`compare/corpus/r06b-text-vs-glyph-{svg,scene,diff}.png` (recorte de Étude
+p1 com o feixe do compasso 4 limpo ao lado de `cresc.` inteiro em vermelho,
+no mesmo recorte).
+
+**Duas medições descartam bug de posição/geometria, a favor de diferença de
+motor de texto:**
+
+1. Correlação por deslocamento inteiro (busca em ±4 px em x/y, região
+   `pp morendo jusqu'à la fin` de Clair p4): o erro quadrático mínimo já
+   está em deslocamento **(0,0)** — não há shift de texto inteiro escondido
+   atrás do ruído de AA.
+2. Viés de luminância nos pixels divergentes (5 páginas amostradas): entre
+   58% e 72% (média ~66%) têm o pixel da **referência mais escuro** que o da
+   cena — ou seja, o texto do Impeller tende a cobrir a borda do glifo com
+   *menos* tinta que o resvg, de forma consistente, não 50/50 aleatório.
+   `Maior diferença de canal observada: 255` nos logs confirma que parte
+   dessas bordas chega a virar preto-puro × branco-puro, não só um degradê
+   suave — comportamento típico de hinting/grade de pixel aplicado por um
+   motor e não pelo outro, não de ruído de sub-pixel simétrico.
+
+**Interpretação:** `score_bridge` desenha glifos SMuFL a partir do
+dicionário de contornos exportado (mesma geometria dos dois lados — por
+isso batem) mas desenha texto comum via `TextPainter`/`TextSpan`, que
+delega no *shaping* e na rasterização de fonte do próprio motor Flutter
+(Skia/Impeller — hinting, grade de pixel, blend de cobertura). O `resvg` da
+referência renderiza a mesma TTF por um caminho diferente (sem o
+hinting/grade do Flutter). A divergência que sobra não é um bug no
+exportador do Verovio, no formato `.vsb` nem no ajuste de página/escala do
+`score_bridge` — é a arquitetura de duas rotas de desenho (contorno
+vetorial × fonte real) escolhida em R04a, cada uma com seu próprio piso de
+AA, e só a rota de fonte real tem esse piso. Não há bandeira pública em
+`dart:ui`/`TextPainter` para desligar hinting e igualar ao resvg.
+
+**Fora do escopo desta investigação (decisão do usuário, não decidida
+aqui):** o único jeito de zerar esse piso seria tratar texto comum como
+SMuFL — converter cada glifo de texto comum em contorno vetorial na
+exportação (reusar o mesmo dicionário glyphId→contorno) e desenhar como
+path preenchido no `score_bridge`, em vez de `TextPainter`. Isso é uma
+mudança de arquitetura (mexe em R04a-R04d e no formato), não uma correção
+pontual — do mesmo porte que D-BIN/D-RUNTIME. Não implementado sem decisão
+explícita.
+
+**Critério 5 (parada honesta, reafirmado com causa mais precisa):** média
+**0,010821%** inalterada, 8 páginas acima de 0,01%, e agora com causa
+**100% localizada e explicada** (texto comum via motor de fonte real) em
+vez de "halo genérico de motor". Passo continua **não concluído** — a
+única correção que fecharia o número é a mudança de arquitetura acima,
+que precisa ir ao usuário antes de qualquer código.
+
+---
+
+Spike de viabilidade (2026-09-19, fora do exportador, só para instrumentar a
+decisão acima — nenhum código de produção mudou). Pergunta: se texto comum
+fosse desenhado como contorno vetorial (como SMuFL) em vez de `TextPainter`,
+o piso realmente some?
+
+**Método:** extraído com `fontTools` (Qu2CuPen, `all_cubic=True`) o contorno
+real de `c`/`r`/`e`/`s`/`.` de `LiberationSerif-Italic.ttf`, convertido para
+o formato `paths` (`v`/`i`/`o`) de `glyphs.json` (§4), montado um `.vsb-json`
+mínimo com "cresc." como 6 ocorrências `u` (mesmo mecanismo de R03b, nenhuma
+fonte carregada no lado do Flutter), posicionadas por avanço de `hmtx` +
+kerning clássico da tabela `kern` (par `r→e -76` unidades — sem ele o
+acúmulo de posição por si só já bastava para gerar divergência, uma
+armadilha do próprio spike, não do motor). Referência: SVG autônomo
+equivalente (`<text font-family="Liberation Serif" font-style="italic">`),
+mesmo `svg_render`/`resvg` do pipeline oficial. Arquivos:
+`compare/corpus/r06b-textpath-experiment-{svg,scene,diff}.png`.
+
+**Resultado:** a **0 pixels divergentes em 50 000 (0,000000%)** na
+tolerância oficial (128); maior diferença de canal 82 (abaixo do limiar). Na
+tolerância histórica de 32/255 (a mesma que já classificava SMuFL como
+paridade), 94 px (0,188%) — mesma ordem de grandeza do piso que os glifos
+SMuFL já aceitam, não da ordem dos 0,03-0,05% que o texto via `TextPainter`
+mostra nas páginas reais. Ou seja: **o piso desaparece** ao trocar
+`TextPainter` por contorno vetorial — a causa raiz é mesmo a rota de
+desenho, não uma característica inerente ao par Impeller/resvg em si.
+
+**O que isso muda na decisão:** a opção "converter texto comum em contorno
+vetorial" (registrada acima como fora de escopo/decisão do usuário) tem
+agora evidência direta de que **funcionaria** para fechar o portão de
+99,99%, não é só uma hipótese teórica. O custo continua real e não medido
+por este spike: (1) Verovio não tem hoje nenhuma biblioteca de parsing de
+TTF (`grep` em `verovio/src`/`include` não acha FreeType/HarfBuzz/stb_tt) —
+os contornos SMuFL vêm de um recurso pré-extraído (`Glyph`, `pugixml`), não
+de parsing de fonte em tempo real; texto comum aceita qualquer caractere,
+então precisaria de um caminho novo (candidato leve: `stb_truetype.h`,
+single-header, cobre `cmap`/`glyf`/`hmtx`/`kern` clássico, mas não GPOS —
+suficiente para o `kern` clássico da Liberation Serif usado aqui; ligaduras
+e GPOS ficariam de fora numa primeira versão); (2) o restante da
+infraestrutura (dicionário de glifos, `u`, `GlyphCache`) já existe e é
+reuso, não trabalho novo; (3) risco principal não testado aqui: strings
+maiores/multi-linha, alinhamento (`align`), `letterSpacing` combinado com
+avanço por glifo, e fallback de fonte para caracteres fora da Liberation
+Serif (a mesma classe de problema do D01-6/PUA, agora do lado do
+exportador em vez do lado do `resvg`).
+
+---
+
+Quinta investigação (2026-09-19, pedido do usuário: "Investigue melhor Clair
+de Lune página 4. Tem um problema de deslocamento de texto lá"). Achado:
+**bug real de posicionamento, não ruído de motor** — explica a maior parte
+do excesso de Clair p1/p4 sobre as outras 6 páginas acima de 0,01%.
+
+**Sintoma medido:** nos runs de tinta de "morendo jusqu'à la fin" (linha
+`pp morendo jusqu'à la fin`, y viewBox 21757), cada palavra começa
+**9px constante mais à esquerda na cena que no SVG** (`morendo`: svg 723 ×
+cena 714; `jusqu'à`: 870×861; `la`: 967×958; medidas em
+`compare/corpus/Clair_de_Lune__Debussy-p4-{svg,scene}.png`, linha
+y=2205-2240). Deslocamento **constante**, não crescente (descarta kerning
+acumulado) e assimétrico entre lados (descarta AA). **Controle limpo**: a
+mesma frase, em negrito, uma linha acima (y viewBox 21350, `class="tempo"`,
+sem `pp` antes) bate pixel a pixel entre SVG e cena — única diferença entre
+as duas linhas é ter ou não um `pp` na frente.
+
+**Causa raiz, confirmada em 3 passos:**
+
+1. No SVG bruto, o `pp` desta linha é **um único glifo PUA** (U+E52B, "pp"
+   combinado do Leipzig — mesma família de caso do D01-6) dentro de
+   `<tspan font-family="Leipzig" ... letter-spacing="90px">` seguido, na
+   mesma `<text>`, pelo tspan de `" morendo jusqu'à la fin"` sem `x` próprio
+   (herda a posição de onde o tspan anterior "terminou").
+2. Reprodução isolada (`compare/svg_render` + SVG mínimo):
+   `<tspan letter-spacing="90px">X</tspan><tspan>Y</tspan>` desloca "Y"
+   exatamente **90 unidades** (9px nesta escala) a mais que
+   `letter-spacing="0px">X</tspan>`, mesmo "X" sendo um único caractere sem
+   nada depois dele dentro do próprio tspan — ou seja, `resvg`/CSS aplica
+   `letter-spacing` **depois de cada caractere**, inclusive o único/último.
+3. Em `verovio/src/bridgedevicecontext.cpp`, `DrawText` (ramo
+   `allGlyphsAvailable`, glifos PUA/SMuFL) só soma `letterSpacing`
+   **entre** caracteres: `if (!first && letterSpacing != 0) { m_textPenX +=
+   letterSpacing; ... }`. Para uma string de 1 caractere, `!first` nunca é
+   verdadeiro no laço, então o `letterSpacing` do glifo (90 unidades) nunca
+   é somado a `m_textPenX`. O mesmo laço existe, idêntico, no ramo SMuFL
+   puro logo acima.
+
+**Efeito:** `m_textPenX` fica 90 unidades (9px) atrasado bem no ponto em
+que o próximo `DrawText` ("morendo jusqu'à la fin") usa esse valor como
+`run.origin`/`t.x` — dali em diante, cada glifo do run herda o mesmo atraso
+constante. Como o run é longo (~500px), o número de pixels divergentes
+gerados é grande — a causa direta de Clair p1/p4 serem as duas piores
+páginas do corpus (0,0389%/0,0528%, muito acima das outras 6 páginas
+"halo puro" que ficam em 0,013-0,032%).
+
+**Por que o caso comum (duas letras "pp" separadas) não mostra este bug
+hoje:** com 2 caracteres, o laço atual soma `letterSpacing` **uma vez**,
+entre eles — que é exatamente onde o `resvg` também soma o primeiro (e
+único, nesse caso, já que são só 2 glifos) intervalo. A lacuna *depois* do
+2º glifo (que o `resvg` também adicionaria, pelo teste do item 2) só passa
+a importar quando **algo mais usa `m_textPenX` depois** — isto é, quando a
+dinâmica com `letterSpacing` está numa `<text>` composta com texto comum
+na sequência, como aqui. Dinâmica isolada (nada depois na mesma `<text>`,
+o caso mais comum) nunca expõe o bug porque ninguém lê o pente atrasado.
+
+**Correção candidata (passo de origem: exportador, S05/R04 — não aplicada
+nesta investigação, aguardando decisão de priorização):** somar
+`letterSpacing` depois de **cada** glifo nos dois laços de `DrawText`
+(SMuFL puro e `allGlyphsAvailable`), não só entre eles — iguala ao modelo
+do CSS confirmado no item 2. Risco baixo: no caso comum (nada consome o
+pente extra depois), a mudança não tem efeito visível; revalidação ainda
+precisa rodar `flutter test` (66/66, incl. widget-vs-harness R05c em 0px) e
+a varredura completa do corpus para confirmar que nenhuma das 26 páginas
+que já passam regride.
+
+**Escopo:** este achado é independente do spike de texto-vetorial (achado
+anterior) — mesmo se/quando texto comum virar contorno vetorial, este bug
+específico de `letterSpacing` no laço de glifos PUA/SMuFL continuaria
+existindo e precisaria da mesma correção.
+
+**Varredura de impacto no corpus (pedido do usuário antes de corrigir):**
+scan automático dos 34 SVGs (`xml.etree`, todo `<tspan letter-spacing="...">`
+seguido de mais texto visível na mesma `<text>`, sem exigir que o conteúdo
+seja PUA). Resultado: **o único valor de `letter-spacing` em todo o corpus
+é `90px`, e ele aparece uma única vez — exatamente esta ocorrência em Clair
+de Lune p4.** Confirmado também que Clair de Lune p1 (segunda pior página,
+0,038624%) **não** tem nenhum `letter-spacing` em seu SVG — seu "pp" (antes
+de outra frase) é uma dinâmica separada sem esse mecanismo; o residual de
+p1 continua classificado como halo puro de AA (terceira investigação,
+inalterado). Ou seja: **esta correção específica afeta só Clair de Lune p4
+neste corpus** (mas é um bug de código, não do corpus — reapareceria em
+qualquer partitura real com o mesmo padrão "dinâmica PUA combinada com
+`letterSpacing` seguida de texto comum na mesma `<text>`").
+
+**Correção aplicada e revalidada (2026-09-20).** `verovio/src/bridgedevicecontext.cpp`:
+nos dois laços de `DrawText` (SMuFL puro e `allGlyphsAvailable`/PUA), o
+`letterSpacing` agora é somado depois de **cada** glifo (movido para depois
+do avanço, sem o guard `!first`), igualando ao comportamento do CSS/`resvg`
+confirmado na quinta investigação. Revalidação:
+
+- `flutter test` (score_bridge): **66/66 verde**, incluindo o
+  widget-vs-harness (R05c, 0 px).
+- Varredura completa do corpus refeita (34 páginas, 190s): **só Clair de
+  Lune p4 mudou** (as outras 33 páginas deram delta 0 — confirma que a
+  correção não tem efeito colateral fora do único caso do corpus que a
+  aciona). Clair p4: 3291 → **436 px** (0,052766% → **0,006991%**, agora
+  dentro do portão de 99,99%).
+- **Corpus inteiro: 26/34 → 27/34 páginas dentro do portão. Média:
+  0,010821% → 0,009475% — primeira vez abaixo de 0,01%.** Zero regressões
+  (nenhuma página piorou).
+
+Isso satisfaz o critério de aceite 4 de R06b ("repetir até que a média do
+corpus fique abaixo de 0,01%") pela média agregada, ainda que 7 páginas
+individuais continuem acima de 0,01% — todas já causalmente classificadas
+(terceira investigação) como piso de AA Impeller×tiny-skia em texto comum
+via `TextPainter`, sem causa corrigível adicional identificada. R06c decide
+se a média agregada abaixo do portão, com o residual individual explicado
+e sem causa corrigível restante, é suficiente para fechar o passo.

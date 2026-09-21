@@ -18,6 +18,10 @@ o que o host usa para "levar a tela até esta nota".
 
 ## Contexto que você precisa (não vá procurar, está aqui)
 
+- **Não há virada por haste aqui.** No modo contínuo não existe página atual
+  nem página de trás: `SweepCurtain` (A03b) é ignorado e a rolagem acompanha a
+  posição (A05b). Nos modos paginados, `scrollToId` navega com `goToPage`, que
+  cancela qualquer virada em curso.
 - Cada página visível mantém um `ScorePageView` com seu cache de `Picture`.
   Fora da janela, o cache tem que ser **descartado** (`dispose`), senão uma
   peça longa acumula memória nativa. Recomendação inicial: manter a visível
@@ -34,9 +38,9 @@ o que o host usa para "levar a tela até esta nota".
   virar posição de tela é `(bbox + origin) * fit.scale + (fit.tx, fit.ty)` —
   a mesma conversão de A04a. Faça num lugar só, compartilhado pelos dois
   passos.
-- No corpus, a peça mais longa tem 7 páginas. A peça grande de P01a (20+
-  páginas) é o caso que realmente testa a virtualização — se ela já estiver
-  disponível, use-a aqui também.
+- No corpus, a peça mais longa tem 7 páginas. Uma peça grande (20+
+  páginas), fora do corpus, é o caso que realmente testa a virtualização —
+  se houver uma disponível (por exemplo, do `zywny`), use-a aqui também.
 
 ## O que fazer
 
@@ -71,4 +75,29 @@ o que o host usa para "levar a tela até esta nota".
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Concluído em 2026-09-21 (`score_view.dart`, `test/score_view_test.dart`).
+
+- `ListView.builder` com `itemExtentBuilder` (altura = largura × `heightPx /
+  widthPx` de cada página), `padding: EdgeInsets.zero` (senão o
+  `MediaQuery` desloca) e `scrollCacheExtent` de **uma altura de página**:
+  ficam vivas as páginas que cruzam a viewport ± 1 — **limite documentado: 3
+  páginas com viewport de uma página**.
+- **Repouso (critério 1)**: 34 páginas → **0 pixels** (janela do tamanho da
+  primeira página; `goToPage(i)` rola até a página).
+- **Rolagem completa (critério 2)** no Nocturne (7 páginas, ida e volta):
+  pico de **278** `Picture` vivos = exatamente as 3 páginas mais pesadas
+  (limite calculado por `segmentPage` = 278); `builds = 769`, `disposals =
+  662` durante o percurso; **ao desmontar, `live = 0`** (sem vazamento).
+  **Memória nativa (RSS) não foi medida** — só os contadores de `Picture`;
+  a medição em dispositivo fica para o `zywny`.
+- **`scrollToId(id, {alignment = 0.5, duration = 0})`** devolve `bool`:
+  `false` (sem lançar, sem mexer) para id inexistente (`-rend2`) ou vista ainda
+  não montada. Contínuo: rola até a bbox ficar visível com o alinhamento
+  (`topo da bbox + a·altura − a·viewport`, saturado ao intervalo); paginado:
+  `goToPage`. Testado com uma nota da **última** página do Nocturne nos dois
+  modos: bbox dentro da viewport de meia página. **Tempo**: 437 µs
+  (paginado) e 339 µs (contínuo), sem animação.
+- No contínuo a "página corrente" é a que contém o **centro** da viewport
+  (`currentPage`/`onPageChanged` acompanham a rolagem); saltos programáticos
+  não disparam o listener duas vezes.
+- `SweepCurtain` é ignorado fora de `pagedSweep`.

@@ -5,7 +5,7 @@ modelo com contexto limitado. Leia **só** este README, o [`CLAUDE.md`](../../CL
 da raiz, a [especificação do formato](../formato/especificacao-v1.md) e o
 arquivo do passo que for executar.
 
-Os passos das fases R, A e P têm sufixo de letra (`R02a`, `R02b`, …). O
+Os passos das fases R e A têm sufixo de letra (`R02a`, `R02b`, …). O
 número indica o tema (R02 = primitivas, A03 = páginas) e a letra, a ordem
 dentro dele. Cada arquivo traz, numa seção **"Contexto que você precisa"**,
 os fatos medidos e as armadilhas conhecidas daquele tema — a intenção é que
@@ -99,8 +99,8 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Timemap | `include/vrv/timemap.h`, `src/timemap.cpp`, `Toolkit::RenderToTimemap` |
 | Parser de path de glifo | `src/svgpathparser.cpp`, `include/vrv/svgpathparser.h` |
 | Glifos SMuFL (dados) | `Resources::GetGlyph` (`include/vrv/resources.h`), `Glyph::GetXML` (`src/glyph.cpp`), `Glyph::SetBoundingBox` L95 (a bbox ×10 de S08), dados em `data/<fonte>/*.xml` |
-| Bindings C | `tools/c_wrapper.cpp`: `vrvToolkit_renderToBridgeFile` L296, `vrvToolkit_renderToBridgeJson` L307 (P02a) |
-| Binding Dart FFI | `verovio/bindings/dart/`: `VerovioToolkit` (`lib/src/verovio_toolkit.dart`), assinaturas em `lib/src/verovio_bindings.dart`, builds em `build_linux_so.sh` / `build_android_so.sh` (P02a) |
+| Bindings C | `tools/c_wrapper.cpp`: `vrvToolkit_renderToBridgeFile` L296, `vrvToolkit_renderToBridgeJson` L307 |
+| Binding Dart FFI | `verovio/bindings/dart/`: `VerovioToolkit` (`lib/src/verovio_toolkit.dart`), assinaturas em `lib/src/verovio_bindings.dart`, builds em `build_linux_so.sh` / `build_android_so.sh` |
 
 ### Referência de verdade (não alterar — é o que a paridade compara)
 
@@ -120,7 +120,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | API pública | `score_bridge/lib/score_bridge.dart` (só o que o app pode importar) |
 | Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`; fixture real em `test/fixtures/erik-satie.vsb` |
 | Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
-| Já criados nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `page_layers.dart` + `score_page_view.dart` (A01b), `score_controller.dart` (A01c/A02b), `highlight_engine.dart` (A02a). **A criar:** `score_view.dart` (A03a), `hit_test.dart` (A04a), `score_player.dart` (A05a) |
+| Já criados nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `page_layers.dart` + `score_page_view.dart` (A01b), `score_controller.dart` (A01c/A02b), `highlight_engine.dart` (A02a). `score_view.dart` (A03a/b/c: `ScoreView`, `ScoreViewController`, `SweepCurtain`), `hit_test.dart` (A04a: `ScoreGeometry`, via `VsbDocument.geometry`), `score_cursor.dart` (A04b), `score_timeline.dart` + `score_player.dart` (A05a/b). Fase A **concluída** |
 
 ### Comparação visual
 
@@ -182,8 +182,8 @@ que ninguém precise ler este README inteiro para executar um passo.
 | Id | Pergunta | Bloqueia | Recomendação |
 | --- | --- | --- | --- |
 | D-NOME | Nome do formato, extensão e flags de CLI | — | Resolvida em S01 (2026-09-17): `.vsb`, `-t vsb`, `-t vsb-json`; timemap embutido quando disponível |
-| D-BIN | Vale trocar JSON por encoding binário? | P01b | medir primeiro (P01a); só decidir com números reais na mão |
-| D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | P02a | Resolvida em P02a (2026-09-20): **(a) gera no dispositivo**, via FFI com `libverovio.so`; empacotar a `.so` + `verovio/data` é obrigatório (P02b) |
+| D-BIN | Vale trocar JSON por encoding binário? | — | Em aberto, sem passo no plano: só decidir com números reais do `zywny` na mão (decisão do usuário) |
+| D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | — | Resolvida (2026-09-20): **(a) gera no dispositivo**, via FFI com `libverovio.so`. Biblioteca e wrapper C existem em `verovio/bindings/dart/`; empacotamento e isolate ficam no `zywny` |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
@@ -207,11 +207,11 @@ no [`CLAUDE.md`](../../CLAUDE.md).
    tem 1 345 formas na mediana (máximo 2 463) e produz ~196 segmentos
    alternados (máximo 545). **Mitigação:** A01a/A01b separam estático
    (compilado uma vez em `ui.Picture`) de dinâmico, com o critério de
-   byte-identidade; P03a mede em dispositivo.
+   byte-identidade; o perfil em dispositivo é feito no `zywny`.
 4. **Tamanho do JSON** — o dicionário de glifos remove a maior repetição, mas
-   o corpus é pequeno (5-16 compassos/peça). **Mitigação:** P01a mede tamanho
-   e tempo de parse (incluindo uma peça de 20+ páginas, fora do corpus) antes
-   de qualquer otimização; P01b é o gate com o usuário.
+   o corpus é pequeno (5-16 compassos/peça). **Mitigação:** medir tamanho e
+   tempo de parse no `zywny` (com uma peça de 20+ páginas, fora do corpus)
+   antes de qualquer otimização; encoding binário é decisão do usuário.
 5. **`zip_file.hpp` é header-only com o miniz embutido** — incluí-lo em mais de
    uma unidade de tradução gera símbolos duplicados no link. O escritor de zip
    fica em `src/filereader.cpp`, que já o inclui.
@@ -255,20 +255,13 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [A02a](A02a-motor-de-animacao.md) | Motor de animação: um `Ticker`, fases e curvas | A01c | — | concluído |
 | [A02b](A02b-api-de-destaque.md) | API de destaque e restauração da cor original | A02a | — | concluído |
 | [A02c](A02c-evidencia-e-desempenho.md) | Evidência visual e orçamento de frame | A02b | — | concluído |
-| [A03a](A03a-trilha-de-paginas.md) | `ScoreView`: trilha de páginas e navegação direta | A01b | — | a fazer |
-| [A03b](A03b-virada-animada.md) | Virada animada: `pagedPeek` e `pagedSlide` | A03a, A02b | — | a fazer |
-| [A03c](A03c-rolagem-continua.md) | `continuousScroll`, `scrollToId` e cache de páginas | A03b | — | a fazer |
-| [A04a](A04a-coordenadas-e-hit-test.md) | Coordenadas e hit-test: `rectForId` e `idAt` | A01b, S04, S08 | — | a fazer |
-| [A04b](A04b-overlay-e-gestos.md) | Overlay de widgets, toque e `ScoreCursor` | A04a | — | a fazer |
-| [A05a](A05a-score-player.md) | `ScorePlayer`: relógio próprio e timemap → destaque | A02b, S07 | — | a fazer |
-| [A05b](A05b-virada-automatica-e-evidencias.md) | Virada automática por compasso e evidências | A05a, A03b | — | a fazer |
-| [P01a](P01a-medicoes.md) | Medições: tamanho, parse, compilação e memória | R06c, A02c | — | a fazer |
-| [P01b](P01b-gate-de-encoding.md) | Gate D-BIN: decidir com o usuário | P01a | D-BIN | a fazer |
-| [P02a](P02a-libverovio-e-wrapper.md) | Decisão D-RUNTIME, `libverovio` e wrapper C | S07 | D-RUNTIME resolvida | concluído |
-| [P02b](P02b-ffi-dart-e-isolate.md) | Binding FFI Dart, dados empacotados e isolate | P02a | — | a fazer |
-| [P03a](P03a-perfil-em-dispositivo.md) | Perfil em dispositivo Android | A05b, P01a | — | a fazer |
-| [P03b](P03b-app-de-exemplo.md) | App de exemplo | P03a | — | a fazer |
-| [P03c](P03c-documentacao-final.md) | Documentação final e fechamento dos requisitos | P03b | — | a fazer |
+| [A03a](A03a-trilha-de-paginas.md) | `ScoreView`: trilha de páginas e navegação direta | A01b | — | concluído |
+| [A03b](A03b-virada-animada.md) | Virada por haste: `pagedSweep` e `pagedSlide` | A03a, A02b, A04a | — | concluído |
+| [A03c](A03c-rolagem-continua.md) | `continuousScroll`, `scrollToId` e cache de páginas | A03b | — | concluído |
+| [A04a](A04a-coordenadas-e-hit-test.md) | Coordenadas e hit-test: `rectForId` e `idAt` | A01b, S04, S08 | — | concluído |
+| [A04b](A04b-overlay-e-gestos.md) | Overlay de widgets, toque e `ScoreCursor` | A04a | — | concluído |
+| [A05a](A05a-score-player.md) | `ScorePlayer`: relógio próprio e timemap → destaque | A02b, S07 | — | concluído |
+| [A05b](A05b-virada-automatica-e-evidencias.md) | Virada automática por compasso e evidências | A05a, A03b | — | concluído |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -280,7 +273,6 @@ R02a → R02b → R02c → R02d → R03a → R03b → R03c
                            ↘ A03a → A03b → A03c
                              A04a → A04b        (usa as bboxes corrigidas em S08)
                              A05a → A05b
-        P01a → P01b · P02a → P02b · P03a → P03b → P03c
 ```
 
 S08 já foi executado e o corpus em `compare/out/s08/` traz as bboxes

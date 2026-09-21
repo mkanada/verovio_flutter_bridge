@@ -88,4 +88,24 @@ A04b e o app fazem por cima depende destas duas funções estarem certas.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Concluído em 2026-09-21 (`lib/src/hit_test.dart`, `test/hit_test_test.dart`).
+
+- **API real** (`VsbDocument.geometry`, um `ScoreGeometry` montado na primeira
+  consulta): `rectForId(id, {pageWidth})`, `idAt(page, offset, {pageWidth,
+  classes})`, `idsIn(page, rect, {pageWidth, classes})`, `elementOf(id)` →
+  `ElementRef(id, className, page, bbox)`. É **por página**, porque o widget
+  de uma página só conhece a própria origem; a posição da página na
+  trilha/rolagem (câmera) é somada por quem a conhece (`ScoreView`).
+- Conversão de página **separada** da de widget: funções soltas
+  `pageRectToPagePx`/`pagePxToPageRect`/`xToPagePx`/`xFromPagePx`
+  (viewBox→pixels da página, a fórmula do plano); o escalonamento para o
+  widget é `pageWidth / widthPx`. `ScoreView` e o player só usam estas.
+- **Regras**: menor área vence; bbox de largura ou altura ≤ 0 é descartada na
+  indexação (`elementOf` devolve `null`, `idAt` nunca as devolve); varredura
+  linear por página, sem R-tree.
+- Critérios: ida e volta em 21 ids de 3 peças (tolerância 1e-6), escala 2×
+  coerente, `idAt` no centro de 21 notas (nota com `classes: {'note'}`,
+  compasso com `{'measure'}`), canto da página → `null`.
+- A conferência visual do critério 6 (bboxes sobre as cabeças de nota) ficou
+  nas imagens de `ScoreCursor` de A04b (`compare/out/a04b/cursor-*.png`:
+  retângulo em volta da nota).

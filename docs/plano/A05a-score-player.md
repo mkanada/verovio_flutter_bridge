@@ -66,6 +66,25 @@ corpus:
 4. `seek`: recalcula o estado do zero para o instante pedido — nada de
    destaque "preso" de antes do seek.
 
+5. Expor o **índice de compassos** que A05b precisa para dirigir a haste de
+   virada (construído junto com o mapa `nota → compasso → página`, no mesmo
+   percurso da árvore):
+
+   ```dart
+   class MeasureInfo {
+     final String id;              // xml:id do compasso
+     final int page;               // página onde ele está
+     final List<String> noteIds;   // notas do compasso, na ordem do timemap
+     final int startMs;            // tstamp da primeira nota do compasso
+     final int endMs;              // tstamp da primeira nota do compasso seguinte
+   }
+   List<MeasureInfo> get measures; // em ordem de execução
+   ```
+
+   `endMs` do último compasso da peça é o `tstamp` final. Compassos de
+   repetição (ids `-rend2`) que não existem na cena ficam de fora, como as
+   notas ausentes.
+
 ## Fora de escopo
 
 - Virada automática de página e evidências (A05b).
@@ -88,8 +107,42 @@ corpus:
 5. `pause`/`play` não movem a posição nem reiniciam animações em curso.
 6. Ids do timemap ausentes da cena não geram erro nem log ruidoso (teste com
    Gymnopédie, que tem 180 deles).
+7. `measures` cobre todos os compassos de uma peça de 3+ páginas: `startMs`
+   estritamente crescente, `endMs == startMs` do seguinte, cada `page` coerente
+   com a cena.
 7. `flutter analyze` limpo, `flutter test` verde.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Concluído em 2026-09-21 (`score_timeline.dart`, `score_player.dart`,
+`test/score_player_test.dart`, `test/score_timeline_test.dart`).
+
+- **Divisão**: a lógica pura (índice de compassos e `curtainAt`) mora em
+  `ScoreTimeline` (sem widget nem `Ticker`); `ScorePlayer` é o relógio + a
+  ligação com `ScoreController` e `ScoreViewController`. `ScorePlayer.view`
+  é um **`ScoreViewController`** (não o widget).
+- **Índice de compassos**: um percurso da árvore (nós `hidden` ignorados) monta
+  `id → compasso` e a página de cada compasso; a ordem e os instantes vêm do
+  timemap (`on` e `restsOn`). Ids ausentes da cena ficam de fora sem erro.
+  `MeasureInfo(id, page, noteIds, startMs, endMs)` exatamente como no plano.
+  `currentMeasureIndex` é 0 antes do primeiro compasso.
+- **Critério 1**: Gymnopédie, Scarlatti e Nocturne — 20 instantes sorteados por
+  `seek` e, também, avanço incremental em passos irregulares (1–1500 ms): o
+  conjunto de `controller.highlightedIds` é **igual** ao esperado pelo timemap
+  (com `release: 0`, e restrito aos ids visíveis para o controller).
+  Implementação: `on` → `highlightAll(hold: 365 dias)`, `off` → `release(id)`
+  (o fim da nota é dirigido pelo `off`, não por uma duração fixa — com `speed`
+  ≠ 1 isso mantém a nota alinhada à música).
+- **Critérios 2–6**: Nocturne (7 páginas) toca até o fim e termina com
+  `highlightedCount == 0`; `seek` para 30 s do Scarlatti cai no compasso
+  certo e preserva cores fixas do host (`clearHighlights`, novo em
+  `ScoreController`); a 4× os conjuntos de ids acesos são idênticos aos de 1×
+  (todos os `on` do timemap); pausar não anda e não apaga notas seguradas; a
+  Gymnopédie (≥100 ids ausentes) toca a 30× sem exceção.
+- **Critério 7**: nas 10 peças `startMs` estritamente crescente, `endMs ==
+  startMs` do seguinte, cada `page` coerente com a cena, todas as notas do
+  compasso existem na página dele.
+- `tempo` exposto em `ValueListenable<double?> tempo`; `onEntry` chama o host a
+  cada entrada aplicada (som, por exemplo).
+- Relógio: `Ticker` próprio em ms musicais; `advance(Duration)` é o mesmo
+  caminho para tempo simulado.

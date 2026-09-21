@@ -79,4 +79,46 @@ um acorde, apagar, apagar tudo — e garantir que apagar devolve a página
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-21. `flutter test` verde; testes em
+`test/score_controller_test.dart` (grupo "destaques").
+
+**O que foi feito** — API no `ScoreController`: `highlight`, `highlightAll`,
+`release`, `releaseAll`, `clearAll` (imediato, sem fade), `isHighlighted`,
+`highlightedCount`. Defaults: cor `#D32F2F`, `attack` 0, `hold` 0, `release`
+300 ms, `Curves.easeOut` (`kDefaultHighlightColor`).
+
+**Decisões**
+
+- O `Ticker` é do controller (um `Ticker` próprio, sem `TickerProvider` de
+  widget): liga na primeira animação e **desliga** quando o motor fica ocioso;
+  o tick notifica **uma vez por frame**, e só se alguma cor mudou.
+- **Relógio:** o tempo do controller só avança enquanto o `Ticker` roda. Um
+  destaque novo parte do tempo do último frame (o primeiro frame depois do
+  `start` do `Ticker` tem `elapsed == 0`); nos testes, dê um `pump()` antes de
+  avançar o relógio.
+- **Precedência entre `setColor` e `highlight`:** ver A01c. `setColor` durante
+  a animação só muda a base (destino do `release`); ao terminar, o id fica na
+  cor fixa.
+- Ao fim de uma animação o id volta ao repouso **por remoção** do override
+  (cor fixa ou original do nó), não por uma cor calculada — é isso que garante
+  a byte-identidade com o repouso.
+- `highlight` de id inexistente é ignorado, sem notificar nem ligar o `Ticker`.
+
+**Critérios**
+
+1. `flutter analyze` limpo, `flutter test` verde (130/130).
+2. `highlightAll` com 50 ids → 1 notificação.
+3. Mistura exata de ids reais e `-rend2`: os 50 reais acendem, os 20 `-rend2`
+   são ignorados.
+4. Reinício no meio do `release`: a nota vai à cor nova imediatamente e as
+   outras 49 mantêm exatamente a cor que tinham.
+5. `clearAll()` no meio de 50 fades (mais uma cor fixa): página **0 pixels**
+   diferente do PNG de repouso e `Ticker` parado.
+6. `releaseAll` com duração: termina com `colors` vazio e 0 pixels contra o
+   repouso, com uma nota `@color` azul no meio (no meio do `release` a nota
+   azul está entre vermelho e azul, não preto).
+7. Precedência `setColor`/`highlight`: parte do verde fixo, volta ao azul novo
+   quando o `setColor` muda durante a animação; `clearColor` durante o
+   destaque leva o `release` à cor original.
+8. `Ticker` parado sem animação ativa (`tickerActive`, também para
+   `release: 0`, que termina no mesmo instante).

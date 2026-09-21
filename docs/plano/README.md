@@ -120,7 +120,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | API pública | `score_bridge/lib/score_bridge.dart` (só o que o app pode importar) |
 | Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`; fixture real em `test/fixtures/erik-satie.vsb` |
 | Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
-| A criar nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `score_page_view.dart` (A01b), `score_controller.dart` (A01c), `highlight_engine.dart` (A02a), `score_view.dart` (A03a), `hit_test.dart` (A04a), `score_player.dart` (A05a) |
+| Já criados nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `page_layers.dart` + `score_page_view.dart` (A01b), `score_controller.dart` (A01c/A02b), `highlight_engine.dart` (A02a). **A criar:** `score_view.dart` (A03a), `hit_test.dart` (A04a), `score_player.dart` (A05a) |
 
 ### Comparação visual
 
@@ -250,11 +250,11 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [R06b](R06b-investigacao-de-divergencias.md) | Investigação das páginas acima de 0,1% | R06a | — | concluído |
 | [R06c](R06c-relatorio-de-paridade.md) | Relatório de paridade e mesa de prova (**portão**) | R06b | — | concluído |
 | [A01a](A01a-segmentacao.md) | Segmentação da página por ordem de documento | R06c | — | concluído |
-| [A01b](A01b-cache-de-picture.md) | `ScorePageView`: camadas e cache de `ui.Picture` | A01a | — | a fazer |
-| [A01c](A01c-score-controller.md) | `ScoreController` (cor instantânea) e medições | A01b | — | a fazer |
-| [A02a](A02a-motor-de-animacao.md) | Motor de animação: um `Ticker`, fases e curvas | A01c | — | a fazer |
-| [A02b](A02b-api-de-destaque.md) | API de destaque e restauração da cor original | A02a | — | a fazer |
-| [A02c](A02c-evidencia-e-desempenho.md) | Evidência visual e orçamento de frame | A02b | — | a fazer |
+| [A01b](A01b-cache-de-picture.md) | `ScorePageView`: camadas e cache de `ui.Picture` | A01a | — | concluído |
+| [A01c](A01c-score-controller.md) | `ScoreController` (cor instantânea) e medições | A01b | — | concluído |
+| [A02a](A02a-motor-de-animacao.md) | Motor de animação: um `Ticker`, fases e curvas | A01c | — | concluído |
+| [A02b](A02b-api-de-destaque.md) | API de destaque e restauração da cor original | A02a | — | concluído |
+| [A02c](A02c-evidencia-e-desempenho.md) | Evidência visual e orçamento de frame | A02b | — | concluído |
 | [A03a](A03a-trilha-de-paginas.md) | `ScoreView`: trilha de páginas e navegação direta | A01b | — | a fazer |
 | [A03b](A03b-virada-animada.md) | Virada animada: `pagedPeek` e `pagedSlide` | A03a, A02b | — | a fazer |
 | [A03c](A03c-rolagem-continua.md) | `continuousScroll`, `scrollToId` e cache de páginas | A03b | — | a fazer |

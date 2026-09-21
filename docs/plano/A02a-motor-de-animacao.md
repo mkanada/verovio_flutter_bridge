@@ -93,4 +93,46 @@ passo, só o motor — sem render, com tempo simulado e testes determinísticos.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-21. `flutter test` verde; 8 testes em
+`test/highlight_engine_test.dart`.
+
+**O que foi feito**
+
+- `lib/src/highlight_engine.dart` (novo): `HighlightEngine` (`start`, `stop`,
+  `stopAll`, `rebase`, `clear`, `colorsAt`, `isIdle`, `isActive`,
+  `activeCount`) e `HighlightSpec`. Sem `Ticker`, sem `DateTime.now()`: o
+  tempo é sempre argumento. O `Ticker` vive no `ScoreController`.
+- Estado por nota num mapa `id -> _Entry`; iniciar/reiniciar uma nota só toca
+  na própria entrada.
+
+**Desvios do esboço**
+
+- `stop(id, at, {release, curve})` e `stopAll(at, ...)` recebem `at`
+  **posicional e obrigatório**: o motor não tem relógio, então o "agora" tem
+  que vir de fora. `stop` antecipa o `release` a partir da cor que a nota tem
+  em `at` (sem salto); numa nota que já está em `release` é ignorado.
+- Acrescentados `rebase` (o `setColor` do controller muda a cor de repouso
+  durante a animação) e `clear` (apagar sem fade).
+- **Interpolação:** `Color.lerp`, sRGB direto por canal; a curva é aplicada ao
+  parâmetro `t` da fase, nunca ao resultado.
+- `colorsAt` devolve um mapa **reaproveitado** (vale até a próxima chamada).
+  Uma nota cujo `release` termina é devolvida uma última vez com a `baseColor`
+  **exata** e sai do motor na chamada seguinte.
+
+**Critérios**
+
+1. `flutter analyze` limpo, `flutter test` verde.
+2. 50 notas com `attack`/`hold`/`release` e bases diferentes, em 5 instantes:
+   batem com a conta à mão escrita no teste (tolerância 1/255).
+3. Reiniciar uma nota não muda a cor de nenhuma das outras 19 (igualdade).
+4. Fim do `release`: cor **igual** à `baseColor` e id fora do mapa.
+5. `isIdle` verdadeiro depois da última nota (3 notas com releases de
+   100/200/300 ms).
+6. `Curves.easeOut` em t = 50% bate com `easeOut.transform(0.5)` aplicado à
+   interpolação — e não com o linear —, no `attack` e no `release`.
+7. **Alocação por frame:** `colorsAt` 1 000× com 64 notas ativas: o **mesmo**
+   `Map` é devolvido em todas as chamadas (nenhuma lista/mapa novo) e o RSS
+   (`ProcessInfo.currentRss`, depois de 3 000 chamadas de aquecimento) cresce
+   menos de 4 MB. O que sobra por chamada são os `Color` interpolados (64 por
+   chamada, vida curta); eliminá-los exigiria interpolar em canais crus, e o
+   orçamento de A02c (abaixo) não pede.

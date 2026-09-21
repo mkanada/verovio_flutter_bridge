@@ -83,4 +83,60 @@ vivo. O critério que manda neste passo é um só: **não pode mudar um pixel**.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-21 (Flutter 3.47.4). `flutter analyze` limpo; `flutter test` 130/130.
+
+**O que foi feito**
+
+- `lib/src/page_layers.dart` (novo): `PageLayers` (segmentos de A01a + cache de
+  `ui.Picture` dos estáticos, gravação preguiçosa ou `compileAll()`, `dispose()`
+  idempotente) e `PictureStats` (contadores `builds`, `disposals`, `live`,
+  `buildMicroseconds`, compartilhados entre as gerações de cache de um widget).
+- `lib/src/score_page_view.dart` (novo): `ScorePageView` (`document`,
+  `pageIndex`, `controller`, `animatableIds`, `backgroundColor`) e o `State`
+  público `ScorePageViewState`, com `pictureBuilds`, `pictureDisposals`,
+  `pictureStats` e `layers` (`@visibleForTesting`). `AspectRatio` →
+  `RepaintBoundary` → `CustomPaint`, com `repaint:` ligado ao controller.
+- `ScenePainter` ganhou `applyPageTransform`, `paintLeaf` e `paintSubtree`
+  (públicos), e a constante `kPageInitialColor`; o percurso continua sendo o de
+  `walkScene`.
+
+**Decisões (documentadas no código)**
+
+- **Os `Picture` são gravados em unidades de viewBox**, no espaço de conteúdo;
+  `fit`/`origin` e a escala do widget são aplicados **uma vez** no `Canvas` de
+  quem pinta. Redimensionar o widget não recompila nada (teste
+  "redimensionar não recompila") e o `Picture` continua vetorial em qualquer
+  escala. O widget tem a proporção da página (`widthPx : heightPx`) e escala
+  pela largura recebida; a 1:1 nenhuma escala é aplicada.
+- O cache só é invalidado por documento, página ou conjunto de ids dinâmicos —
+  nunca por cor. A única exceção é a promoção de id (ver A01c).
+- Estático: `save`/`transform`/`restore` só quando o item tem `rotate`
+  herdado; dinâmico: `paintSubtree` com o `colorOverrides` do controller.
+- Ids animáveis: `null` → `on`/`off` do timemap (`animatableIdsFromTimemap`,
+  calculado a cada mudança estrutural, não por frame).
+- **Nenhuma fusão de segmentos estáticos foi necessária**: compilar a página
+  inteira custa ~1,9 ms (mediana; máx 4,0 ms) — ver A01c.
+
+**Critérios**
+
+1. `flutter analyze` sem avisos; `flutter test` 130/130.
+2. **Byte-identidade (critério 1 do passo): as 34 páginas do corpus** —
+   `test/score_page_view_test.dart` compara o RGBA cru do `ScorePageView` com o
+   do harness de passada única (0 pixels de diferença em todas, incluindo as
+   4 páginas com `rotate`). Comparação em bytes crus, mais estrita que `cmp`
+   de PNG codificado. Lê `../compare/out/s08/*.vsb`; sem o diretório o grupo é
+   pulado.
+3. `setColor` em vários ids não incrementa `pictureBuilds`.
+4. Trocar de página descarta os `Picture` da anterior (`pictureDisposals ==`
+   builds da página 0), voltar a ela recompila, e remover o widget deixa
+   `live == 0`.
+5. `widget_vs_harness_test.dart` (R05c) continua em 0 pixels.
+
+**Afeta os passos seguintes**
+
+- Para A03, cada página é um `ScorePageView` com o próprio cache; o `State` é
+  o que expõe as contagens para teste.
+- Os testes de render usam `test/support/render_helpers.dart` (harness,
+  captura por `RepaintBoundary`, contagem de pixels) e
+  `test/support/colored_fixture.dart` (o corpus **não tem** `@color`: o fixture
+  colorido é o Satie com `"color"` gravado em nós escolhidos).

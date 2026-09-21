@@ -82,4 +82,70 @@ medir o custo real das operações que a fase A inteira vai depender. Animação
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-21. Medições na máquina de desenvolvimento
+(Intel i5-4440 @ 3,1 GHz, 4 núcleos, Linux) sob o `flutter_tester` — Skia com
+rasterização por software na CPU; **não** é o backend de produção nem GPU.
+
+**O que foi feito**
+
+- `lib/src/score_controller.dart` (novo): `ScoreController extends
+  ChangeNotifier` com `colorOf`, `colors` (visão somente leitura, a mesma
+  para sempre), `setColor`, `setColors`, `clearColor`, `clearAll`,
+  `attachDocument`. O `ScorePageView` chama `attachDocument` sozinho.
+- Ligação: o painter recebe `controller.colors` como `colorOverrides` **só dos
+  segmentos dinâmicos**; os estáticos ignoram o controller por construção.
+
+**Decisões**
+
+- **Precedência de cor de um id:** animação ativa > cor "fixa" de `setColor` >
+  cor original do nó. `setColor` é a **cor de repouso**: um destaque parte
+  dela e volta a ela. `clearColor` volta à original (e, durante um destaque, o
+  `release` passa a ir para a original).
+- **Cor original resolvida uma vez por documento** (visitante de `walkScene`
+  sobre todas as páginas, no primeiro uso), não por frame; vem com o `@color`
+  do MEI (`node.color`) e a herança.
+- **Id não-animável: o widget o promove a dinâmico e recompila a página**
+  (escolha entre "documentar como limitação" e "promover"): quando o controller
+  tem cor para um id que existe na página e não está em `animatableIds`, o
+  `ScorePageViewState` acrescenta o id e recria as camadas (uma recompilação
+  por promoção; o custo aparece em `pictureBuilds`). O caminho barato continua
+  sendo declarar os ids em `animatableIds` (padrão: timemap). Testado com
+  `animatableIds: {}` (página = 1 segmento; `setColor` recolore, recompila uma
+  vez, a segunda troca não recompila, `clearAll` volta byte-idêntico).
+- **Id que não existe no documento é ignorado em silêncio** (com documento
+  associado) — necessário para os ids `-rend2` do timemap. Sem documento tudo
+  é aceito.
+- Uma notificação por operação pública, e nenhuma se nada mudou.
+
+**Medições** (`flutter test tool/measure_a01c.dart`; 34 páginas; mediana entre
+páginas / máximo)
+
+| Medida | Mediana | Máximo |
+| --- | ---: | ---: |
+| Segmentos por página (A01a) | 197 | 545 |
+| `Picture` estáticos por página | 99 | 273 |
+| Compilação dos `Picture` (mediana de 10 por página) | **1,85 ms** | 4,01 ms |
+| Repaint (gravar a página) sem cor alterada (mediana de 100) | 1,16 ms | 2,27 ms |
+| Repaint com **1** cor alterada (mediana de 100) | **1,16 ms** | 2,29 ms |
+| Repaint com **64** cores alteradas (mediana de 100) | **1,19 ms** | 2,37 ms |
+| Repaint + `toImage` da página inteira (software; mediana de 30) | 45,7 ms | 62,3 ms |
+
+Ler: o repaint custa o mesmo com 0, 1 ou 64 cores — o custo é percorrer os nós
+dinâmicos, não colori-los. A linha "raster" é só a ordem de grandeza da
+rasterização por CPU, a medir em dispositivo em P03. (A mediana de segmentos é
+197 aqui contra 196 no plano: número par de páginas, escolha do elemento
+superior.)
+
+**Critérios**
+
+1. `flutter analyze` limpo, `flutter test` verde (130/130).
+2. `setColor` recolore a nota inteira — cabeça **e** haste — e nenhum outro
+   elemento: todos os pixels diferentes ficam dentro da bbox da nota, cobrem
+   mais de 80% da altura dela e são avermelhados.
+3. `clearColor` → 0 pixels contra o repouso, e com nota de `@color` azul o
+   repouso volta ao **azul**, não ao preto.
+4. `setColors` com 64 ids → 1 notificação (uma segunda chamada idêntica → 0).
+5. `pictureBuilds` constante em todas as operações de cor.
+6. Números na tabela acima, com máquina e backend.
+7. Id não-animável (promoção) e id inexistente (ignorado): documentados e
+   testados.

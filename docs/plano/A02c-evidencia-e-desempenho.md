@@ -64,4 +64,47 @@ diferente do fade**, convivendo — e medir se isso cabe no orçamento de frame.
 
 ## Notas de execução
 
-(a preencher por quem executar)
+Executado em 2026-09-21 com `flutter test tool/a02c_evidence.dart`.
+Máquina: Intel i5-4440 @ 3,1 GHz, 4 núcleos, Linux; `flutter_tester` (Skia,
+rasterização por software). **Não é** medição em dispositivo (P03).
+
+**Roteiro** (tempo simulado pelo relógio do teste; Gymnopédie, página 1)
+
+| Instante | Ação |
+| --- | --- |
+| t = 0 | `highlightAll` no **acorde de 4 notas** com mais notas da página (`w15g98jj`, `ytdvz43`, `z1t9tkxl`, `afdnkq9`), `#D32F2F`, attack 100, hold 150, release 700, `easeOut` |
+| t = 180 ms | `highlightAll` na **voz separada** (2 notas, `yw90mxt`, `t1mebzmw`), `#1565C0`, attack 40, hold 100, release 500, `easeInOut` |
+
+Frames capturados em t = 60, 200, 320, 480 e 750 ms (página inteira em
+`compare/out/a02/`, git-ignorado; **recortes em `docs/exemplos/a02/`**):
+
+| t | Acorde | Voz |
+| --- | --- | --- |
+| 60 | `#a62525` (meio do attack) | repouso |
+| 200 | `#d32f2f` (hold) | `#0b3360` (meio do attack) |
+| 320 | `#b12727` (release começando) | `#1565c0` (hold) |
+| 480 | `#6d1818` (release) | `#104f97` (release começando) |
+| 750 | `#190606` (quase de volta) | `#010408` (quase de volta) |
+
+Em t = 200, 320 e 480 as duas famílias convivem em **fases diferentes na mesma
+imagem** — o caso que o playhead único do Lottie não permitia (a segunda
+chamada cancelava a primeira). O script verifica isso por asserção (≥ 2 cores
+distintas por frame) e ainda o confere a olho nos recortes.
+
+**Orçamento** — 64 notas animando (`attack` 3 s, `hold` 1 s, `release` 3 s),
+100 `pump` de 16 ms (tick + notificação + build + gravação do paint):
+**mediana 1,83 ms, média 2,02 ms, máximo 5,76 ms**, contra o orçamento de
+8 ms. Só a rasterização por software da página inteira custa ~46 ms (A01c),
+mas isso é o `flutter_tester` em CPU e fica para P03.
+
+**`pictureBuilds`:** 98 antes e 98 depois de toda a sequência (5 capturas, 64
+notas animando, `clearAll`). Nenhum `Picture` estático recompilado.
+
+**Critérios**
+
+1. Cinco frames com cores distintas convivendo (tabela e recortes acima).
+2. Frame médio com 64 notas: 2,02 ms (< 8 ms). Dentro do orçamento; nada a
+   investigar.
+3. Nenhum `Picture` recompilado durante as animações (98 = 98).
+4. `widget_vs_harness_test.dart` (R05c) em 0 pixels.
+5. `flutter analyze` limpo, `flutter test` verde (130/130).

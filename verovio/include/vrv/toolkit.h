@@ -22,6 +22,7 @@
 namespace vrv {
 
 class BridgeDeviceContext;
+struct BridgeMeta;
 class EditorToolkit;
 class RuntimeClock;
 
@@ -475,7 +476,8 @@ public:
      * Render the whole document to the `.vsb` package (`-t vsb`): a zip archive with
      * manifest.json, scene.json and glyphs.json, plus timemap.json when the piece produces one
      * (docs/formato/especificacao-v1.md §2 - a piece with no usable rhythmic information omits
-     * both the file and the manifest entry, never an empty timemap). Always the full document,
+     * both the file and the manifest entry, never an empty timemap) and meta.json when there is a
+     * rendered title or a credited person (§2.3, same omission rule). Always the full document,
      * unlike RenderToBridgeJsonFile's optional page range.
      *
      * @remark nojs
@@ -868,6 +870,13 @@ private:
      * @param toPage A negative value means the last page
      */
     bool RenderPagesToBridge(BridgeDeviceContext &bridge, int fromPage, int toPage);
+
+    /**
+     * Piece metadata for the `.vsb` (docs/formato/especificacao-v1.md §2.3). The title follows what
+     * the `--header` option makes Verovio render on the first page - none when the header is off -
+     * see BridgeWriter::ExtractMeta.
+     */
+    BridgeMeta ReadBridgeMeta();
 
 public:
     //

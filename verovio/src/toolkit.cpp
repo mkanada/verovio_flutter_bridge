@@ -45,6 +45,7 @@
 #include "note.h"
 #include "options.h"
 #include "page.h"
+#include "pages.h"
 #include "runtimeclock.h"
 #include "score.h"
 #include "slur.h"
@@ -2078,7 +2079,22 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     }
 
     const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
-    return BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator);
+    return BridgeWriter::WriteSingleJson(
+        pages, bridge.GetGlyphs(), generator, "", this->ReadBridgeMeta());
+}
+
+BridgeMeta Toolkit::ReadBridgeMeta()
+{
+    // Page::GetHeader() is the renderer's own decision (NULL for `--header none`); m_score is set
+    // by the cast-off, so the first page can be asked without laying it out or making it the
+    // drawing page.
+    const RunningElement *header = NULL;
+    if (this->GetPageCount() > 0) {
+        const Page *firstPage = vrv_cast<const Page *>(m_doc.GetPages()->GetChild(0));
+        assert(firstPage);
+        header = firstPage->GetHeader();
+    }
+    return BridgeWriter::ExtractMeta(m_doc.m_header, header);
 }
 
 bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, int toPage)
@@ -2133,12 +2149,23 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     const bool hasTimemap = timemapArray.parse(timemapJson) && !timemapArray.empty();
     if (!hasTimemap) timemapJson.clear();
 
+    // docs/formato/especificacao-v1.md §2.3: piece title (as rendered in the page header) and
+    // credited people, in a tiny document of its own. Omitted, together with its manifest entry,
+    // when there is neither - so `--header none` on a piece without credits, or the empty <title/>
+    // that Doc::GenerateMEIHeader makes, never turns into a meta.json.
+    const BridgeMeta meta = this->ReadBridgeMeta();
+    const bool hasMeta = !meta.IsEmpty();
+
     ZipFileWriter zip;
-    zip.AddFile("manifest.json", BridgeWriter::WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap));
+    zip.AddFile("manifest.json",
+        BridgeWriter::WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta));
     zip.AddFile("scene.json", BridgeWriter::WriteScene(pages));
     zip.AddFile("glyphs.json", BridgeWriter::WriteGlyphs(bridge.GetGlyphs()));
     if (hasTimemap) {
         zip.AddFile("timemap.json", timemapJson);
+    }
+    if (hasMeta) {
+        zip.AddFile("meta.json", BridgeWriter::WriteMeta(meta));
     }
 
     return zip.Save(filename);

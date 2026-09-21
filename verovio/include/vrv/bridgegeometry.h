@@ -127,6 +127,23 @@ struct BridgePage {
     int originX = 0, originY = 0;
 };
 
+/**
+ * Piece-level metadata (docs/formato/especificacao-v1.md §2.3): title and the people credited in
+ * the MEI header. Whole-document, never per page. Every field is optional; an all-empty BridgeMeta
+ * means "no meta.json".
+ */
+struct BridgeCreator {
+    std::string name;
+    std::string role; // "composer", "lyricist", "arranger", ...; empty = unknown
+};
+
+struct BridgeMeta {
+    std::string title;
+    std::vector<BridgeCreator> creators; // document order, without exact (name, role) duplicates
+
+    bool IsEmpty() const { return title.empty() && creators.empty(); }
+};
+
 } // namespace vrv
 
 #endif // __VRV_BRIDGE_GEOMETRY_H__

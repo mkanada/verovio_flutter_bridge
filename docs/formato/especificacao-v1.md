@@ -33,13 +33,17 @@ flags de saída são:
 
 | Formato de saída | Arquivo | Conteúdo |
 | --- | --- | --- |
-| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponível, `timemap.json` |
-| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponível, `timemap` |
+| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json` e `meta.json` |
+| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap` e `meta` |
 
 O `timemap.json` é **embutido no pacote** quando o Verovio produz um timemap
 não vazio. Se a peça não produzir timemap, o arquivo e a entrada correspondente
 no manifest são omitidos; nunca é gravado um timemap vazio. No JSON único, o
 mesmo array é colocado na propriedade `timemap`.
+
+O `meta.json` (§2.3) leva o título e os autores da peça e segue a mesma regra
+de omissão: se o arquivo de origem não informa nenhum dos dois, o arquivo e a
+entrada do manifest não existem.
 
 ### 2.1 `manifest.json`
 
@@ -52,7 +56,8 @@ mesmo array é colocado na propriedade `timemap`.
   "files": {
     "scene": "scene.json",
     "glyphs": "glyphs.json",
-    "timemap": "timemap.json"
+    "timemap": "timemap.json",
+    "meta": "meta.json"
   }
 }
 ```
@@ -62,8 +67,9 @@ mesmo array é colocado na propriedade `timemap`.
 - `generator` identifica a versão do Verovio e do bridge que produziu o
   documento.
 - `pageCount` é o número de páginas em `scene.pages`.
-- `files.scene` e `files.glyphs` são obrigatórios. `files.timemap` existe somente
-  quando o pacote contém `timemap.json`.
+- `files.scene` e `files.glyphs` são obrigatórios. `files.timemap` e
+  `files.meta` existem somente quando o pacote contém `timemap.json` e
+  `meta.json`, respectivamente.
 - No JSON único, `manifest.files` mantém os nomes lógicos acima mesmo sem
   arquivos físicos separados.
 
@@ -76,13 +82,84 @@ A raiz de `-t vsb-json` é:
   "manifest": { "...": "manifest.json" },
   "glyphs": { "...": "dicionário de glifos" },
   "scene": { "pages": [] },
-  "timemap": []
+  "timemap": [],
+  "meta": { "title": "..." }
 }
 ```
 
-`timemap` é opcional e segue exatamente o conteúdo de `timemap.json`. O parser
-deve aceitar tanto a raiz única quanto os documentos individuais `scene.json`,
-`glyphs.json`, `manifest.json` e `timemap.json`.
+`timemap` e `meta` são opcionais e seguem exatamente o conteúdo de
+`timemap.json` e `meta.json`. O parser deve aceitar tanto a raiz única quanto os
+documentos individuais `scene.json`, `glyphs.json`, `manifest.json`,
+`timemap.json` e `meta.json`.
+
+### 2.3 `meta.json`
+
+Título e autores da peça — do documento inteiro, nunca por página — num
+arquivo pequeno e à parte do `scene.json`, para o host listar uma biblioteca
+sem ler nenhuma página.
+
+```json
+{
+  "title": "Etude in F Minor",
+  "creators": [
+    { "name": "Frédéric Chopin", "role": "composer" }
+  ]
+}
+```
+
+- `title` (string, opcional): título da peça, **como aparece no cabeçalho
+  renderizado** da primeira página (regras abaixo).
+- `creators` (array, opcional): pessoas creditadas na ordem do arquivo de
+  origem, sem pares `(name, role)` repetidos. `name` é obrigatório; `role`
+  (`composer`, `lyricist`, `arranger`, `translator`, `harmonizer`, `author`,
+  `poet`) é omitido quando o arquivo não o informa.
+- Todo campo vazio é omitido, e o documento inteiro é omitido quando não sobra
+  nenhum (um `{}` nunca é gravado). Chaves desconhecidas devem ser ignoradas
+  pelo leitor.
+- Os textos têm o espaço em branco normalizado (sequências viram um espaço,
+  sem espaços nas pontas).
+
+#### Título: o que o cabeçalho renderizado mostra
+
+O título não é lido do arquivo de origem, e sim do cabeçalho que o Verovio
+desenha, com a mesma decisão do renderizador (`Page::GetHeader()` da página 1).
+Por isso ele segue a opção `--header`:
+
+| `--header` | Cabeçalho da página 1 | `title` |
+| --- | --- | --- |
+| `none` | nada é desenhado | ausente |
+| `auto` (padrão) | o gerado a partir do `<meiHead>` (`titleStmt/title`), ou o codificado, se a peça já traz um | primeira linha do bloco de título |
+| `encoded` | só o codificado na peça (`<credit>` do MusicXML, `<pgHead>` do MEI); um MEI que só tem `<meiHead>` não desenha nada | título do cabeçalho codificado, se houver |
+
+Dentro do cabeçalho, o título é o texto do primeiro item de topo que não está
+encostado num lado nem é uma pessoa creditada:
+
+- no cabeçalho gerado (`auto`), o bloco rotulado `title`; a primeira linha é o
+  título principal e as demais (subtítulos, outras línguas) ficam de fora;
+- no cabeçalho codificado, que não traz rótulo, o primeiro texto centralizado ou
+  sem alinhamento — por convenção o compositor fica à direita e o letrista ou o
+  número de catálogo (`BWV 846`) à esquerda.
+
+Como vem do desenho, uma peça MusicXML que guarda o título só em
+`<credit-words>` (comum em arquivos do MuseScore e do Finale) também tem
+`title`; medido nas 10 peças do corpus nos 3 valores de `--header`, `title`
+coincide com o primeiro título centralizado do SVG (30/30) e `--header none`
+não desenha cabeçalho em nenhuma (10/10).
+
+#### Autores: sempre do cabeçalho MEI
+
+`creators` **não** depende de `--header`. Vem do `<meiHead>` que o Verovio
+mantém para qualquer entrada — o próprio cabeçalho MEI, ou o que o importador
+MusicXML monta a partir de `identification/creator`: os elementos `composer`,
+`lyricist`, `arranger` e `author` de `titleStmt` (o papel é o nome do elemento)
+e os `respStmt/persName` cujo `@role` é um dos papéis acima. Um `encoder`,
+`editor` ou `dedicatee` **não** é autor da peça e não entra.
+
+Limites conhecidos: o nome vem como está no arquivo, e pode diferir do que o
+cabeçalho desenha — no Clair de Lune, `creator` é `Claude Debussy(1862 – 1918)`
+e o SVG mostra `Claude Debussy`. Uma peça MusicXML que credita o compositor só
+em `<credit-words>` (4 das 5 do corpus) não tem `creator` e sai sem `creators`,
+mesmo com `title`.
 
 ## 3. Unidades e ajuste de página
 
@@ -462,6 +539,8 @@ explicitamente.
 | derivado de todos os campos acima | `pages[].fit` | `scale`, `tx`, `ty` pré-computados |
 | `BridgeTextRun.family` (S05) | `t.family` | face ativa (`FontInfo::GetFaceName()`) no momento do `DrawText`, com fallback para `resources->GetTextFont() + ", serif"` quando vazia (mesmo default do `font-family` da raiz `svg.definition-scale`); nunca vazia |
 | empacotamento | `manifest`, `timemap` | nomes, versão, páginas e timemap embutido |
+| `BridgeMeta.title` (`Page::GetHeader()` da página 1 via `BridgeWriter::ExtractMeta`) | `meta.title` | título como renderizado no cabeçalho; ausente com `--header none` (§2.3) |
+| `BridgeMeta.creators` (`Doc::m_header`) | `meta.creators[].name`, `.role` | autores do `<meiHead>`, independentes de `--header` (§2.3) |
 
 ## 9. Compatibilidade
 
@@ -484,3 +563,5 @@ explicitamente.
 | 2026-09-19 | Correção pós-S04: §5.1 explicita que `bbox` é no referencial de conteúdo (antes do `translate(origin)`; comparar contra o `viewBox` somando `origin`, §3) — era o que sustentava a ressalva da bbox da raiz, agora encerrada; §5.5 corrige "nenhum caso observado" para os 5 653 casos reais de `[0, 0, 0, 0]` (tabela por classe nas notas de S04). |
 | 2026-09-19 | Correção R06b: §5.2 ganha a exceção de pena 0 — formas desenhadas com `SetPen(0)` (só preenchimento por intenção: feixes, colchetes de pedal, pontos) saem com `"stroke": "none"` em vez do hairline de 1 unidade herdado da regra CSS global, que o Impeller alargava em um pixel inteiro nas formas finas. Medido no corpus: 24,2% das formas passam a `stroke: none` (todos os `r`/`e`, mais os `p` de feixe/polígono cheio); média de divergência 0,4122% → 0,3959% (−3,9% dos pixels divergentes). |
 | 2026-09-20 | `pages[].elements` removido do formato: o índice plano de §5.5 era redundância deliberada com a árvore e custava 20,5% do `scene.json` / 29,3% do `.vsb`. §5.5 passa a especificar a **regra de derivação** que o leitor aplica no percurso que já faz; `BridgeIndexEntry`/`BridgePage::index` saíram do exportador e o `score_bridge` constrói `ScenePage.elements` no parse. Um leitor que encontre `elements` num arquivo antigo pode ignorá-lo. |
+| 2026-09-20 | `meta.json` (§2.3): título e autores da peça, uma vez por documento e à parte do `scene.json`, lidos do `<meiHead>` do Verovio (MEI e MusicXML). Opcional, com a mesma regra de omissão do timemap (`manifest.files.meta`; propriedade `meta` no JSON único). Mudança aditiva: `version` continua `1` e leitores antigos, que ignoram o arquivo extra, seguem funcionando. Schema, fixture e `score_bridge` (`VsbDocument.meta`) atualizados. |
+| 2026-09-20 | `meta.title` passa a ser derivado do cabeçalho **renderizado** (`Page::GetHeader()` da página 1), seguindo `--header`: ausente com `none`, primeira linha do bloco de título com `auto`, título do cabeçalho codificado com `encoded`. Antes vinha do `<meiHead>`, o que dava título mesmo com o cabeçalho desligado e nenhum título nas peças MusicXML que só têm `<credit-words>` (4 das 5 do corpus, agora todas com título). `creators` continua vindo do `<meiHead>`. Sem mudança de forma: schema, fixture e leitor Dart inalterados. |

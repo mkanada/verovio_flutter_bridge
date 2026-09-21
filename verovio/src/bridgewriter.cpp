@@ -13,12 +13,16 @@
 #include <cassert>
 #include <cmath>
 #include <iomanip>
+#include <iterator>
 #include <locale>
 #include <sstream>
 
 //----------------------------------------------------------------------------
 
 #include "csscolor.h"
+#include "rend.h"
+#include "runningelement.h"
+#include "text.h"
 #include "vrv.h"
 
 //----------------------------------------------------------------------------
@@ -99,6 +103,81 @@ namespace {
             }
         }
         return out;
+    }
+
+    void AppendNodeText(const pugi::xml_node &node, std::string &out)
+    {
+        for (pugi::xml_node child = node.first_child(); child; child = child.next_sibling()) {
+            if (child.type() == pugi::node_pcdata || child.type() == pugi::node_cdata) {
+                out += child.value();
+            }
+            else if (child.type() == pugi::node_element) {
+                AppendNodeText(child, out);
+            }
+        }
+    }
+
+    // Runs of whitespace collapsed to one space, trimmed.
+    std::string NormalizeSpace(const std::string &raw)
+    {
+        std::string out;
+        bool pendingSpace = false;
+        for (unsigned char c : raw) {
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                pendingSpace = !out.empty();
+            }
+            else {
+                if (pendingSpace) out += ' ';
+                pendingSpace = false;
+                out += static_cast<char>(c);
+            }
+        }
+        return out;
+    }
+
+    // The roles of respStmt/persName that credit the music itself (the set PgHead::
+    // GenerateFromMEIHeader prints in the page header, plus author and poet - MusicXML's
+    // spelling of a lyricist); an "encoder" or "editor" is not an author of the piece.
+    bool IsAuthorRole(const std::string &role)
+    {
+        static const char *const kRoles[] = { "composer", "lyricist", "arranger", "translator", "harmonizer",
+            "author", "poet" };
+        return std::any_of(std::begin(kRoles), std::end(kRoles), [&](const char *r) { return role == r; });
+    }
+
+    // All descendant text of an element (a composer may wrap its name in <persName>).
+    std::string NodeText(const pugi::xml_node &node)
+    {
+        std::string raw;
+        AppendNodeText(node, raw);
+        return NormalizeSpace(raw);
+    }
+
+    // The title as drawn: the text of the first top-level rend of the page header that is not
+    // pushed to a side and not a credited person. Verovio's generated header (`--header auto`)
+    // builds one rend labelled "title" whose first line is the main title; an encoded header
+    // (MusicXML <credit>, MEI <pgHead>) carries no label, and the title is by convention the
+    // centered (or unaligned) text - a composer sits on the right, a lyricist or catalog number
+    // on the left.
+    std::string TitleFromHeader(const RunningElement *header)
+    {
+        if (!header) return "";
+
+        for (const Object *child : header->GetChildren()) {
+            if (!child->Is(REND)) continue;
+            const Rend *rend = vrv_cast<const Rend *>(child);
+
+            const std::string label = rend->GetLabel();
+            if (!label.empty() && label != "title") continue;
+            const data_HORIZONTALALIGNMENT halign = rend->GetHalign();
+            if (halign == HORIZONTALALIGNMENT_left || halign == HORIZONTALALIGNMENT_right) continue;
+
+            for (const Object *object : rend->FindAllDescendantsByType(TEXT)) {
+                const std::string text = NormalizeSpace(UTF32to8(vrv_cast<const Text *>(object)->GetText()));
+                if (!text.empty()) return text;
+            }
+        }
+        return "";
     }
 
     std::string LineCapString(LineCapStyle cap)
@@ -489,7 +568,58 @@ std::string BridgeWriter::WriteGlyphs(const std::map<std::string, BridgeGlyphDef
     return out;
 }
 
-std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCount, bool hasTimemap)
+BridgeMeta BridgeWriter::ExtractMeta(const pugi::xml_document &header, const RunningElement *renderedHeader)
+{
+    BridgeMeta meta;
+    meta.title = TitleFromHeader(renderedHeader);
+
+    // A union of absolute paths yields the nodes in document order.
+    const pugi::xpath_node_set people = header.select_nodes(
+        "//fileDesc/titleStmt/composer | //fileDesc/titleStmt/lyricist | //fileDesc/titleStmt/arranger"
+        " | //fileDesc/titleStmt/author | //fileDesc/titleStmt/respStmt/persName");
+    for (const pugi::xpath_node &entry : people) {
+        const pugi::xml_node person = entry.node();
+        BridgeCreator creator;
+        creator.name = NodeText(person);
+        if (creator.name.empty()) continue;
+        const std::string element = person.name();
+        creator.role = (element == "persName") ? person.attribute("role").as_string() : element;
+        if (element == "persName" && !IsAuthorRole(creator.role)) continue;
+
+        const bool duplicate = std::any_of(meta.creators.begin(), meta.creators.end(),
+            [&](const BridgeCreator &other) { return other.name == creator.name && other.role == creator.role; });
+        if (!duplicate) meta.creators.push_back(std::move(creator));
+    }
+
+    return meta;
+}
+
+std::string BridgeWriter::WriteMeta(const BridgeMeta &meta)
+{
+    std::string out = "{";
+    bool first = true;
+    if (!meta.title.empty()) {
+        out += "\"title\":\"" + EscapeJsonString(meta.title) + "\"";
+        first = false;
+    }
+    if (!meta.creators.empty()) {
+        if (!first) out += ',';
+        out += "\"creators\":[";
+        for (std::size_t i = 0; i < meta.creators.size(); ++i) {
+            if (i) out += ',';
+            out += "{\"name\":\"" + EscapeJsonString(meta.creators[i].name) + "\"";
+            if (!meta.creators[i].role.empty()) {
+                out += ",\"role\":\"" + EscapeJsonString(meta.creators[i].role) + "\"";
+            }
+            out += '}';
+        }
+        out += ']';
+    }
+    out += '}';
+    return out;
+}
+
+std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta)
 {
     std::string out = "{\"format\":\"vsb\",\"version\":1,\"generator\":\"" + EscapeJsonString(generator) + "\"";
     out += ",\"pageCount\":" + std::to_string(pageCount);
@@ -497,19 +627,24 @@ std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCo
     if (hasTimemap) {
         out += ",\"timemap\":\"timemap.json\"";
     }
+    if (hasMeta) {
+        out += ",\"meta\":\"meta.json\"";
+    }
     out += "}}";
     return out;
 }
 
 std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> &pages,
-    const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator, const std::string &timemapJson)
+    const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator, const std::string &timemapJson,
+    const BridgeMeta &meta)
 {
     const bool hasTimemap = !timemapJson.empty();
+    const bool hasMeta = !meta.IsEmpty();
 
     std::string out;
     out.reserve(1 << 20);
     out += "{\"manifest\":";
-    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap);
+    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta);
     out += ",\"glyphs\":";
     out += WriteGlyphs(glyphs);
     out += ",\"scene\":";
@@ -517,6 +652,10 @@ std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> 
     if (hasTimemap) {
         out += ",\"timemap\":";
         out += timemapJson;
+    }
+    if (hasMeta) {
+        out += ",\"meta\":";
+        out += WriteMeta(meta);
     }
     out += '}';
     return out;

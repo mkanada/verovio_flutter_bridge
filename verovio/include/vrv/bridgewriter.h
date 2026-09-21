@@ -15,8 +15,11 @@
 //----------------------------------------------------------------------------
 
 #include "bridgegeometry.h"
+#include "pugixml.hpp"
 
 namespace vrv {
+
+class RunningElement;
 
 //----------------------------------------------------------------------------
 // BridgeWriter
@@ -48,20 +51,44 @@ public:
     static std::string WriteGlyphs(const std::map<std::string, BridgeGlyphDef> &glyphs);
 
     /**
+     * Builds the piece metadata (§2.3).
+     *
+     * The title is derived from what Verovio renders: `renderedHeader` is the first page's header
+     * as Page::GetHeader() resolves it, so `--header none` (NULL - nothing is drawn) yields no
+     * title, `--header auto` yields the first line of the title block generated from the MEI
+     * header, and `--header encoded` yields the encoded header's title (a MusicXML <credit>, an
+     * MEI <pgHead>) - the same text the SVG shows at the top of the page.
+     *
+     * The credited people come from the MEI header kept by Doc::m_header (filled by both the MEI
+     * and the MusicXML importers), whatever the header option: the `titleStmt` elements
+     * `composer`/`lyricist`/`arranger`/`author` plus the `respStmt/persName` whose @role credits
+     * the music (composer, lyricist, arranger, translator, harmonizer, author, poet - never an
+     * encoder or editor). Text is whitespace-normalized.
+     */
+    static BridgeMeta ExtractMeta(const pugi::xml_document &header, const RunningElement *renderedHeader);
+
+    /**
+     * Serializes meta.json (§2.3). Empty fields are omitted; the caller omits the whole document
+     * when BridgeMeta::IsEmpty().
+     */
+    static std::string WriteMeta(const BridgeMeta &meta);
+
+    /**
      * Serializes manifest.json. `generator` identifies the Verovio/bridge version; S06's
      * Toolkit/CLI integration supplies it, this class does not invent one.
      */
-    static std::string WriteManifest(const std::string &generator, int pageCount, bool hasTimemap);
+    static std::string WriteManifest(
+        const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta = false);
 
     /**
-     * Serializes the single-file `-t vsb-json` document: {manifest, glyphs, scene[, timemap]}.
-     * `timemapJson` is the raw JSON array already produced by Toolkit::RenderToTimemap; passing
-     * an empty string (the default, meaning no timemap) omits the "timemap" key entirely - a
-     * timemap is never written as an empty array.
+     * Serializes the single-file `-t vsb-json` document: {manifest, glyphs, scene[, timemap][,
+     * meta]}. `timemapJson` is the raw JSON array already produced by Toolkit::RenderToTimemap;
+     * passing an empty string (the default, meaning no timemap) omits the "timemap" key entirely -
+     * a timemap is never written as an empty array. An empty `meta` omits "meta" the same way.
      */
     static std::string WriteSingleJson(const std::vector<const BridgePage *> &pages,
         const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator,
-        const std::string &timemapJson = "");
+        const std::string &timemapJson = "", const BridgeMeta &meta = BridgeMeta());
 };
 
 } // namespace vrv

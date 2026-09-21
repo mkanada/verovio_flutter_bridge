@@ -7,7 +7,8 @@
     "files": {
       "scene": "scene.json",
       "glyphs": "glyphs.json",
-      "timemap": "timemap.json"
+      "timemap": "timemap.json",
+      "meta": "meta.json"
     }
   },
   "glyphs": {
@@ -154,5 +155,12 @@
       "tstamp": 1.0,
       "on": ["note-1"]
     }
-  ]
+  ],
+  "meta": {
+    "title": "Título",
+    "creators": [
+      { "name": "Compositor Exemplo", "role": "composer" },
+      { "name": "Letrista Exemplo", "role": "lyricist" }
+    ]
+  }
 }

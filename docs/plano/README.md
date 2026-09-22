@@ -122,6 +122,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
 | Já criados nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `page_layers.dart` + `score_page_view.dart` (A01b), `score_controller.dart` (A01c/A02b), `highlight_engine.dart` (A02a). `score_view.dart` (A03a/b/c: `ScoreView`, `ScoreViewController`, `SweepCurtain`), `hit_test.dart` (A04a: `ScoreGeometry`, via `VsbDocument.geometry`), `score_cursor.dart` (A04b), `score_timeline.dart` + `score_player.dart` (A05a/b). Fase A **concluída** |
 | Ids expandidos (`-rendN`) | `expansion.dart` (E02a): `IdExpansion`, exposto como `VsbDocument.sceneIdOf`/`passOf` — regra do sufixo de D-EXPMAP, usada por `ScoreController`, `ScoreGeometry.elementOf`/`pageOf`/`rectForId` e `animatableIdsFromTimemap(..., document: ...)` |
+| Ocorrências e toque num elemento repetido | `score_timeline.dart` (E02b/E02c): `MeasureInfo.pass`/`.timemapId`, `ScoreTimeline.occurrencesOf`/`onsetsOf`; `score_player.dart`: `ScorePlayer.seekToElement` |
 
 ### Comparação visual
 
@@ -226,7 +227,7 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
 | D-EXPMAP | Como o leitor chega do id `-rend<N>` do timemap ao nó da cena: regra do sufixo documentada na spec, ou `expansion.json` embutido? | E01b, E02a | Resolvida (2026-09-21): **regra do sufixo**, documentada em `especificacao-v1.md` §2.4 e implementada em `score_bridge` (`VsbDocument.sceneIdOf`/`passOf`, E02a); 0 divergências contra o `-t expansionmap` em 12 388 ids (10 peças + as 13 partituras de E01a); o mapa completo pesa 50-207 KB por peça e teria de ser filtrado |
 | D-EXPAND | Corrigir a geração de expansão no fork (MEI com várias `section`/`<ending>`; MusicXML com casa 1 sem casa 2)? | E04a, E04b | **Sim, no fork, isolado** em `expansionmap.cpp`/`iomusxml.cpp`, sem tocar `View`/DCs; desenho byte-idêntico; patch pronto para PR upstream (enviar é decisão do usuário) |
 | D-SALTO | O que a vista faz quando a execução salta para outra página? | E03a, E03b | **Haste generalizada**: a mesma regra de A05b com a página de destino atrás; salto na mesma página não mexe na vista |
-| D-TOQUE | Qual passagem `seekToElement` escolhe para um elemento tocado mais de uma vez? | E02c | **A mesma passagem da posição atual, se existir; senão a primeira**; `pass:` explícito sempre ganha |
+| D-TOQUE | Qual passagem `seekToElement` escolhe para um elemento tocado mais de uma vez? | E02c | Resolvida (2026-09-22): **a mesma passagem da posição atual, se existir; senão a primeira**; `pass:` explícito sempre ganha; implementada em `ScorePlayer.seekToElement` |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
@@ -316,7 +317,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E01b](E01b-timemap-com-compassos.md) | Timemap com `measureOn` no `.vsb` e contrato dos ids `-rendN` | E01a | D-EXPMAP resolvida | concluído |
 | [E02a](E02a-ids-expandidos.md) | Ids expandidos (`-rendN`) chegam à nota desenhada | E01b | — | concluído |
 | [E02b](E02b-linha-do-tempo-por-ocorrencia.md) | `ScoreTimeline` por ocorrência de compasso | E02a | — | concluído |
-| [E02c](E02c-tocar-a-partir-de-elemento.md) | Tocar a partir de um elemento repetido (`seekToElement`) | E02b | D-TOQUE | pendente |
+| [E02c](E02c-tocar-a-partir-de-elemento.md) | Tocar a partir de um elemento repetido (`seekToElement`) | E02b | D-TOQUE resolvida | concluído |
 | [E03a](E03a-haste-com-pagina-de-destino.md) | Haste com página de destino (mecanismo) | E02b | D-SALTO | pendente |
 | [E03b](E03b-regra-da-haste-nos-saltos.md) | Regra da haste nos saltos e evidências | E03a | — | pendente |
 | [E04a](E04a-expansao-mei.md) | Expansão de MEI com várias `section` e `<ending>` (fork) | E01a | D-EXPAND | pendente |

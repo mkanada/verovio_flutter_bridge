@@ -82,4 +82,66 @@ Nos três casos, `pass:` explícito ganha da política.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**D-TOQUE resolvida pelo usuário: (a) mesma passagem da posição atual,
+senão a 1ª** (`pass:` explícito sempre ganha).
+
+**Código novo.** `ScoreTimeline.onsetsOf(id)` (`score_timeline.dart`):
+- se `id` resolve a um **compasso** (`_measureOfId[sceneId] == sceneId`), os
+  onsets vêm de `occurrencesOf(id)` — reaproveita a lista de ocorrências de
+  E02b, um `(pass, startMs)` por ocorrência;
+- senão (nota, ou outro elemento com onset no timemap), varre `entries`
+  procurando por `on` cujo `sceneIdOf` bate com o alvo, coletando
+  `(passOf(onId), tstamp)`; um `id` expandido filtra para só a sua passagem
+  (mesmo padrão de `occurrencesOf`).
+
+`ScorePlayer.seekToElement(id, {pass})`: pega `timeline.onsetsOf(id)`; com
+`pass` explícito, procura o onset daquela passagem (`false` se não achar);
+sem `pass`, aplica D-TOQUE — `currentPass` é a passagem da ocorrência em
+`timeline.measures[timeline.measureIndexAt(_positionMs)]`, e o alvo é o
+onset da mesma passagem ou, na ausência, `onsets.first` (que é sempre a
+passagem 1, porque `onsets` está em ordem de tempo e a 1ª passagem sempre
+toca antes das demais). `false` sem mexer em nada se `onsets` vier vazio
+(id desconhecido, ou sem timemap) ou (com `pass` explícito) se a passagem
+pedida não existir. Guarda `_disposed` igual às outras chamadas públicas do
+player.
+
+Doc da API pública: `ScorePageView.onElementTap` agora cita o exemplo de
+ligação (`onElementTap: (id) => player.seekToElement(id)`), e o método em
+si documenta a política por extenso.
+
+**Fixture novo**: `test/fixtures/erik-satie.vsb` reaproveitado (já tinha
+`measureOn` de E01b/E02b). Não foi preciso nenhum fixture novo — os números
+usados (compasso 5 = `jbxc50u`, nota `i88ib9g`, onsets 9 474 ms/101 842 ms;
+compasso 32 = ocorrência única) foram lidos direto do `.vsb` existente.
+
+**Critérios de aceite** (`test/score_player_seek_test.dart`, 8 testes):
+
+1. Gymnopédie, nota do compasso 5: posição 10 000 ms → onset da 1ª (9 474
+   ms); 100 000 ms (dentro da repetição) → onset da 2ª (101 842 ms);
+   170 000 ms (depois da repetição, casa 2, tocada uma vez em pass 1) →
+   conforme D-TOQUE(a): 1ª — bate com o que o critério já antecipava para as
+   opções (a) e (b).
+2. `pass: 2` explícito leva ao onset da 2ª de qualquer posição; `pass: 3`
+   devolve `false` sem mudar a posição.
+3. Nota da casa 1 (compasso 32, ocorrência única): uma só entrada em
+   `onsetsOf`, e `seekToElement` vai para ela a partir de 4 posições
+   diferentes (0, 50 000, 120 000, 170 000 ms).
+4. Id expandido (`i88ib9g-rend2`) sem `pass:` vai para a passagem 2, mesmo
+   partindo de uma posição na 1ª passagem.
+5. Teste de widget: `ScorePageView` com `onElementTap: (id) =>
+   player.seekToElement(id)`, toque físico (`tester.tapAt`) no centro da
+   bbox da nota do compasso 5 → `player.position` vai para 9 474 ms e a nota
+   fica destacada (`controller.isHighlighted`).
+6. `id` desconhecido → `false`, posição inalterada.
+7. `flutter analyze` limpo, `flutter test` 235/235 (era 227; 8 testes
+   novos).
+
+**Armadilha de teste (não é do produto):** os testes que chamam
+`ScorePlayer.seek`/`seekToElement` sem depois desligar o `Ticker` antes do
+fim do `testWidgets` derrubam a suíte com "An animation is still running
+even after the widget tree was disposed" se a limpeza for feita via
+`addTearDown` — o comentário em `score_player_test.dart` já avisava
+("`addTearDown` roda tarde demais para a verificação do binding"), mas só
+bateu nele de verdade ao escrever este arquivo. A limpeza precisa estar num
+`finally` dentro do próprio corpo do teste (função `withPlayer` deste
+arquivo, mesmo padrão do `Cleanup`/`testPlayer` de `score_player_test.dart`).

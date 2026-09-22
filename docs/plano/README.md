@@ -320,7 +320,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E02b](E02b-linha-do-tempo-por-ocorrencia.md) | `ScoreTimeline` por ocorrência de compasso | E02a | — | concluído |
 | [E02c](E02c-tocar-a-partir-de-elemento.md) | Tocar a partir de um elemento repetido (`seekToElement`) | E02b | D-TOQUE resolvida | concluído |
 | [E03a](E03a-haste-com-pagina-de-destino.md) | Haste com página de destino (mecanismo) | E02b | D-SALTO resolvida | concluído |
-| [E03b](E03b-regra-da-haste-nos-saltos.md) | Regra da haste nos saltos e evidências | E03a | — | pendente |
+| [E03b](E03b-regra-da-haste-nos-saltos.md) | Regra da haste nos saltos e evidências | E03a | — | concluído |
 | [E04a](E04a-expansao-mei.md) | Expansão de MEI com várias `section` e `<ending>` (fork) | E01a | D-EXPAND | pendente |
 | [E04b](E04b-expansao-musicxml-casa-unica.md) | MusicXML: casa 1 sem casa 2 (fork) | E04a | — | pendente |
 | [E05](E05-portao-das-repeticoes.md) | Portão da fase E: repetições de ponta a ponta | E02c, E03b, E04b | — | pendente |

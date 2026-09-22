@@ -83,4 +83,67 @@ regra das viradas normais (A05b), e registrar a prova visual como em
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**Código: uma condição trocada, um campo novo no retorno.** Em
+`ScoreTimeline.curtainAt`: o `continue` que pulava qualquer fronteira que
+não fosse `next.page == run.page + 1` (comentário antigo: "salto de
+repetição: sem haste") virou `if (next.page == run.page) continue;`
+("salto na mesma página: nada para revelar"). O `SweepCurtain` devolvido
+ganhou `targetPageIndex: next.page` sempre — no caso comum (`next.page ==
+run.page + 1`) isso é redundante com o `?? pageIndex + 1` de
+`SweepCurtain`, mas simplifica o código (uma fórmula só) e não muda o
+resultado visual (testado: nenhum teste que compara `.pageIndex`/`.edgeX`
+quebrou). O comentário "REGRA DA HASTE" no topo do arquivo foi generalizado
+para `M'`/`B` (a ocorrência e a página seguintes **na execução**, não mais
+"a página seguinte" por definição).
+
+**Achado ao gerar as evidências:** a Maple Leaf Rag tem **três** fronteiras
+entre páginas que trocam de página (não duas): além dos dois saltos
+conhecidos (34→19 e 67→52), há uma 3ª — `66 → 68` (o mesmo padrão "pula a
+casa 1" de E01a, que também cruza de página 1 para a 2) — que também ganha
+haste agora, embora o passo só peça evidência dos dois primeiros. Isso
+apareceu como um efeito colateral ao escrever `tool/generate_examples.dart`:
+o quadro "repouso" do salto 97 500 ms, calculado ingenuamente como
+`m.startMs - 800`, caiu **dentro** da haste da 3ª fronteira (saltos
+encadeados de perto). Corrigido com uma função `restNear` que anda de
+200 ms em 200 ms até achar um instante sem nenhuma haste ativa, para trás
+(repouso antes) ou para a frente (repouso depois) — sem essa correção o
+roteiro mentiria "haste ausente" citando um instante que na verdade tinha
+haste.
+
+**Achado colateral (não é deste passo, registrado para não confundir quem
+rodar de novo):** `flutter test tool/generate_examples.dart` roda os três
+testes do arquivo, e por isso também regerou os PNGs de A02c
+(`destaque-notas/Gymnopedie`) e A05b (`virada-pagina/Nocturne`) — nenhum
+código deles mudou, mas os bytes saíram ~0,2-3% diferentes (antialiasing/
+hinting de fonte desta máquina, mesmo padrão do achado de fixture
+desatualizada em E01b). Descartados (`git checkout`) antes do commit deste
+passo, para não misturar uma diferença de ambiente com a mudança real.
+
+**Critérios de aceite:**
+
+1. `test/score_timeline_jump_curtain_test.dart` (fixture `maple-leaf-rag.vsb`,
+   `-x 42`, já criado em E02b): tabela dos dois saltos batendo com
+   `edgeX`/`targetPageIndex` esperados em entrada/estacionada/conclusão,
+   inclusive o salto que sai da **última** página (97 500 ms, `m.page ==
+   pages.length - 1`).
+2. Sem haste nos saltos de mesma página: amostrado a cada 50 ms ao redor de
+   135 900 ms (Maple Leaf Rag, 84 → 69) — sempre `null`. (Gymnopédie 92 368 ms
+   é o mesmo caso, coberto pela regressão do item 3.)
+3. Regressão de E02b: já media `curtainAt` a cada 50 ms nas 8 peças sem
+   expansão via `git stash`; rodada de novo depois desta mudança, **0
+   diferenças** de novo (a alteração só afeta fronteiras com `next.page ==
+   run.page`, que não existem nessas 8 peças).
+4. `docs/exemplos/repeticao/MapleLeafRag/`: 10 quadros (`frame-salto1-*.png`,
+   `frame-salto2-*.png`) e `roteiro.md`, gerados por
+   `flutter test tool/generate_examples.dart`. O quadro "estacionada" do
+   salto 39 900 ms mostra o compasso 19 (destino) à esquerda da haste, como
+   a limitação conhecida de D-SALTO previa (a haste estaciona bem à direita
+   do destino nesse caso).
+5. `ScorePlayer` tocando a Maple Leaf Rag do início ao fim "a 4×" (passos de
+   200 ms = 50 ms reais × 4): termina exatamente em `player.duration`, sem
+   exceção. (Sem usar `play()`/`isPlaying`, que dependem de um `Ticker`
+   real movido por frames — fora do propósito deste teste, que só quer
+   varrer o timemap inteiro, inclusive os saltos, sem quebrar.)
+
+`flutter analyze` limpo, `flutter test` 243/243 (era 239; 4 testes novos
+em `score_timeline_jump_curtain_test.dart`).

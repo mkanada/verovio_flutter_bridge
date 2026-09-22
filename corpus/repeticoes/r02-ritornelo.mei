@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="4.0.1">
+  <meiHead>
+    <fileDesc>
+      <titleStmt>
+        <title>r02 ritornelo simples (MEI)</title>
+      </titleStmt>
+      <pubStmt/>
+    </fileDesc>
+  </meiHead>
+  <music>
+    <body>
+      <mdiv>
+        <score>
+          <scoreDef meter.count="4" meter.unit="4" key.sig="0">
+            <staffGrp>
+              <staffDef n="1" lines="5" clef.shape="G" clef.line="2"/>
+            </staffGrp>
+          </scoreDef>
+          <section>
+            <measure n="1" xml:id="m1">
+              <staff n="1">
+                <layer n="1">
+                <note xml:id="m1n1" pname="c" oct="4" dur="4"/>
+                <note xml:id="m1n2" pname="e" oct="4" dur="4"/>
+                <note xml:id="m1n3" pname="g" oct="4" dur="4"/>
+                <note xml:id="m1n4" pname="b" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="2" xml:id="m2">
+              <staff n="1">
+                <layer n="1">
+                <note xml:id="m2n1" pname="d" oct="4" dur="4"/>
+                <note xml:id="m2n2" pname="f" oct="4" dur="4"/>
+                <note xml:id="m2n3" pname="a" oct="4" dur="4"/>
+                <note xml:id="m2n4" pname="c" oct="5" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="3" xml:id="m3">
+              <staff n="1">
+                <layer n="1">
+                <note xml:id="m3n1" pname="e" oct="4" dur="4"/>
+                <note xml:id="m3n2" pname="g" oct="4" dur="4"/>
+                <note xml:id="m3n3" pname="b" oct="4" dur="4"/>
+                <note xml:id="m3n4" pname="c" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="4" xml:id="m4" right="rptend">
+              <staff n="1">
+                <layer n="1">
+                <note xml:id="m4n1" pname="f" oct="4" dur="4"/>
+                <note xml:id="m4n2" pname="a" oct="4" dur="4"/>
+                <note xml:id="m4n3" pname="c" oct="5" dur="4"/>
+                <note xml:id="m4n4" pname="d" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="5" xml:id="m5">
+              <staff n="1">
+                <layer n="1">
+                <note xml:id="m5n1" pname="g" oct="4" dur="4"/>
+                <note xml:id="m5n2" pname="b" oct="4" dur="4"/>
+                <note xml:id="m5n3" pname="c" oct="4" dur="4"/>
+                <note xml:id="m5n4" pname="e" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="6" xml:id="m6">
+              <staff n="1">
+                <layer n="1">
+                <note xml:id="m6n1" pname="a" oct="4" dur="4"/>
+                <note xml:id="m6n2" pname="c" oct="5" dur="4"/>
+                <note xml:id="m6n3" pname="d" oct="4" dur="4"/>
+                <note xml:id="m6n4" pname="f" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+          </section>
+
+        </score>
+      </mdiv>
+    </body>
+  </music>
+</mei>

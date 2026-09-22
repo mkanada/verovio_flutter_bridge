@@ -30,7 +30,7 @@ saltos é do E03b, como A03b/A05b fizeram para as viradas normais.
 - **(c) Deslizar para a página de destino no instante do salto**, como a
   trilha do `pagedSlide`, sem haste.
 
-Salto **na mesma página** (Gymnopédie 39 → 1; Maple Leaf Rag 83 → 69): em
+Salto **na mesma página** (Gymnopédie 39 → 1; Maple Leaf Rag 84 → 69): em
 todas as opções, nada acontece na vista, porque a página já está à mostra.
 Um aviso visual do salto é do host, fora deste passo.
 

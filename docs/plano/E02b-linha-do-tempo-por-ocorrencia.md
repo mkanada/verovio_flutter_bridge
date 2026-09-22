@@ -43,7 +43,7 @@ comportamento provisório, mas correto.
   | Gymnopédie | 92 368 ms | 39 → 1 | 0 → 0 |
   | Maple Leaf Rag | 39 900 ms | 34 → 19 | 1 → 0 |
   | Maple Leaf Rag | 97 500 ms | 67 → 52 | **2 (última) → 1** |
-  | Maple Leaf Rag | 135 900 ms | 83 → 69 | 2 → 2 |
+  | Maple Leaf Rag | 135 900 ms | 84 → 69 | 2 → 2 |
 
   Viradas **para a frente dentro da 2ª passagem** também existem, e seguem a
   regra normal da haste: Maple Leaf Rag, compasso 29 (página 0) → 30

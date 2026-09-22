@@ -199,7 +199,15 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
   página 1 enquanto a música toca a página 0.
 - Saltos entre páginas: Maple Leaf Rag 34 → 19 (página 1 → 0) e 67 → 52
   (página 2, **a última**, → 1). Saltos na mesma página: Gymnopédie 39 → 1,
-  Maple Leaf Rag 83 → 69.
+  Maple Leaf Rag 84 → 69 (a peça tem um compasso de anacruse antes do
+  compasso 1 marcado no arquivo, que conta como ocorrência 1 na ordem de
+  documento — por isso os índices de compasso ficam sempre uma unidade acima
+  do atributo `number` do MusicXML; corrigido em E01a, que tinha herdado
+  `83 → 69` de uma contagem sem a anacruse).
+- Além desses três, `repeat-order.py` (E01a) lista mais três saltos "casa 1 →
+  casa 2" na Maple Leaf Rag (33 → 35, 66 → 68, 83 → 85): a 2ª passagem de cada
+  ritornello pula o compasso da casa 1 e salta direto para a casa 2, sempre na
+  mesma página.
 - Tirar o `-rendN` concorda com o `-t expansionmap` do Verovio em 2 933 de
   2 933 ids de timemap (com `--xml-id-seed`). O mapa completo tem 50-207 KB de
   JSON por peça.
@@ -303,7 +311,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [A04b](A04b-overlay-e-gestos.md) | Overlay de widgets, toque e `ScoreCursor` | A04a | — | concluído |
 | [A05a](A05a-score-player.md) | `ScorePlayer`: relógio próprio e timemap → destaque | A02b, S07 | — | concluído |
 | [A05b](A05b-virada-automatica-e-evidencias.md) | Virada automática por compasso e evidências | A05a, A03b | — | concluído |
-| [E01a](E01a-corpus-de-repeticoes.md) | Corpus de repetições, roteiro esperado e diagnóstico | A05b | — | pendente |
+| [E01a](E01a-corpus-de-repeticoes.md) | Corpus de repetições, roteiro esperado e diagnóstico | A05b | — | concluído |
 | [E01b](E01b-timemap-com-compassos.md) | Timemap com `measureOn` no `.vsb` e contrato dos ids `-rendN` | E01a | D-EXPMAP | pendente |
 | [E02a](E02a-ids-expandidos.md) | Ids expandidos (`-rendN`) chegam à nota desenhada | E01b | — | pendente |
 | [E02b](E02b-linha-do-tempo-por-ocorrencia.md) | `ScoreTimeline` por ocorrência de compasso | E02a | — | pendente |

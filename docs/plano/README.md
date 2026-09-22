@@ -102,12 +102,15 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Bindings C | `tools/c_wrapper.cpp`: `vrvToolkit_renderToBridgeFile` L296, `vrvToolkit_renderToBridgeJson` L307 |
 | Binding Dart FFI | `verovio/bindings/dart/`: `VerovioToolkit` (`lib/src/verovio_toolkit.dart`), assinaturas em `lib/src/verovio_bindings.dart`, builds em `build_linux_so.sh` / `build_android_so.sh` |
 
-Fora do exportador, único ponto do fork que a fase E tocou: geração de
+Fora do exportador, únicos pontos do fork que a fase E tocou: geração de
 expansão (repetições), em `src/expansionmap.cpp`/`include/vrv/expansionmap.h`
 (E04a) — `GenerateExpansionFor` atravessa várias `<section>` e grupos de
 `<ending>`; `EndingHasRepeatEnd` é novo; `Expand()` ganhou um fallback de
 busca pelo `Score` ancestral quando o id referenciado não é descendente da
-seção onde a expansão vive.
+seção onde a expansão vive — e o importador de MusicXML, em
+`src/iomusxml.cpp` (E04b) — `CreateExpansion` trata uma casa 1 sozinha com
+repeat como casa 1 + casa 2 implícita (o que vem a seguir), e o fechamento
+de uma `<ending>` para de descartar `m_repeatInfo`.
 
 ### Referência de verdade (não alterar — é o que a paridade compara)
 
@@ -196,7 +199,7 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
 | Peça | Marcação | Verovio em 2026-09-21 | Verovio depois de E04a/E04b | Ocorrências de compasso |
 | --- | --- | --- | --- | --- |
 | Gymnopédie (MusicXML) | 1 ritornelo, casas 1 (32-39) e 2 (40-47) | correto | correto | 78 |
-| Maple Leaf Rag (MusicXML) | 4 ritornelos, 4 casas 1, 3 casas 2 | perde o 1º ritornelo (casa 1 sem casa 2) | corrigido em E04b | 130 → 145 |
+| Maple Leaf Rag (MusicXML) | 4 ritornelos, 4 casas 1, 3 casas 2 | perde o 1º ritornelo (casa 1 sem casa 2) | **corrigido em E04b** | 130 → 145 |
 | Mazurka (MEI, 3 `section`) | 2 ritornelos | não expandia (várias `section`) | **corrigido em E04a** | 75 → 117 |
 | Butterfly (MEI, 2 `section`) | 1 ritornelo | não expandia | **corrigido em E04a** | 42 → 48 |
 | Little bird (MEI, 3 `section`) | 2 ritornelos | não expandia | **corrigido em E04a** | 39 → 69 |
@@ -329,7 +332,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E03a](E03a-haste-com-pagina-de-destino.md) | Haste com página de destino (mecanismo) | E02b | D-SALTO resolvida | concluído |
 | [E03b](E03b-regra-da-haste-nos-saltos.md) | Regra da haste nos saltos e evidências | E03a | — | concluído |
 | [E04a](E04a-expansao-mei.md) | Expansão de MEI com várias `section` e `<ending>` (fork) | E01a | D-EXPAND resolvida | concluído |
-| [E04b](E04b-expansao-musicxml-casa-unica.md) | MusicXML: casa 1 sem casa 2 (fork) | E04a | — | pendente |
+| [E04b](E04b-expansao-musicxml-casa-unica.md) | MusicXML: casa 1 sem casa 2 (fork) | E04a | — | concluído |
 | [E05](E05-portao-das-repeticoes.md) | Portão da fase E: repetições de ponta a ponta | E02c, E03b, E04b | — | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):

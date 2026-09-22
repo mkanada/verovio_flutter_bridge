@@ -427,9 +427,11 @@ void MusicXmlInput::AddMeasure(Section *section, Measure *measure, int i)
             if (m_sectionStop->m_classId == ENDING) {
                 m_sections.back().first.m_endingInfo = m_sectionStop->m_endingInfo;
             }
-            else {
-                m_sections.back().first.m_repeatInfo = m_sectionStop->m_repeatInfo;
-            }
+            // E04b: keep the repeat info even when the same measure also closes an <ending>
+            // (a "casa 1" with a plain repeat backward and no casa 2 written) - the branch above
+            // used to overwrite it with a default (m_times == 1), the only reason
+            // CreateExpansion() could not tell that case apart from an ending with no repeat.
+            m_sections.back().first.m_repeatInfo = m_sectionStop->m_repeatInfo;
             m_sections.push_back({ musicxml::SectionInfo(), {} });
         }
     }
@@ -1400,6 +1402,19 @@ void MusicXmlInput::CreateExpansion(Section *section)
                 }
                 std::string endref = "#" + ending->second->first.m_target->GetID();
                 expansion->GetPlistInterface()->AddRefAllowDuplicate(endref);
+            }
+
+            // E04b: a lone <ending number="1"> whose own measure also closes a repeat (only the
+            // first ending marked, the second left implicit in whatever comes right after) used
+            // to make the whole repeat disappear: with only one entry in `endings`, the loop
+            // above never took its "repeat the shared part again" branch. Do that repeat here
+            // instead, then let the outer while loop fall through to the next <section>/<ending>
+            // in m_sections (added the normal way) as the implicit casa 2.
+            if (endings.size() == 1 && endings.begin()->second->first.m_repeatInfo.m_times > 1) {
+                for (auto it = rptIter; it != std::next(secIter); ++it) {
+                    std::string ref = "#" + it->first.m_target->GetID();
+                    expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
+                }
             }
 
             // set the repetition to the (latest) nested one

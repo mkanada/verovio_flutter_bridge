@@ -121,6 +121,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`; fixture real em `test/fixtures/erik-satie.vsb` |
 | Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
 | Já criados nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `page_layers.dart` + `score_page_view.dart` (A01b), `score_controller.dart` (A01c/A02b), `highlight_engine.dart` (A02a). `score_view.dart` (A03a/b/c: `ScoreView`, `ScoreViewController`, `SweepCurtain`), `hit_test.dart` (A04a: `ScoreGeometry`, via `VsbDocument.geometry`), `score_cursor.dart` (A04b), `score_timeline.dart` + `score_player.dart` (A05a/b). Fase A **concluída** |
+| Ids expandidos (`-rendN`) | `expansion.dart` (E02a): `IdExpansion`, exposto como `VsbDocument.sceneIdOf`/`passOf` — regra do sufixo de D-EXPMAP, usada por `ScoreController`, `ScoreGeometry.elementOf`/`pageOf`/`rectForId` e `animatableIdsFromTimemap(..., document: ...)` |
 
 ### Comparação visual
 
@@ -222,7 +223,7 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
 | D-NOME | Nome do formato, extensão e flags de CLI | — | Resolvida em S01 (2026-09-17): `.vsb`, `-t vsb`, `-t vsb-json`; timemap embutido quando disponível |
 | D-BIN | Vale trocar JSON por encoding binário? | — | Em aberto, sem passo no plano: só decidir com números reais do `zywny` na mão (decisão do usuário) |
 | D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | — | Resolvida (2026-09-20): **(a) gera no dispositivo**, via FFI com `libverovio.so`. Biblioteca e wrapper C existem em `verovio/bindings/dart/`; empacotamento e isolate ficam no `zywny` |
-| D-EXPMAP | Como o leitor chega do id `-rend<N>` do timemap ao nó da cena: regra do sufixo documentada na spec, ou `expansion.json` embutido? | E01b, E02a | **Regra do sufixo**: 0 divergências contra o `-t expansionmap` em 2 933 ids; o mapa completo pesa 50-207 KB por peça e teria de ser filtrado |
+| D-EXPMAP | Como o leitor chega do id `-rend<N>` do timemap ao nó da cena: regra do sufixo documentada na spec, ou `expansion.json` embutido? | E01b, E02a | Resolvida (2026-09-21): **regra do sufixo**, documentada em `especificacao-v1.md` §2.4 e implementada em `score_bridge` (`VsbDocument.sceneIdOf`/`passOf`, E02a); 0 divergências contra o `-t expansionmap` em 12 388 ids (10 peças + as 13 partituras de E01a); o mapa completo pesa 50-207 KB por peça e teria de ser filtrado |
 | D-EXPAND | Corrigir a geração de expansão no fork (MEI com várias `section`/`<ending>`; MusicXML com casa 1 sem casa 2)? | E04a, E04b | **Sim, no fork, isolado** em `expansionmap.cpp`/`iomusxml.cpp`, sem tocar `View`/DCs; desenho byte-idêntico; patch pronto para PR upstream (enviar é decisão do usuário) |
 | D-SALTO | O que a vista faz quando a execução salta para outra página? | E03a, E03b | **Haste generalizada**: a mesma regra de A05b com a página de destino atrás; salto na mesma página não mexe na vista |
 | D-TOQUE | Qual passagem `seekToElement` escolhe para um elemento tocado mais de uma vez? | E02c | **A mesma passagem da posição atual, se existir; senão a primeira**; `pass:` explícito sempre ganha |
@@ -313,7 +314,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [A05b](A05b-virada-automatica-e-evidencias.md) | Virada automática por compasso e evidências | A05a, A03b | — | concluído |
 | [E01a](E01a-corpus-de-repeticoes.md) | Corpus de repetições, roteiro esperado e diagnóstico | A05b | — | concluído |
 | [E01b](E01b-timemap-com-compassos.md) | Timemap com `measureOn` no `.vsb` e contrato dos ids `-rendN` | E01a | D-EXPMAP resolvida | concluído |
-| [E02a](E02a-ids-expandidos.md) | Ids expandidos (`-rendN`) chegam à nota desenhada | E01b | — | pendente |
+| [E02a](E02a-ids-expandidos.md) | Ids expandidos (`-rendN`) chegam à nota desenhada | E01b | — | concluído |
 | [E02b](E02b-linha-do-tempo-por-ocorrencia.md) | `ScoreTimeline` por ocorrência de compasso | E02a | — | pendente |
 | [E02c](E02c-tocar-a-partir-de-elemento.md) | Tocar a partir de um elemento repetido (`seekToElement`) | E02b | D-TOQUE | pendente |
 | [E03a](E03a-haste-com-pagina-de-destino.md) | Haste com página de destino (mecanismo) | E02b | D-SALTO | pendente |

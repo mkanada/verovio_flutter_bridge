@@ -115,4 +115,86 @@ que usa os mesmos ids.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**Código novo.** `score_bridge/lib/src/expansion.dart`: `IdExpansion`
+(regra do sufixo, memoizada) — exportado pela API pública
+(`score_bridge.dart`). `VsbDocument` ganha `sceneIdOf`/`passOf`, que
+delegam para uma `IdExpansion` construída (`late final`, uma vez) a partir
+de `{for (final page in pages) ...page.byId.keys}`.
+
+**Pontos de entrada resolvidos:**
+
+- `ScoreController`: `setColor`, `setColors`, `clearColor`, `highlightAll`
+  (e portanto `highlight`), `release`, `isHighlighted`, `colorOf` — todos
+  via um `_resolve(id)` privado no topo do método. `highlightedIds`/
+  `colors`/`haloColors` não precisaram mudar: como só ids resolvidos entram
+  no motor, eles já saem resolvidos.
+- `ScoreGeometry.elementOf` (`hit_test.dart`) resolve com
+  `document.sceneIdOf(id) ?? id`; `pageOf` e `rectForId` passaram a chamar
+  `elementOf` em vez de indexar `_byId` direto, então ganham a resolução de
+  graça. `idAt`/`idsIn` não mudam: devolvem id da cena, nunca recebem um de
+  fora.
+- `ScoreViewController.scrollToId` não precisou de nenhuma linha nova: já
+  chama `_doc.geometry.elementOf(id)`, que passou a resolver.
+- `_withInteraction` do `ScorePageView` (overlays) também não mudou por
+  código: usa `geometry.elementOf(id)` para posicionar cada overlay.
+- `animatableIdsFromTimemap` ganhou um parâmetro opcional `document:`
+  (assinatura antiga preservada — sem ele, ids passam como estão, do jeito
+  que um teste síntetico já testava). `ScorePageView._rebuildLayers` (o
+  único uso em produção) passa `document: widget.document`.
+
+**Por que `ScorePageView`/`_withInteraction` não mudaram:** a resolução foi
+posta na camada mais baixa que todo mundo já chama (`ScoreGeometry`,
+`ScoreController`), não repetida em cada chamador — só
+`animatableIdsFromTimemap` precisou de um parâmetro novo, porque ela não
+recebe o documento (só a lista de timemap).
+
+**Critérios de aceite.**
+
+1. Testes unitários da resolução em `test/expansion_test.dart`: os 6 casos
+   do critério 1 (`x`→`x`/1; `x-rend2` com base→`x`/2; `x-rend3`→`x`/3;
+   `x-rend2` presente na cena→ele mesmo/1; base ausente→`null`;
+   `abc-rendezvous`→`null`), mais `VsbDocument.sceneIdOf`/`passOf` e um caso
+   de `animatableIdsFromTimemap`.
+2. `compare/scripts/check-suffix-rule.py` (novo): gera `-t expansionmap` e
+   o `.vsb` (mesmo `--xml-id-seed`) das 10 peças **e** das 13 partituras de
+   E01a, e compara a regra do sufixo com o que `-t expansionmap` diz ser a
+   base de cada id de `on`/`off`/`measureOn` do timemap. **0 divergências em
+   12 388 ids** (bem mais que os 2 933 verificados informalmente em E01b).
+3. `test/score_player_test.dart`: novo teste "Gymnopédie: destaque não-vazio
+   durante toda a 2ª passagem" — 20 instantes sorteados entre 92 368 e
+   165 789 ms, `controller.highlightedIds` bate com os ids ativos do timemap
+   **resolvidos** e nunca vazio. Antes de E02a esse conjunto seria vazio o
+   tempo todo (o motivo de existir este passo).
+4. Novo teste com a fixture `test/fixtures/r13-um-compasso.vsb` (gerada de
+   `corpus/repeticoes/r13-um-compasso.musicxml`, E01a): 1 ms depois do
+   instante em que a passagem 2 começa (`off m1n1` + `on m1n1-rend2` no
+   mesmo instante, 2000 ms), a nota está destacada; quase 2 s depois (bem
+   dentro do que seria a janela de `release` do bug antigo) continua
+   destacada, na cor cheia — nunca esteve em `release`.
+5. `test/expansion_test.dart`: um timemap sintético com só `x-rend2` (sem
+   `x` solto) torna `x` dinâmico com `document:` e não sem. Sobre o corpus
+   real: o conjunto de nós dinâmicos por página com/sem `document:` é
+   **idêntico** nas 10 peças — confirma o achado de E01a ("0 ids-base
+   ausentes"; a resolução não muda nada hoje, só protege o futuro).
+6. `rectForId('x-rend2') == rectForId('x')`, `pageOf` idem,
+   `elementOf('x-rend2')!.id == 'x'` (`expansion_test.dart`, documento
+   sintético). `scrollToId` com um id `-rend<N>` sintético (base real +
+   sufixo) em `score_view_test.dart`, nos dois modos (`pagedSweep` e
+   `continuousScroll`): rola para a mesma página que o id base.
+7. `nao-existe-rend2` continua sem destino em todos os pontos que já
+   testavam isso (`score_controller_test.dart`, `score_view_test.dart`) —
+   sem mudança de comportamento porque a base "nao-existe" não está na
+   cena. `flutter analyze` limpo, `flutter test` 220/220 (era 207; a
+   diferença é só teste novo, nenhum teste pré-existente removido).
+
+**Teste pré-existente atualizado (comportamento, não regressão):**
+`score_controller_test.dart` — "highlightAll com 50 ids: uma notificação;
+-rend2 ignorados" testava exatamente o defeito que este passo corrige (ids
+`-rend2` eram ignorados). Renomeado e reescrito para o comportamento
+correto: um `-rend2` cuja base já está entre os 50 ids reais resolve à
+mesma nota (sem duplicar `highlightedCount`) e passa a responder
+`isHighlighted`/`colorOf` como a base.
+
+**Fora do escopo, como previsto:** a sequência de compassos e a página
+durante a repetição continuam vindo da cena sem resolução (E02b); a
+escolha de passagem num toque (`onElementTap`) é E02c.

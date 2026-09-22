@@ -46,6 +46,7 @@
 #include "options.h"
 #include "page.h"
 #include "pages.h"
+#include "pghead.h"
 #include "runtimeclock.h"
 #include "score.h"
 #include "slur.h"
@@ -2094,7 +2095,30 @@ BridgeMeta Toolkit::ReadBridgeMeta()
         assert(firstPage);
         header = firstPage->GetHeader();
     }
-    return BridgeWriter::ExtractMeta(m_doc.m_header, header);
+    if (header) {
+        return BridgeWriter::ExtractMeta(m_doc.m_header, header);
+    }
+
+    // P01a (D-META-TITULO, option (a)): meta.title must not depend on `--header`. With no
+    // rendered header (`--header none`, or a piece with nothing to draw), fall back to the coded
+    // <pgHead func="first"> if the encoding has one, otherwise build a throwaway one the same way
+    // Doc::GenerateHeader() would for `--header auto`. GenerateFromMEIHeader only reads the MEI
+    // header tree, so this never touches layout.
+    std::list<Score *> scores = m_doc.GetVisibleScores();
+    if (!scores.empty()) {
+        ScoreDef *scoreDef = scores.front()->GetScoreDef();
+        assert(scoreDef);
+        const PgHead *codedHead = scoreDef->GetPgHead(PGFUNC_first);
+        if (codedHead) {
+            return BridgeWriter::ExtractMeta(m_doc.m_header, codedHead);
+        }
+
+        PgHead generatedHead;
+        generatedHead.GenerateFromMEIHeader(m_doc.m_header);
+        return BridgeWriter::ExtractMeta(m_doc.m_header, &generatedHead);
+    }
+
+    return BridgeWriter::ExtractMeta(m_doc.m_header, NULL);
 }
 
 bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, int toPage)

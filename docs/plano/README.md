@@ -239,6 +239,8 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
 | D-EXPAND | Corrigir a geração de expansão no fork (MEI com várias `section`/`<ending>`; MusicXML com casa 1 sem casa 2)? | E04a, E04b | Resolvida (2026-09-22): **sim, no fork, isolado** em `expansionmap.cpp`/`iomusxml.cpp`, sem tocar `View`/DCs; desenho byte-idêntico (E04a: as 4 peças MEI do corpus); patch pronto para PR upstream (enviar é decisão do usuário) |
 | D-SALTO | O que a vista faz quando a execução salta para outra página? | E03a, E03b | Resolvida (2026-09-22): **haste generalizada** — a mesma regra de A05b com a página de destino atrás (`SweepCurtain.targetPageIndex`, E03a); salto na mesma página não mexe na vista; quando a haste anda nos saltos é E03b |
 | D-TOQUE | Qual passagem `seekToElement` escolhe para um elemento tocado mais de uma vez? | E02c | Resolvida (2026-09-22): **a mesma passagem da posição atual, se existir; senão a primeira**; `pass:` explícito sempre ganha; implementada em `ScorePlayer.seekToElement` |
+| D-ALT, D-ALT-INDICE, D-ALT-EXTENSAO, D-VSB-PADRAO, D-ALT-MECANISMO | Páginas alternativas do player nas repetições (fase P) | P01-P05 | Resolvidas pelo usuário (2026-09-22) — ver [`P00`](P00-visao-geral-paginas-alternativas.md): o `.vsb` carrega páginas normais + sequências alternativas (via `Toolkit::Select`), cada uma do compasso de chegada até o fim da peça; indexação do usuário inalterada, alternativas só no player; `.vsb` por padrão com `--header none --footer none --no-instrument-labels` |
+| D-META-TITULO | Com `--header none` por padrão, de onde vem `meta.title`? | P01a | Resolvida (2026-09-22, usuário): **(a)** o título que o cabeçalho `auto` mostraria (ou o codificado), sem desenhar; implementada em `Toolkit::ReadBridgeMeta` |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
@@ -334,6 +336,20 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E04a](E04a-expansao-mei.md) | Expansão de MEI com várias `section` e `<ending>` (fork) | E01a | D-EXPAND resolvida | concluído |
 | [E04b](E04b-expansao-musicxml-casa-unica.md) | MusicXML: casa 1 sem casa 2 (fork) | E04a | — | concluído |
 | [E05](E05-portao-das-repeticoes.md) | Portão da fase E: repetições de ponta a ponta | E02c, E03b, E04b | — | concluído |
+| [P00](P00-visao-geral-paginas-alternativas.md) | **Visão geral da fase P** (leitura obrigatória, não executável) | — | — | — |
+| [P01a](P01a-titulo-sem-cabecalho.md) | `meta.title` sem depender do cabeçalho desenhado | — | D-META-TITULO resolvida | concluído |
+| [P01b](P01b-padroes-do-vsb.md) | Padrões do `.vsb`: sem cabeçalho, rodapé e rótulo | P01a | D-VSB-PADRAO resolvida | pendente |
+| [P01c](P01c-remedir-corpus.md) | Regenerar corpus e fixtures, re-medir paridade e fatos | P01b | — | pendente |
+| [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | pendente |
+| [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | pendente |
+| [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | pendente |
+| [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | pendente |
+| [P03a](P03a-modelo-e-parser-alternates.md) | Dart: modelo, parser e geometria das alternativas (`PageRef`) | P02a, P02c | — | pendente |
+| [P03b](P03b-vista-com-pageref.md) | Dart: `ScorePageView`/`ScoreView` exibem um `PageRef` | P03a, P02d | D-ALT-INDICE resolvida | pendente |
+| [P04a](P04a-rota-na-timeline.md) | Dart: rota de exibição na `ScoreTimeline` | P03b | — | pendente |
+| [P04b](P04b-player-com-alternativas.md) | Dart: `ScorePlayer` segue a rota | P04a | — | pendente |
+| [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | pendente |
+| [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -348,7 +364,16 @@ R02a → R02b → R02c → R02d → R03a → R03b → R03c
         E01a → E01b → E02a → E02b → E02c ─────┐
             │                   ↘ E03a → E03b ─┤
             └→ E04a → E04b ────────────────────┴→ E05   (fase E: repetições)
+
+        P01a → P01b → P01c ─┐                    (fase P: páginas alternativas;
+        P02a ───────────────┴→ P02b → P02c ─┐     leia P00 antes de qualquer P*)
+                              P03a ─────────┴→ P02d → P03b → P04a → P04b → P04c → P05
 ```
+
+A fase P faz o player, num salto de repetição para outra página, mostrar uma
+página **redesenhada** que começa no compasso de chegada, em vez da página
+original. A visão geral, as decisões e as regras estão em
+[`P00`](P00-visao-geral-paginas-alternativas.md).
 
 A fase E corrige a execução de peças com repetição. E02-E03 são o lado Dart
 (valem já para as peças MusicXML, que o Verovio expande). E04 é o lado C++

@@ -119,32 +119,42 @@ sem ler nenhuma página.
 - Os textos têm o espaço em branco normalizado (sequências viram um espaço,
   sem espaços nas pontas).
 
-#### Título: o que o cabeçalho renderizado mostra
+#### Título: o que o cabeçalho mostraria com `--header auto`
 
-O título não é lido do arquivo de origem, e sim do cabeçalho que o Verovio
-desenha, com a mesma decisão do renderizador (`Page::GetHeader()` da página 1).
-Por isso ele segue a opção `--header`:
+`title` **não depende de `--header`** (P01a, D-META-TITULO opção (a)): é
+calculado como se `--header` fosse `auto`, sem desenhar nada. Isso evita que o
+host perca o título quando o `.vsb` é gerado com `--header none` (o padrão,
+D-VSB-PADRAO).
 
-| `--header` | Cabeçalho da página 1 | `title` |
-| --- | --- | --- |
-| `none` | nada é desenhado | ausente |
-| `auto` (padrão) | o gerado a partir do `<meiHead>` (`titleStmt/title`), ou o codificado, se a peça já traz um | primeira linha do bloco de título |
-| `encoded` | só o codificado na peça (`<credit>` do MusicXML, `<pgHead>` do MEI); um MEI que só tem `<meiHead>` não desenha nada | título do cabeçalho codificado, se houver |
+A regra, em `Toolkit::ReadBridgeMeta`: se a página 1 tem cabeçalho desenhado
+(`Page::GetHeader()`, que só acontece com `--header auto` ou `encoded`),
+`title` vem dele, como antes. Senão (`--header none`, ou `encoded` numa peça
+sem cabeçalho codificado):
 
-Dentro do cabeçalho, o título é o texto do primeiro item de topo que não está
-encostado num lado nem é uma pessoa creditada:
+1. se o `scoreDef` da primeira `Score` visível já traz um `<pgHead
+   func="first">` codificado, usa-o;
+2. senão, monta um `PgHead` descartável do mesmo jeito que
+   `Doc::GenerateHeader()` faria (`GenerateFromMEIHeader`, sem anexá-lo ao
+   documento nem depender de layout) e usa esse.
 
-- no cabeçalho gerado (`auto`), o bloco rotulado `title`; a primeira linha é o
-  título principal e as demais (subtítulos, outras línguas) ficam de fora;
+Dentro do cabeçalho (real ou descartável), o título é o texto do primeiro item
+de topo que não está encostado num lado nem é uma pessoa creditada:
+
+- no cabeçalho gerado, o bloco rotulado `title`; a primeira linha é o título
+  principal e as demais (subtítulos, outras línguas) ficam de fora;
 - no cabeçalho codificado, que não traz rótulo, o primeiro texto centralizado ou
   sem alinhamento — por convenção o compositor fica à direita e o letrista ou o
   número de catálogo (`BWV 846`) à esquerda.
 
-Como vem do desenho, uma peça MusicXML que guarda o título só em
-`<credit-words>` (comum em arquivos do MuseScore e do Finale) também tem
-`title`; medido nas 10 peças do corpus nos 3 valores de `--header`, `title`
-coincide com o primeiro título centralizado do SVG (30/30) e `--header none`
-não desenha cabeçalho em nenhuma (10/10).
+Como vem do desenho (ou do que o desenho mostraria), uma peça MusicXML que
+guarda o título só em `<credit-words>` (comum em arquivos do MuseScore e do
+Finale) também tem `title`. Medido nas 10 peças do corpus, `title` é **igual**
+com `--header none`, `auto` e `encoded` (30/30): as 5 peças MusicXML já batem
+o `<credit>` como `<pgHead>` codificado na importação, então `encoded` sempre
+tinha `title`; as 5 peças MEI não trazem `<pgHead>` codificado, então
+`encoded` caía na mesma regra de "sem cabeçalho desenhado" que `none` — e por
+isso ganha o `title` gerado, igual ao de `auto`, desde este passo (antes dele,
+`encoded` saía sem `title` nessas 5).
 
 #### Autores: sempre do cabeçalho MEI
 
@@ -585,7 +595,7 @@ explicitamente.
 | derivado de todos os campos acima | `pages[].fit` | `scale`, `tx`, `ty` pré-computados |
 | `BridgeTextRun.family` (S05) | `t.family` | face ativa (`FontInfo::GetFaceName()`) no momento do `DrawText`, com fallback para `resources->GetTextFont() + ", serif"` quando vazia (mesmo default do `font-family` da raiz `svg.definition-scale`); nunca vazia |
 | empacotamento | `manifest`, `timemap` | nomes, versão, páginas e timemap embutido |
-| `BridgeMeta.title` (`Page::GetHeader()` da página 1 via `BridgeWriter::ExtractMeta`) | `meta.title` | título como renderizado no cabeçalho; ausente com `--header none` (§2.3) |
+| `BridgeMeta.title` (`Toolkit::ReadBridgeMeta` via `BridgeWriter::ExtractMeta`) | `meta.title` | título como o cabeçalho mostraria com `--header auto`, independente do `--header` real (§2.3) |
 | `BridgeMeta.creators` (`Doc::m_header`) | `meta.creators[].name`, `.role` | autores do `<meiHead>`, independentes de `--header` (§2.3) |
 
 ## 9. Compatibilidade
@@ -612,3 +622,4 @@ explicitamente.
 | 2026-09-20 | `meta.json` (§2.3): título e autores da peça, uma vez por documento e à parte do `scene.json`, lidos do `<meiHead>` do Verovio (MEI e MusicXML). Opcional, com a mesma regra de omissão do timemap (`manifest.files.meta`; propriedade `meta` no JSON único). Mudança aditiva: `version` continua `1` e leitores antigos, que ignoram o arquivo extra, seguem funcionando. Schema, fixture e `score_bridge` (`VsbDocument.meta`) atualizados. |
 | 2026-09-20 | `meta.title` passa a ser derivado do cabeçalho **renderizado** (`Page::GetHeader()` da página 1), seguindo `--header`: ausente com `none`, primeira linha do bloco de título com `auto`, título do cabeçalho codificado com `encoded`. Antes vinha do `<meiHead>`, o que dava título mesmo com o cabeçalho desligado e nenhum título nas peças MusicXML que só têm `<credit-words>` (4 das 5 do corpus, agora todas com título). `creators` continua vindo do `<meiHead>`. Sem mudança de forma: schema, fixture e leitor Dart inalterados. |
 | 2026-09-21 | E01b: §2.4 (nova) documenta o timemap embutido — sempre pedido com `includeMeasures: true` (preenche `measureOn`) e a regra de sufixo `-rend<N>` que resolve um id expandido do timemap ao nó da cena (D-EXPMAP, decisão do usuário: regra documentada, sem `expansion.json` à parte). Mudança aditiva: `version` continua `1`, o formato do pacote não muda, só o conteúdo de `timemap.json` ganha mais um campo por instante. |
+| 2026-09-22 | P01a (D-META-TITULO, opção (a)): `meta.title` deixa de depender de `--header`. Passa a ser o título que o cabeçalho mostraria com `--header auto` — do `<pgHead func="first">`/`<credit>` codificado se a peça já traz um, senão de um `PgHead` descartável gerado do mesmo jeito que `Doc::GenerateHeader()` faria — calculado mesmo com `--header none`. Motivo: P01b torna `--header none` o padrão do `.vsb` (D-VSB-PADRAO), e o host precisa do título mesmo sem cabeçalho desenhado. Medido nas 10 peças do corpus: `title` passa a ser igual com `none`, `auto` e `encoded` (30/30; antes, `encoded` saía sem título nas 5 peças MEI, que não têm `<pgHead>` codificado). `creators` não muda (já independia de `--header`). `scene.json`, `glyphs.json` e `-t svg` byte-idênticos nos 3 valores de `--header` (o desenho não muda). |

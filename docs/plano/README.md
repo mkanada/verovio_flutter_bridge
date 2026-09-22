@@ -175,7 +175,7 @@ que ninguém precise ler este README inteiro para executar um passo.
 | Nós dinâmicos (ids do timemap) por página | mediana 308, máximo 719 |
 | Segmentos alternados por página (A01a) | mediana **196**, máximo **545** |
 | Ids do timemap **ausentes** da cena | Gymnopédie 180, Maple Leaf Rag 883 (sufixo `-rend2`, repetição/expansão; hoje ignorados, a fase E os resolve) |
-| `measureOn` no timemap | **nunca preenchido** — a relação nota→compasso→página sai da cena (E01b passa a preencher) |
+| `measureOn` no timemap | preenchido desde E01b (`includeMeasures: true`); Gymnopédie 78 entradas com `measureOn` (31 `-rend2`), igual ao nº de ocorrências de compasso |
 
 ### Repetições no corpus (medido em 2026-09-21, base da fase E)
 
@@ -312,7 +312,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [A05a](A05a-score-player.md) | `ScorePlayer`: relógio próprio e timemap → destaque | A02b, S07 | — | concluído |
 | [A05b](A05b-virada-automatica-e-evidencias.md) | Virada automática por compasso e evidências | A05a, A03b | — | concluído |
 | [E01a](E01a-corpus-de-repeticoes.md) | Corpus de repetições, roteiro esperado e diagnóstico | A05b | — | concluído |
-| [E01b](E01b-timemap-com-compassos.md) | Timemap com `measureOn` no `.vsb` e contrato dos ids `-rendN` | E01a | D-EXPMAP | pendente |
+| [E01b](E01b-timemap-com-compassos.md) | Timemap com `measureOn` no `.vsb` e contrato dos ids `-rendN` | E01a | D-EXPMAP resolvida | concluído |
 | [E02a](E02a-ids-expandidos.md) | Ids expandidos (`-rendN`) chegam à nota desenhada | E01b | — | pendente |
 | [E02b](E02b-linha-do-tempo-por-ocorrencia.md) | `ScoreTimeline` por ocorrência de compasso | E02a | — | pendente |
 | [E02c](E02c-tocar-a-partir-de-elemento.md) | Tocar a partir de um elemento repetido (`seekToElement`) | E02b | D-TOQUE | pendente |

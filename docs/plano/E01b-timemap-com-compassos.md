@@ -106,4 +106,64 @@ parser em `score_bridge`) e E02a passa a ler o mapa em vez de aplicar a regra.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**D-EXPMAP resolvida pelo usuário: (a) regra do sufixo.** Documentada em
+`docs/formato/especificacao-v1.md` §2.4 (nova). Sem `expansion.json`; sem
+mudança no `manifest.json`.
+
+**Mudança de código.** Uma linha em `Toolkit::RenderToBridgeFile`
+(`verovio/src/toolkit.cpp`): `this->RenderToTimemap()` passa a
+`this->RenderToTimemap("{\"includeMeasures\": true}")`, com um comentário
+explicando por que `includeRests`/`useFractions` continuam de fora. Nada
+mais em `verovio/src` ou `verovio/include`.
+
+**Critério 1 (contagem de `measureOn`).** Nas 10 peças e nas 13 partituras
+mínimas de E01a, o nº de `measureOn` no timemap embutido é **idêntico** ao nº
+de ocorrências que `repeat-order.py` já contava pelas notas (E01a): Gymnopédie
+78 (31 `-rend2`), Maple Leaf Rag 130 (45), r01 10, r02 10, r03 9, r04 6, r05 6,
+r06 18, r07 18, r08 6, r09 8, r10 7, r11 9, r12 5, r13 3, e uma ocorrência por
+compasso nas 4 peças sem repetição de verdade (Étude/Nocturne/Clair de
+Lune/Prelude) e nas 4 MEI que hoje não expandem. Nenhuma diferença por
+"compasso sem nota começando nele" apareceu neste corpus.
+
+**Critério 2 (timemap embutido == `-t timemap --timemap-options
+'{"includeMeasures":true}'`).** Idêntico nas 10 peças (MEI byte a byte,
+MusicXML com `--xml-id-seed`), exceto o último dígito de `tempo` na
+Gymnopédie — o quirk já conhecido de S07 (arredondamento float32 no
+round-trip de `SetMidiDoc`), não uma regressão.
+
+Armadilha do processo de verificação: comparar o timemap embutido (saída de
+`-t vsb`) com o de `-t timemap` avulso só é válido se as duas chamadas
+usarem `--xml-id-seed` — isso vale tanto para MusicXML (já sabido, S07)
+quanto para **MEI**, que também tem elementos sem `xml:id` explícito (feixes,
+hastes, pausas) recebendo id automático a cada execução do binário. Sem o
+seed nos dois lados, `scene.json`/`timemap.json` "divergem" só por isso, sem
+relação com este passo — quase virou um falso positivo aqui.
+
+**Critério 3 (`scene.json`/`glyphs.json`/`meta.json` byte-idênticos).**
+Confirmado nas 10 peças, comparando o binário antes e depois do patch, ambos
+com `--xml-id-seed 42` para as 5 MusicXML e para as 5 MEI (mesma armadilha
+do parágrafo acima). Faz sentido por construção: o patch só troca o argumento
+de uma chamada a `RenderToTimemap`, que não participa da montagem da cena.
+
+**Achado colateral, fora do escopo deste passo mas registrado aqui.** A
+fixture `score_bridge/test/fixtures/erik-satie.vsb` (gerada antes de S08)
+estava desatualizada em relação ao exportador atual: o `scene.json`
+regenerado (com o binário de antes deste patch, sem nenhuma mudança de
+código) já vinha ~20% menor, porque o exportador atual grava o run de texto
+de uma classe `text` como **irmão** do `g` (`{"t":"g","class":"text",
+"children":[]}` seguido de `{"t":"t",...}`), enquanto a fixture antiga tinha
+o `t` **dentro** de `children`. Não há passo no plano documentando quando
+essa mudança aconteceu (não é do S08, que só mexeu em bbox de glifo). A
+fixture foi regenerada como parte da tarefa 3 deste passo (que já pedia
+regenerá-la para embutir `measureOn`); `flutter test` (207/207) e
+`flutter analyze` continuam limpos com a fixture nova, porque nenhum teste
+existente dependia da forma exata dessa aninhação (só de contagens de
+elementos com id e do `nodePath` do percurso completo, que não mudam de
+valor com essa reestruturação). Nenhum teste precisou de número corrigido.
+
+**Regeneração.** `.vsb` das 10 peças regenerados em `compare/out/e01b/`
+(git-ignorado). Fixture `erik-satie.vsb` regenerada com `-x 42`.
+
+**Fora do escopo, confirmado que continua assim:** `-t vsb-json`
+(`RenderToBridgeJson`) não foi tocado e continua sem timemap embutido
+(passa `""` para o parâmetro correspondente, inalterado).

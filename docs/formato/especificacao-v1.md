@@ -161,6 +161,52 @@ e o SVG mostra `Claude Debussy`. Uma peça MusicXML que credita o compositor só
 em `<credit-words>` (4 das 5 do corpus) não tem `creator` e sai sem `creators`,
 mesmo com `title`.
 
+### 2.4 `timemap.json`
+
+O conteúdo é o timemap do próprio `Toolkit` do Verovio (um array de
+instantes, cada um com `tstamp`/`qstamp`, `on`/`off` de notas, `restsOn`/
+`restsOff`, `tempo` quando muda naquele instante), sem reinterpretação — o
+formato só decide **quando** embutir (regra acima) e com quais opções chamar
+o exportador de timemap.
+
+Desde 2026-09-21, o timemap é sempre pedido com `includeMeasures: true`
+(`Toolkit::RenderToBridgeFile`), o que preenche `measureOn` com o `xml:id` do
+compasso que começa naquele instante — presente mesmo quando nenhuma nota
+começa exatamente ali (só ligaduras, ou só pausas). `includeRests` e
+`useFractions` continuam desligados (mudariam outras colunas que o
+`score_bridge` já lê).
+
+**Ids expandidos (`-rend<N>`).** Uma peça com repetição tem, no timemap, ids
+que não existem em `scene.json`: a árvore desenhada é sempre a do documento
+**notado** (sem repetição), enquanto o timemap vem de uma cópia expandida
+internamente pelo Verovio para o cálculo de tempo (`Toolkit::SetMidiDoc`).
+Cada trecho repetido vira um clone com o id `<id notado>-rend<N>` (`N` = a
+N-ésima execução daquele elemento; `N` começa em 2, já que a 1ª execução usa
+o id notado sem sufixo). Isso vale tanto para `measureOn` quanto para os ids
+de `on`/`off`.
+
+O leitor resolve um id do timemap ao nó da cena por uma **regra de sufixo**,
+sem precisar de um arquivo extra:
+
+1. Se o id existe em `scene.json`, ele é o próprio nó — na 1ª execução.
+   (Isso vale mesmo que o id termine em `-rend<N>`: um host que desenhe a
+   partitura já expandida, por exemplo com `--expand-always`, tem esses
+   clones como nós próprios da cena, e a regra do sufixo nunca se aplica a
+   um id que já existe.)
+2. Senão, se o id casa com `^(.*)-rend([0-9]+)$` e a base (grupo 1) existe em
+   `scene.json`, o id representa a base, na execução número do grupo 2.
+3. Senão, o id não pertence à cena (ex.: um `xml:id` interno do documento
+   expandido que não corresponde a nada desenhado).
+
+Verificado sobre o corpus e sobre um conjunto de partituras de teste com
+todo tipo de repetição (D.C./D.S./coda, casas, `times`, repetição aninhada
+num compasso só): a regra concorda com o `-t expansionmap` do Verovio em
+100% dos ids de timemap (2 933 ids checados inicialmente, `docs/plano/
+E01a-corpus-de-repeticoes.md`/`E01b-timemap-com-compassos.md`), então o
+formato não ganha um `expansion.json` à parte — o mapa completo do Verovio
+lista todo elemento clonado (pauta, camada, haste…), não só os ids do
+timemap, e pesa 50-207 KB por peça no corpus.
+
 ## 3. Unidades e ajuste de página
 
 Todas as coordenadas de desenho estão em **unidades de viewBox** — exatamente
@@ -565,3 +611,4 @@ explicitamente.
 | 2026-09-20 | `pages[].elements` removido do formato: o índice plano de §5.5 era redundância deliberada com a árvore e custava 20,5% do `scene.json` / 29,3% do `.vsb`. §5.5 passa a especificar a **regra de derivação** que o leitor aplica no percurso que já faz; `BridgeIndexEntry`/`BridgePage::index` saíram do exportador e o `score_bridge` constrói `ScenePage.elements` no parse. Um leitor que encontre `elements` num arquivo antigo pode ignorá-lo. |
 | 2026-09-20 | `meta.json` (§2.3): título e autores da peça, uma vez por documento e à parte do `scene.json`, lidos do `<meiHead>` do Verovio (MEI e MusicXML). Opcional, com a mesma regra de omissão do timemap (`manifest.files.meta`; propriedade `meta` no JSON único). Mudança aditiva: `version` continua `1` e leitores antigos, que ignoram o arquivo extra, seguem funcionando. Schema, fixture e `score_bridge` (`VsbDocument.meta`) atualizados. |
 | 2026-09-20 | `meta.title` passa a ser derivado do cabeçalho **renderizado** (`Page::GetHeader()` da página 1), seguindo `--header`: ausente com `none`, primeira linha do bloco de título com `auto`, título do cabeçalho codificado com `encoded`. Antes vinha do `<meiHead>`, o que dava título mesmo com o cabeçalho desligado e nenhum título nas peças MusicXML que só têm `<credit-words>` (4 das 5 do corpus, agora todas com título). `creators` continua vindo do `<meiHead>`. Sem mudança de forma: schema, fixture e leitor Dart inalterados. |
+| 2026-09-21 | E01b: §2.4 (nova) documenta o timemap embutido — sempre pedido com `includeMeasures: true` (preenche `measureOn`) e a regra de sufixo `-rend<N>` que resolve um id expandido do timemap ao nó da cena (D-EXPMAP, decisão do usuário: regra documentada, sem `expansion.json` à parte). Mudança aditiva: `version` continua `1`, o formato do pacote não muda, só o conteúdo de `timemap.json` ganha mais um campo por instante. |

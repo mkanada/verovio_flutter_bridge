@@ -2144,7 +2144,12 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     // round-trip. Not a bridge/vsb defect - Att::StrToDbl affects every MEI double attribute and is
     // out of S07's scope to fix; onset/offset xml:ids are unaffected, only a tempo value's last
     // significant digit is.
-    std::string timemapJson = this->RenderToTimemap();
+    // docs/formato/especificacao-v1.md §2: includeMeasures fills each instant that starts a
+    // measure with "measureOn" (the measure's xml:id, or its expanded "-rendN" clone on a
+    // repeated pass) - the ground truth for playback order (E01b), independent of whether a note
+    // happens to start there. Not passing includeRests/useFractions: those would change other
+    // columns score_bridge already reads.
+    std::string timemapJson = this->RenderToTimemap("{\"includeMeasures\": true}");
     jsonxx::Array timemapArray;
     const bool hasTimemap = timemapArray.parse(timemapJson) && !timemapArray.empty();
     if (!hasTimemap) timemapJson.clear();

@@ -229,12 +229,18 @@ class VerovioToolkit {
   ///
   /// The output is binary, so - like the CLI - it can only be written to a
   /// file, never returned as a string. This is what `score_bridge` parses.
+  ///
+  /// Call `setOutputTo('vsb')` before `loadFile`/`loadData` - see the
+  /// "Use it" section of this package's README for why.
   bool renderToBridgeFile(String filename) => using((arena) => _bindings
       .renderToBridgeFile(_tk, filename.toNativeUtf8(allocator: arena)));
 
   /// The scene of every page as one JSON document (`-t vsb-json` on the CLI):
   /// a single glyph dictionary shared by all pages, no zip and no timemap.
   /// Useful for debugging; `renderToBridgeFile` is the production path.
+  ///
+  /// Call `setOutputTo('vsb-json')` before `loadFile`/`loadData` - see the
+  /// "Use it" section of this package's README for why.
   String renderToBridgeJson() => _fromUtf8(_bindings.renderToBridgeJson(_tk));
 
   String renderToExpansionMap() =>

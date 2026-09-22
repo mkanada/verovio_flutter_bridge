@@ -338,7 +338,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E05](E05-portao-das-repeticoes.md) | Portão da fase E: repetições de ponta a ponta | E02c, E03b, E04b | — | concluído |
 | [P00](P00-visao-geral-paginas-alternativas.md) | **Visão geral da fase P** (leitura obrigatória, não executável) | — | — | — |
 | [P01a](P01a-titulo-sem-cabecalho.md) | `meta.title` sem depender do cabeçalho desenhado | — | D-META-TITULO resolvida | concluído |
-| [P01b](P01b-padroes-do-vsb.md) | Padrões do `.vsb`: sem cabeçalho, rodapé e rótulo | P01a | D-VSB-PADRAO resolvida | pendente |
+| [P01b](P01b-padroes-do-vsb.md) | Padrões do `.vsb`: sem cabeçalho, rodapé e rótulo | P01a | D-VSB-PADRAO resolvida | concluído |
 | [P01c](P01c-remedir-corpus.md) | Regenerar corpus e fixtures, re-medir paridade e fatos | P01b | — | pendente |
 | [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | pendente |
 | [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | pendente |

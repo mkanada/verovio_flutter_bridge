@@ -45,11 +45,28 @@ dart run example/main.dart ../../../corpus/mei/Grieg_Little_bird_Op43_No4.mei ou
 import 'package:verovio/verovio.dart';
 
 final toolkit = VerovioToolkit.withResourcePath('../../data'); // Bravura/Leipzig fonts
+toolkit.setOutputTo('vsb'); // before loadFile: see note below
 toolkit.loadFile('score.mei');
 toolkit.renderToBridgeFile('score.vsb');  // whole score as a package, -t vsb
 final json = toolkit.renderToBridgeJson(); // every page as one JSON, -t vsb-json
 toolkit.dispose();
 ```
+
+Call `setOutputTo('vsb')` (or `'vsb-json'`) **before** `loadFile`/`loadData`,
+even if you only ever call `renderToBridgeFile`/`renderToBridgeJson`
+afterwards. The bridge's own layout defaults (P01b, D-VSB-PADRAO: no header,
+no footer, no instrument labels, unless you set one of the three yourself)
+only kick in while the toolkit's output format is `vsb`/`vsb-json`, and all
+three affect page layout — they have to be in place before the document is
+loaded and cast off, not just before rendering. Skip the call (or set the
+output format to something else) and you get Verovio's regular defaults
+(header/footer drawn, instrument labels shown) instead.
+
+One caveat of how Verovio's `Option` tracks "was this passed on the command
+line/API:" it can't tell "not passed" from "passed with the default value",
+so an explicit `setOptions({'header': 'auto'})` on a `vsb` export does **not**
+turn the header back on — use `'encoded'` instead if the piece has one baked
+in, or read the un-rendered title from `meta.title` either way (P01a).
 
 `VerovioToolkit` exposes the full `c_wrapper.h` surface (loading, SVG,
 MIDI, PAE, Humdrum conversion, timemap, expansion map, editor actions,

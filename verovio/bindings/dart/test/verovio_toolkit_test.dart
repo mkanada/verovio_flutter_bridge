@@ -92,4 +92,42 @@ void main() {
     // The whole document, not just page 1 - same default as the CLI's -a.
     expect(pages, hasLength(toolkit.getPageCount()));
   });
+
+  // Collects every space-separated class token used in the scene tree, e.g.
+  // "mdiv pageMilestone" contributes both "mdiv" and "pageMilestone".
+  Set<String> _classTokens(Map<String, dynamic> node, Set<String> acc) {
+    final classAttr = node['class'] as String?;
+    if (classAttr != null) acc.addAll(classAttr.split(' '));
+    for (final child in (node['children'] as List? ?? const [])) {
+      _classTokens(child as Map<String, dynamic>, acc);
+    }
+    return acc;
+  }
+
+  test(
+      'setOutputTo(vsb) before loadFile suppresses header/footer/label '
+      '(P01b, D-VSB-PADRAO)', () {
+    final toolkit = VerovioToolkit.withResourcePath(resourcePath);
+    addTearDown(toolkit.dispose);
+
+    expect(toolkit.setOutputTo('vsb'), isTrue);
+    expect(toolkit.loadFile(sampleMei), isTrue);
+
+    final doc =
+        jsonDecode(toolkit.renderToBridgeJson()) as Map<String, dynamic>;
+    final pages = (doc['scene'] as Map<String, dynamic>)['pages'] as List;
+    final classes = <String>{};
+    for (final page in pages) {
+      _classTokens(
+          (page as Map<String, dynamic>)['root'] as Map<String, dynamic>,
+          classes);
+    }
+
+    expect(classes, isNot(contains('pgHead')));
+    expect(classes, isNot(contains('pgFoot')));
+    expect(classes, isNot(contains('label')));
+    // meta.title survives even with no header drawn (P01a): the whole point
+    // of computing it independently of --header.
+    expect((doc['meta'] as Map<String, dynamic>?)?['title'], isNotNull);
+  });
 }

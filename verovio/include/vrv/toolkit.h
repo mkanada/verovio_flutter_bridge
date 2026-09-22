@@ -454,6 +454,12 @@ public:
      * Render a page range to the Bridge JSON document (`-t vsb-json`): one glyph dictionary
      * shared by every page in the range, plus the scene for each of those pages.
      *
+     * Call `SetOutputTo("vsb-json")` before `LoadData`/`LoadFile`: the bridge's own layout
+     * defaults (P01b, D-VSB-PADRAO - no header, no footer, no instrument labels, unless the
+     * caller set one of those explicitly) only apply while `m_options->GetOutputTo()` is
+     * `VSB`/`VSB_JSON`, and those three affect page layout, so they must be in place before the
+     * document is loaded and cast off, not just before rendering.
+     *
      * @param fromPage The first page to render (1-based)
      * @param toPage The last page to render (1-based); a negative value means the last page
      * @return The Bridge JSON document as a string
@@ -479,6 +485,8 @@ public:
      * both the file and the manifest entry, never an empty timemap) and meta.json when there is a
      * rendered title or a credited person (§2.3, same omission rule). Always the full document,
      * unlike RenderToBridgeJsonFile's optional page range.
+     *
+     * Call `SetOutputTo("vsb")` before `LoadData`/`LoadFile` - see RenderToBridgeJson for why.
      *
      * @remark nojs
      *
@@ -856,6 +864,18 @@ private:
     void SetViewAndEditor();
 
     /**
+     * Force the bridge's own layout defaults (P01b, D-VSB-PADRAO) for `-t vsb`/`-t vsb-json`:
+     * `--header none`, `--footer none`, `--no-instrument-labels`, so the score gets the extra
+     * space and pages P02* generates for a repeat's arrival measure look the same as a normal
+     * page. Only touches an option the caller has not already set explicitly (`Option::IsSet()`);
+     * a caveat of that check (it cannot tell "not passed" from "passed with the default value")
+     * is that an explicit `--header auto` on a `.vsb` export does not turn the header back on -
+     * use `--header encoded` instead. Must run before LoadData's cast-off, since all three affect
+     * page layout, not just drawing.
+     */
+    void ApplyBridgeDefaults();
+
+    /**
      * Set the Doc pointer for MIDI / Timemap rendering.
      * Point to the main Doc if no difference in expansion handling is needed.
      */
@@ -872,9 +892,9 @@ private:
     bool RenderPagesToBridge(BridgeDeviceContext &bridge, int fromPage, int toPage);
 
     /**
-     * Piece metadata for the `.vsb` (docs/formato/especificacao-v1.md §2.3). The title follows what
-     * the `--header` option makes Verovio render on the first page - none when the header is off -
-     * see BridgeWriter::ExtractMeta.
+     * Piece metadata for the `.vsb` (docs/formato/especificacao-v1.md §2.3). The title is what the
+     * first page's header would show with `--header auto`, independent of the `--header` actually
+     * in effect (P01a, D-META-TITULO) - see BridgeWriter::ExtractMeta.
      */
     BridgeMeta ReadBridgeMeta();
 

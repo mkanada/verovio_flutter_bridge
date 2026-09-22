@@ -526,6 +526,15 @@ void Toolkit::SetViewAndEditor()
 #endif
 }
 
+void Toolkit::ApplyBridgeDefaults()
+{
+    if ((m_options->GetOutputTo() != VSB) && (m_options->GetOutputTo() != VSB_JSON)) return;
+
+    if (!m_options->m_header.IsSet()) m_options->m_header.SetValue(HEADER_none);
+    if (!m_options->m_footer.IsSet()) m_options->m_footer.SetValue(FOOTER_none);
+    if (!m_options->m_noInstrumentLabels.IsSet()) m_options->m_noInstrumentLabels.SetValue(true);
+}
+
 bool Toolkit::LoadData(const std::string &data, bool resetLogBuffer)
 {
     const Resources &resources = m_doc.GetResources();
@@ -533,6 +542,8 @@ bool Toolkit::LoadData(const std::string &data, bool resetLogBuffer)
         LogError("The data cannot be loaded because the font resources are not available");
         return false;
     }
+
+    this->ApplyBridgeDefaults();
 
     std::string newData;
     Input *input = NULL;

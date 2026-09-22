@@ -965,7 +965,11 @@ Options::Options()
 
     m_outputTo.SetInfo("Output to",
         "Select output format to: \"mei\", \"mei-pb\", \"mei-facs\", \"mei-basic\", \"svg\", \"midi\", \"timemap\", "
-        "\"expansionmap\", \"humdrum\", \"pae\", \"mei-pb-serialized\", \"vsb\" or \"vsb-json\"");
+        "\"expansionmap\", \"humdrum\", \"pae\", \"mei-pb-serialized\", \"vsb\" or \"vsb-json\". \"vsb\"/\"vsb-json\" "
+        "default --header, --footer to \"none\" and --no-instrument-labels to true, for any of the three not "
+        "explicitly passed (P01b, D-VSB-PADRAO); pass --header encoded to draw an encoded header on a .vsb "
+        "(an explicit --header auto does not re-enable it, since Verovio's Option can't tell \"not passed\" "
+        "from \"passed with the default value\")");
     m_outputTo.Init("svg");
     m_outputTo.SetKey("outputTo");
     m_outputTo.SetShortOption('t', true);

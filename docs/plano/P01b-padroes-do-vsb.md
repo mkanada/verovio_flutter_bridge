@@ -88,4 +88,55 @@ continuar escolhendo outro valor explicitamente.
 
 ## Notas de execução
 
-_(preencher)_
+Implementado como descrito: `Toolkit::ApplyBridgeDefaults()` (novo método
+privado, `verovio/src/toolkit.cpp`), chamado no início de
+`Toolkit::LoadData(const std::string &, bool)`, antes de qualquer outro
+processamento. Só mexe em `m_header`/`m_footer`/`m_noInstrumentLabels` quando
+`m_options->GetOutputTo()` é `VSB`/`VSB_JSON` **e** a opção ainda não foi
+setada (`Option::IsSet()`). Não achei um jeito limpo de distinguir "não
+passado" de "passado com o valor padrão" sem mexer em `Option` além do
+mínimo (o problema é estrutural: `OptionBool`/`OptionIntMap` só guardam
+`m_value`/`m_defaultValue`, não um terceiro estado); segui com a limitação
+documentada, como o passo previa.
+
+Critério 1: 0 nós `pgHead`/`pgFoot`/`label` no `.vsb` padrão, nas 10 peças
+(medido com `-t vsb-json`, `--xml-id-seed 42` fixo — sem seed fixo o
+`xml:id` sintético de `mdiv`/`pageMilestone` muda a cada execução e "some"
+sozinho da comparação, sem relação com este passo, mesma armadilha de P01a).
+Contagem de `pgFoot` **antes** deste passo (com `--header auto --footer auto`,
+que já não é mais o padrão do `.vsb`): não medi de novo (o número citado no
+passo, "8, 6, 14, 0, 4, 6, 4, 6, 4, 6", já vem de antes; não repeti porque o
+critério real é "0 depois", que medi diretamente).
+
+Critério 2: `--header encoded` sobrescreve o padrão e desenha nas 5 peças
+MusicXML (têm `<credit>` codificado, batido como `pgHead` na importação);
+nas 5 peças MEI (sem `<pgHead>` codificado) continua sem cabeçalho — mesma
+observação de P01a, não é regressão deste passo.
+
+Critério 3: `-t svg` sem flags, nas 10 peças (34 páginas), byte-idêntico
+antes/depois deste passo — a única diferença bruta encontrada foi a string
+`<desc>Engraved by Verovio 6.3.0-<hash>-dirty</desc>` (o hash do commit no
+`--version`, que muda com o HEAD/dirty state do build, não com o código);
+ignorando essa linha, 0 diferenças nas 34 páginas.
+
+Critério 4: `meta.json` do `.vsb` padrão (`--header none --footer none
+--no-instrument-labels`) tem `title` igual ao de `--header auto` de antes de
+P01a nas 10 peças — já garantido pelo P01a (que calcula `title`
+independente de `--header`); aqui só confirmei que continua True com o novo
+padrão.
+
+Critério 5: `dart test` em `verovio/bindings/dart/` — 5/5 verdes, incluindo
+o teste novo (`setOutputTo(vsb) before loadFile suppresses
+header/footer/label`), que carrega a Little bird com `setOutputTo('vsb')`
+antes de `loadFile` e confere 0 `pgHead`/`pgFoot`/`label` e `meta.title`
+não nulo. Precisou reconstruir `libverovio.so`
+(`./build_linux_so.sh`, ~2 min) antes de rodar. Build do Verovio (CLI) sem
+avisos novos.
+
+Documentação: `-t`/`m_outputTo` (`options.cpp`), `RenderToBridgeFile`/
+`RenderToBridgeJson` (`toolkit.h`) e o `README.md` do binding Dart (exemplo
+de uso + nota) e o doc-comment de `renderToBridgeFile`/`renderToBridgeJson`
+em `verovio_toolkit.dart` avisam que `setOutputTo('vsb'|'vsb-json')` precisa
+vir **antes** de `loadFile`/`loadData` — os três padrões afetam layout
+(cast-off), não só desenho, e `ApplyBridgeDefaults()` só roda dentro de
+`LoadData`.

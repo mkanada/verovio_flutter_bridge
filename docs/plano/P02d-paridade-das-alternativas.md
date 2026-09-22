@@ -59,4 +59,66 @@ inegociável 1 do `CLAUDE.md`, agora para as páginas novas.
 
 ## Notas de execução
 
-_(preencher)_
+**`--select-from` (item 1).** Implementado como opção genérica registrada
+(`OptionString m_selectFrom`, `options.h`/`.cpp`, grupo geral), não como
+flag ad-hoc de `getopt` — primeira tentativa foi um `getopt_long` manual
+(entrada em `baseOptions` + `case` próprio, como `--stdin`/`'z'`), mas
+registrar como `vrv::Option` de verdade dá dois benefícios de graça: aparece
+documentado em `-h general` (item explícito do passo) e evita uma entrada
+de long-option duplicada (a lista genérica de `main.cpp` já registra
+**todo** `vrv::Option` automaticamente — uma entrada manual para o mesmo
+nome longo colidiria). Lido via `options->m_selectFrom.IsSet()` logo depois
+do `LoadFile`/`LoadData`, antes de qualquer render.
+
+**Mesmo caminho do exportador (item 1, "reuse-o").** `Toolkit::
+SelectFromMeasureToEnd(measureId)` (novo método público, `toolkit.h`/`.cpp`)
+extrai exatamente a lógica que P02c já tinha inline em
+`RenderAlternatesToBridge` (achar o último compasso, montar o JSON de
+seleção, `Select`+`RedoLayout`, `HasSelection()` como sinal de sucesso) —
+refatorado para os dois chamarem o mesmo método, não duas cópias
+parecidas. `RenderAlternatesToBridge` ficou mais curto e a CLI ganha a
+garantia de "é o mesmo mecanismo" por construção, não por revisão manual.
+
+**`scene-to-png --alternate` (item 2).** `sceneToPng` ganhou
+`alternateStart` opcional: quando dado, lê `doc.alternateStartingAt(id)`
+(P03a) em vez de `doc.pages`; `--page` continua 1-based, agora dentro da
+sequência. `compare/lib/main.dart` expõe `--alternate <start-id>` no
+comando.
+
+**`compare-page.sh --alternate` / `compare-corpus.sh SWEEP_ALTERNATES=1`
+(item 3).** Achado ao testar manualmente: sem uma semente fixa de
+`xml:id`, o `--alternate <id>` do chamador nunca bate com o `.vsb` que o
+próprio script gera internamente (cada `verovio` sorteia uma sequência de
+ids diferente sem `--xml-id-seed`) — o `.vsb`/SVG de referência das páginas
+**normais** nunca precisou de semente (a comparação é só de pixel, nunca
+por id), mas o modo `--alternate` depende de casar o mesmo `xml:id` entre
+duas chamadas separadas ao `verovio`. Corrigido com `--xml-id-seed 42`
+fixo (a mesma semente do resto do projeto, `check-suffix-rule.py`) só
+nesse modo. `compare-corpus.sh` ganhou uma segunda passada opcional
+(`SWEEP_ALTERNATES=1`) que sonda `alternates.json` de cada peça (mesma
+semente) e chama `compare-page.sh --alternate` para cada página de cada
+sequência, num CSV à parte (`resultado-alternates.csv`) — não entra no
+`resultado.csv` nem no total de 34 páginas do gate de R06a, que continua
+medindo só as páginas normais.
+
+**Critério 1** (todas as páginas alternativas do corpus acima de 99,99%).
+`CORPUS_DIR=compare/out/p02d SWEEP_ALTERNATES=1 compare-corpus.sh 128`:
+18/18 páginas alternativas (as 4 peças com pontos de chegada que sobrevivem
+à regra de existência de §2.5 — Gymnopédie 1, Maple Leaf Rag 13 em 8
+sequências, Mazurka 2, Little bird 2), sem nenhuma falha. Tabela completa
+em `docs/relatorio-paridade.md`, seção "Atualização de 2026-09-22 — P02d".
+
+**Critério 2** (média comparável às páginas normais de P01c). 0,006514%
+(alternativas) vs. 0,006402% (normais de P01c) — praticamente igual;
+14/18 (78%) ≤ 0,01% vs. 27/34 (79%) nas normais; máximo 0,021789%, bem
+abaixo do teto de 0,05%. Nenhuma página precisou de investigação de
+imagem de diff (nenhuma acima de 0,01% chegou perto do teto).
+
+**Critério 3** (`-t svg` sem `--select-from` byte-idêntico a antes do
+passo). `git stash` dos 5 arquivos tocados
+(`options.h`/`toolkit.h`/`options.cpp`/`toolkit.cpp`/`main.cpp`),
+recompilado, `-t svg -a` no Chopin Étude (4 páginas, `-x 42`) antes/depois:
+0 diferenças.
+
+**Critério 4**: build sem avisos novos (duas recompilações completas, por
+mudar `options.h`); `flutter analyze` limpo em `compare/` (0 avisos).

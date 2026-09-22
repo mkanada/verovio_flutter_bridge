@@ -2215,6 +2215,27 @@ std::vector<std::string> Toolkit::ComputeAlternateStarts()
     return BridgeAlternates::FindAlternateStarts(executionOrder, docOrder, firstOfNormalPage);
 }
 
+bool Toolkit::SelectFromMeasureToEnd(const std::string &measureId)
+{
+    const std::map<std::string, int> docOrder = this->ComputeMeasureDocOrder();
+    if (!docOrder.count(measureId)) {
+        LogError("SelectFromMeasureToEnd: measure '%s' not found", measureId.c_str());
+        return false;
+    }
+    const ListOfObjects measures = m_doc.FindAllDescendantsByType(MEASURE, false);
+    assert(!measures.empty()); // docOrder has measureId, so there is at least one measure
+    const std::string lastMeasureId = measures.back()->GetID();
+
+    this->Select("{\"start\":\"" + measureId + "\",\"end\":\"" + lastMeasureId + "\"}");
+    this->RedoLayout();
+
+    // docs/plano/P00 + doc.cpp's own InitSelectionDoc: a selection that could not be made
+    // (start/end not found, or too few pages resulting) clears m_selectionStart/End without
+    // reactivating anything - HasSelection() is the cheapest way to ask "did this actually apply"
+    // without re-deriving InitSelectionDoc's own logic here.
+    return m_doc.HasSelection();
+}
+
 std::vector<BridgeAlternateSequence> Toolkit::RenderAlternatesToBridge(BridgeDeviceContext &bridge)
 {
     std::vector<BridgeAlternateSequence> sequences;
@@ -2222,10 +2243,6 @@ std::vector<BridgeAlternateSequence> Toolkit::RenderAlternatesToBridge(BridgeDev
     if (!m_options->m_noVsbAlternates.GetValue()) {
         const std::vector<std::string> starts = this->ComputeAlternateStarts();
         if (!starts.empty()) {
-            const ListOfObjects measures = m_doc.FindAllDescendantsByType(MEASURE, false);
-            assert(!measures.empty()); // starts is non-empty, so the Doc has at least one measure
-            const std::string lastMeasureId = measures.back()->GetID();
-
             // Index ranges, not pointers: bridge.GetPages() is a std::vector<BridgePage>, and
             // pushing more pages into it (the next Select/render, or the caller's own normal pages
             // if it built them before calling this) can reallocate and invalidate any pointer taken
@@ -2239,15 +2256,7 @@ std::vector<BridgeAlternateSequence> Toolkit::RenderAlternatesToBridge(BridgeDev
             std::vector<SequenceRange> ranges;
 
             for (const std::string &start : starts) {
-                const std::string selectionJson = "{\"start\":\"" + start + "\",\"end\":\"" + lastMeasureId + "\"}";
-                this->Select(selectionJson);
-                this->RedoLayout();
-
-                // docs/plano/P00 + doc.cpp's own InitSelectionDoc: a selection that could not be
-                // made (start/end not found, or too few pages resulting) clears m_selectionStart/
-                // End without reactivating anything - HasSelection() is the cheapest way to ask
-                // "did this actually apply" without re-deriving InitSelectionDoc's own logic here.
-                if (!m_doc.HasSelection()) {
+                if (!this->SelectFromMeasureToEnd(start)) {
                     LogWarning("Alternate sequence for '%s' skipped: selection could not be made", start.c_str());
                     continue;
                 }

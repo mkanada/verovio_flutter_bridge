@@ -329,6 +329,52 @@ contagem, não necessariamente as mesmas páginas (a paginação mudou, então
 Nenhuma página passa de 0,05%: o portão de 99,99% continua satisfeito, com
 folga maior que antes.
 
+## Atualização de 2026-09-22 — P02d: paridade das páginas alternativas
+
+Requisito inegociável 1 do `CLAUDE.md`, agora para as páginas alternativas
+de `alternates.json` (§2.5, P02c): cada uma é uma seleção
+(`Toolkit::SelectFromMeasureToEnd`, o mesmo mecanismo que o exportador usa)
+renderizada de novo, então precisa da mesma prova de paridade que as
+páginas normais.
+
+Mecanismo: `-t svg --select-from <xml:id>` (novo, `tools/main.cpp` +
+`Toolkit::SelectFromMeasureToEnd`) gera a referência da sequência que começa
+naquele compasso; `compare scene-to-png --alternate <xml:id>` (novo,
+`compare/lib/src/scene_to_png.dart`, lê `VsbDocument.alternateStartingAt`,
+P03a) desenha a mesma sequência a partir do `.vsb`.
+`compare-page.sh`/`compare-corpus.sh` ganharam `--alternate`/
+`SWEEP_ALTERNATES=1` para varrer as duas ao mesmo tempo, com `--xml-id-seed
+42` fixo só nesse modo (os dois lados — a referência SVG e o `.vsb` que a
+sondagem lê — precisam gerar o mesmo `xml:id` de compasso de chegada; sem
+semente fixa cada `verovio` roda com uma sequência de ids diferente).
+
+Comando: `CORPUS_DIR=compare/out/p02d SWEEP_ALTERNATES=1
+compare/scripts/compare-corpus.sh 128` (git-ignorado). As 10 peças do
+corpus geram 18 páginas alternativas ao todo (Gymnopédie 1, Maple Leaf Rag
+13 em 8 sequências, Mazurka 2, Little bird 2; Butterfly e Scarlatti têm
+pontos de chegada mas nenhum sobrevive à regra de existência de §2.5 — já
+são o 1º compasso de alguma página normal, P02b).
+
+| | Skia, páginas normais (P01c) | Skia, páginas alternativas (P02d) |
+| --- | --- | --- |
+| Páginas | 34/34 | 18/18 |
+| Min | 0,000128% | 0,000096% |
+| Max | 0,024964% | 0,021789% |
+| Média | 0,006402% | 0,006514% |
+| Páginas ≤ 0,01% | 27/34 (79%) | 14/18 (78%) |
+| Páginas ≤ 0,05% | 34/34 | 18/18 |
+
+**Paridade comparável às páginas normais** — a média (0,006514% vs.
+0,006402%) e a proporção ≤ 0,01% (78% vs. 79%) praticamente coincidem, e
+nenhuma página passa de 0,022%. Esperado: uma página alternativa é uma
+seleção do **mesmo** documento renderizada pelo **mesmo** `View`/
+`BridgeDeviceContext`, só com um recorte de compassos diferente — não há
+nenhum caminho de código novo que pudesse introduzir uma categoria de
+divergência que as páginas normais não já tivessem (texto comum continua
+sendo a maior fonte, risco 1 do plano). As piores páginas (Maple Leaf Rag,
+0,018-0,022%) são justamente as sequências mais cedo no documento, com mais
+texto/dinâmica por página — mesma assinatura das piores páginas normais.
+
 ## Comando exato
 
 ```

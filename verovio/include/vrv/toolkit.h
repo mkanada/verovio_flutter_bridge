@@ -306,6 +306,25 @@ public:
      */
     bool Select(const std::string &selection);
 
+    /**
+     * Selects the measure range from `measureId` to the document's own last measure and redoes
+     * the layout (`Select` + `RedoLayout`), the same "one repeat sequence" selection P02c's
+     * RenderAlternatesToBridge makes for each arrival point. Used by `-t svg --select-from
+     * <measure-id>` (P02d) to render the reference for an alternate page sequence's paginated
+     * re-render with the exact same mechanism the exporter uses, and reusable by any other caller
+     * that needs "this measure to the end of the piece" without knowing the last measure's id.
+     *
+     * Leaves the selection in place (unlike RenderAlternatesToBridge, which always resets back to
+     * normal before returning) - the caller decides when to reset with `Select("")` +
+     * `RedoLayout()`.
+     *
+     * @param measureId The `xml:id` of the measure the selection should start at.
+     * @return True if the selection was made; false if `measureId` is not a measure in the
+     *     document, or if the selection could not be made ("Selection could not be made", the same
+     *     failure `InitSelectionDoc` logs).
+     */
+    bool SelectFromMeasureToEnd(const std::string &measureId);
+
     ///@}
 
     /**

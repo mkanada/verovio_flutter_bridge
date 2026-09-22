@@ -20,6 +20,14 @@
 # não for 34 páginas (o tamanho do corpus em S08/R06a) ou se qualquer página
 # falhar. Backend via COMPARE_BACKEND (padrão: skia — o Impeller no Linux não
 # aplica antialiasing; ver compare-page.sh), repassado ao compare-page.sh.
+#
+# SWEEP_ALTERNATES=1 (P02d, §2.5): depois da varredura normal (que continua
+# tendo que dar exatamente 34 páginas, o gate de R06a), varre também toda
+# página de toda sequência alternativa de cada peça - `<peça>-alt<K>-p<N>.*`,
+# igual a compare-page.sh --alternate, num CSV à parte
+# ($CORPUS_DIR/resultado-alternates.csv), sem contar para o total de 34
+# nem para o `resultado.csv` das páginas normais (peças sem repetição não
+# entram nesse CSV).
 set -euo pipefail
 
 TOLERANCE=${1:-128}
@@ -127,4 +135,81 @@ echo "Total: $TOTAL_PAGES páginas em $((END - START))s → $CSV"
 if [[ "$TOTAL_PAGES" != "34" ]]; then
     echo "FALHA: esperado 34 páginas (tamanho do corpus em S08/R06a)." >&2
     exit 1
+fi
+
+if [[ "${SWEEP_ALTERNATES:-0}" == "1" ]]; then
+    ALT_CSV="$CORPUS_DIR/resultado-alternates.csv"
+    echo "peca;pagina;largura;altura;divergentes;total;pct;bytes_vsb" > "$ALT_CSV"
+    TOTAL_ALT_PAGES=0
+    ALT_START=$(date +%s)
+
+    for INPUT_FILE in "${INPUT_FILES[@]}"; do
+        BASENAME="$(basename "$INPUT_FILE")"
+        NAME="${BASENAME%.*}"
+
+        # -x 42 fixo (a mesma semente de compare-page.sh --alternate): só para
+        # descobrir quais sequências existem e seus `start`; compare-page.sh
+        # regenera o próprio .vsb com a mesma semente, então os ids batem.
+        TMP_ALT_PROBE="$CORPUS_DIR/_alt-probe-tmp"
+        "$VEROVIO_BIN" -t vsb --xml-id-seed 42 -o "$TMP_ALT_PROBE" --resource-path "$RESOURCE_PATH" \
+            "$INPUT_FILE" >/dev/null
+        STARTS_AND_COUNTS="$(python3 - "$TMP_ALT_PROBE.vsb" <<'PYEOF'
+import json
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as z:
+    if "alternates.json" not in z.namelist():
+        sys.exit(0)
+    alternates = json.loads(z.read("alternates.json"))
+for seq in alternates["sequences"]:
+    print(f"{seq['start']};{len(seq['pages'])}")
+PYEOF
+)"
+        rm -f "$TMP_ALT_PROBE.vsb"
+
+        if [[ -z "$STARTS_AND_COUNTS" ]]; then
+            echo "=== $NAME (sem sequências alternativas) ==="
+            continue
+        fi
+
+        while IFS=';' read -r START PAGE_COUNT; do
+            [[ -z "$START" ]] && continue
+            echo "=== $NAME, sequência $START ($PAGE_COUNT páginas) ==="
+            for ((P = 1; P <= PAGE_COUNT; P++)); do
+                LOG="$CORPUS_DIR/_alt-${NAME}-${START}-p${P}.log"
+                if ! "$PAGE_SCRIPT" "$INPUT_FILE" "$P" "$TOLERANCE" --alternate "$START" \
+                    >"$LOG" 2>"$LOG.stderr"; then
+                    echo "FALHA em $NAME sequência $START página $P (ver $LOG e $LOG.stderr)." >&2
+                    exit 1
+                fi
+                STABLE="$(tail -n 1 "$LOG")"
+                if ! [[ "$STABLE" =~ ^[^[:space:]]+\;[0-9]+\;[0-9]+\;[0-9]+\;[0-9]+\;[0-9]+\;[0-9.]+$ ]]; then
+                    echo "FALHA em $NAME sequência $START página $P: linha estável fora do formato:" >&2
+                    echo "$STABLE" >&2
+                    exit 1
+                fi
+                PAGE_PREFIX="$(echo "$STABLE" | cut -d';' -f1)-p${P}"
+                for f in "$OUT_DIR/${PAGE_PREFIX}.svg" "$OUT_DIR/${PAGE_PREFIX}.vsb" \
+                    "$OUT_DIR/${PAGE_PREFIX}-svg.png" \
+                    "$OUT_DIR/${PAGE_PREFIX}-scene.png" \
+                    "$OUT_DIR/${PAGE_PREFIX}-diff.png"; do
+                    if [[ ! -f "$f" ]]; then
+                        echo "FALHA em $PAGE_PREFIX: esperado $f não gerado." >&2
+                        exit 1
+                    fi
+                    mv "$f" "$CORPUS_DIR/"
+                done
+                VSB_BYTES="$(stat -c%s "$CORPUS_DIR/${PAGE_PREFIX}.vsb")"
+                echo "${STABLE};${VSB_BYTES}" >> "$ALT_CSV"
+                echo "${STABLE};${VSB_BYTES}"
+                rm -f "$LOG" "$LOG.stderr"
+                TOTAL_ALT_PAGES=$((TOTAL_ALT_PAGES + 1))
+            done
+        done <<< "$STARTS_AND_COUNTS"
+    done
+
+    ALT_END=$(date +%s)
+    echo
+    echo "Total (alternativas): $TOTAL_ALT_PAGES páginas em $((ALT_END - ALT_START))s → $ALT_CSV"
 fi

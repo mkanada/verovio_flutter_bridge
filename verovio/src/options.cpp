@@ -1162,6 +1162,15 @@ Options::Options()
     m_scaleToPageSize.Init(false);
     this->Register(&m_scaleToPageSize, "scaleToPageSize", &m_general);
 
+    m_selectFrom.SetInfo("Select from measure to end",
+        "P02d (fase P, páginas alternativas): depois de carregar, seleciona do compasso xml:id dado "
+        "até o último compasso do documento e refaz o layout (Toolkit::SelectFromMeasureToEnd), antes "
+        "de qualquer saída - para gerar a referência SVG de uma sequência alternativa com o mesmo "
+        "mecanismo do exportador (Toolkit::RenderAlternatesToBridge, P02c). Combine com --header none "
+        "--footer none --no-instrument-labels para bater com os padrões do .vsb (D-VSB-PADRAO)");
+    m_selectFrom.Init("");
+    this->Register(&m_selectFrom, "selectFrom", &m_general);
+
     m_setLocale.SetInfo("Set the global locale", "Changes the global locale to C (this is not thread-safe)");
     m_setLocale.Init(false);
     this->Register(&m_setLocale, "setLocale", &m_general);

@@ -335,6 +335,20 @@ int main(int argc, char **argv)
         }
     }
 
+    // P02d: --select-from <measure-id> renders the reference for an alternate page sequence
+    // (§2.5) - the same Select-to-end-of-document + RedoLayout the exporter makes for each
+    // arrival point in P02c (Toolkit::RenderAlternatesToBridge), so `-t svg -a` after this draws
+    // exactly the sequence's own pages. Combine with --header none --footer none
+    // --no-instrument-labels (P01c/D-VSB-PADRAO) to match the .vsb's own defaults.
+    if (options->m_selectFrom.IsSet()) {
+        const std::string selectFrom = options->m_selectFrom.GetValue();
+        if (!toolkit.SelectFromMeasureToEnd(selectFrom)) {
+            std::cerr << "The selection from measure '" << selectFrom << "' to the end of the document "
+                      << "could not be made." << std::endl;
+            exit(1);
+        }
+    }
+
     if (page && (toolkit.GetOutputTo() != vrv::HUMDRUM)) {
         // Check the page range
         if (*page > toolkit.GetPageCount()) {

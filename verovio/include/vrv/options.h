@@ -672,6 +672,7 @@ public:
     OptionBool m_preserveAnalyticalMarkup;
     OptionBool m_removeIds;
     OptionBool m_scaleToPageSize;
+    OptionString m_selectFrom;
     OptionBool m_setLocale;
     OptionBool m_showHidden;
     OptionBool m_showRuntime;

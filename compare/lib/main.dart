@@ -34,6 +34,12 @@ ArgParser _commands() {
   parser.addCommand('diff', diffParser);
   final sceneToPngParser = ArgParser()
     ..addOption('page', defaultsTo: '1', help: 'Número da página (1-based).')
+    ..addOption(
+      'alternate',
+      help:
+          'xml:id do compasso de chegada (§2.5): desenha a página --page '
+          'dessa sequência alternativa, não a normal.',
+    )
     ..addOption('width', help: 'Largura do PNG (padrão: widthPx da página).')
     ..addOption('height', help: 'Altura do PNG (padrão: heightPx da página).')
     ..addFlag(
@@ -98,7 +104,8 @@ Future<void> _runSceneToPng(ArgResults command) async {
   if (command['help'] as bool) {
     stdout.writeln(
       'Uso: compare scene-to-png <entrada.vsb|json> <saida.png> '
-      '[--page N] [--width W] [--height H] [--help]',
+      '[--page N] [--alternate <start-id>] [--width W] [--height H] '
+      '[--help]',
     );
     return;
   }
@@ -108,16 +115,21 @@ Future<void> _runSceneToPng(ArgResults command) async {
   }
   try {
     final page = _parseIntOption('page', command['page'] as String?);
+    final alternateStart = command['alternate'] as String?;
     final widthRaw = command['width'] as String?;
     final heightRaw = command['height'] as String?;
     await sceneToPng(
       command.rest[0],
       command.rest[1],
       page1Based: page,
+      alternateStart: alternateStart,
       width: widthRaw == null ? null : _parseIntOption('width', widthRaw),
       height: heightRaw == null ? null : _parseIntOption('height', heightRaw),
     );
-    stdout.writeln('Gravado ${command.rest[1]} (página $page).');
+    final where = alternateStart == null
+        ? 'página $page'
+        : 'página $page da sequência "$alternateStart"';
+    stdout.writeln('Gravado ${command.rest[1]} ($where).');
   } on FormatException catch (e) {
     stderr.writeln('Erro: ${e.message}');
     exit(2);

@@ -104,7 +104,8 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Padrões do bridge (P01b) | `Toolkit::ApplyBridgeDefaults` (`toolkit.cpp`), chamado no início de `LoadData` |
 | Título sem cabeçalho (P01a) | `Toolkit::ReadBridgeMeta` (`toolkit.cpp`): cai no `<pgHead func="first">` codificado ou gera um descartável com `GenerateFromMEIHeader` quando não há cabeçalho renderizado |
 | Pontos de chegada de repetição (P02b, fase P) | `include/vrv/bridgealternates.h` + `src/bridgealternates.cpp`: `BridgeAlternates::FindAlternateStarts` (função pura); `Toolkit::ComputeMeasureDocOrder`/`ComputeMeasureExecutionOrder`/`ComputeAlternateStarts` (`toolkit.cpp`) montam os três insumos a partir do `Doc` e do timemap. Debug-only por enquanto: `--debug-alternate-starts` grava `_executionOrder`/`_alternateStarts` só em `-t vsb-json` |
-| Renderização das páginas alternativas + `alternates.json` (P02c, fase P) | `Toolkit::RenderAlternatesToBridge` (`toolkit.cpp`): `Select`/`RedoLayout` por ponto de chegada de P02b, no mesmo `BridgeDeviceContext` das páginas normais; `BridgeWriter::WriteAlternates`/`BridgeAlternateSequence` (`bridgewriter.h`/`.cpp`). Opção `--no-vsb-alternates` desliga (padrão é gerar) |
+| Renderização das páginas alternativas + `alternates.json` (P02c, fase P) | `Toolkit::RenderAlternatesToBridge`/`SelectFromMeasureToEnd` (`toolkit.cpp`): `Select`/`RedoLayout` por ponto de chegada de P02b, no mesmo `BridgeDeviceContext` das páginas normais; `BridgeWriter::WriteAlternates`/`BridgeAlternateSequence` (`bridgewriter.h`/`.cpp`). Opção `--no-vsb-alternates` desliga (padrão é gerar) |
+| Referência SVG das páginas alternativas (P02d, fase P) | CLI `--select-from <xml:id>` (`tools/main.cpp`, `options.h`/`.cpp`: `m_selectFrom`) chama `Toolkit::SelectFromMeasureToEnd`, o mesmo mecanismo de P02c; `compare scene-to-png --alternate <xml:id>` (`compare/lib/src/scene_to_png.dart`) lê pelo `score_bridge` (P03a); `compare-page.sh --alternate`/`compare-corpus.sh SWEEP_ALTERNATES=1` varrem as duas |
 
 Fora do exportador, únicos pontos do fork que a fase E tocou: geração de
 expansão (repetições), em `src/expansionmap.cpp`/`include/vrv/expansionmap.h`
@@ -393,7 +394,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | concluído |
 | [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | concluído |
 | [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | concluído |
-| [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | pendente |
+| [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | concluído |
 | [P03a](P03a-modelo-e-parser-alternates.md) | Dart: modelo, parser e geometria das alternativas (`PageRef`) | P02a, P02c | — | concluído |
 | [P03b](P03b-vista-com-pageref.md) | Dart: `ScorePageView`/`ScoreView` exibem um `PageRef` | P03a, P02d | D-ALT-INDICE resolvida | pendente |
 | [P04a](P04a-rota-na-timeline.md) | Dart: rota de exibição na `ScoreTimeline` | P03b | — | pendente |

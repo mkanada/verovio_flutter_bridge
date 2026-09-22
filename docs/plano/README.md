@@ -315,7 +315,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E01a](E01a-corpus-de-repeticoes.md) | Corpus de repetições, roteiro esperado e diagnóstico | A05b | — | concluído |
 | [E01b](E01b-timemap-com-compassos.md) | Timemap com `measureOn` no `.vsb` e contrato dos ids `-rendN` | E01a | D-EXPMAP resolvida | concluído |
 | [E02a](E02a-ids-expandidos.md) | Ids expandidos (`-rendN`) chegam à nota desenhada | E01b | — | concluído |
-| [E02b](E02b-linha-do-tempo-por-ocorrencia.md) | `ScoreTimeline` por ocorrência de compasso | E02a | — | pendente |
+| [E02b](E02b-linha-do-tempo-por-ocorrencia.md) | `ScoreTimeline` por ocorrência de compasso | E02a | — | concluído |
 | [E02c](E02c-tocar-a-partir-de-elemento.md) | Tocar a partir de um elemento repetido (`seekToElement`) | E02b | D-TOQUE | pendente |
 | [E03a](E03a-haste-com-pagina-de-destino.md) | Haste com página de destino (mecanismo) | E02b | D-SALTO | pendente |
 | [E03b](E03b-regra-da-haste-nos-saltos.md) | Regra da haste nos saltos e evidências | E03a | — | pendente |

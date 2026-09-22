@@ -117,4 +117,90 @@ comportamento provisório, mas correto.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**`_build` reescrito em torno de ocorrências.** `ScoreTimeline` ganhou três
+mapas de instância (`_measureOfId`, `_pageOfMeasure`, `_docOrderOfMeasure`,
+este último novo: ordem de documento de cada compasso, preenchida no mesmo
+percurso de `_collect` que já existia). Uma ocorrência abre:
+
+- com `measureOn` (a maioria dos `.vsb` a partir de E01b): a cada entrada
+  cujo `measureOn` resolve (`VsbDocument.sceneIdOf`) a um compasso da cena;
+- sem `measureOn` (`.vsb` antigos, como os de `compare/out/s08` usados por
+  boa parte da suíte de testes): pela 1ª nota de `on` que resolve a um
+  compasso conhecido, abrindo uma nova ocorrência quando o par
+  `(compasso, passagem)` muda — a mesma regra do script `repeat-order.py`
+  de E01a.
+
+`noteIds` e as bboxes usam sempre o id da cena (`sceneIdOf`), nunca o id cru
+do timemap. `MeasureInfo` ganhou `pass` e `timemapId` (reconstruído pela
+convenção do sufixo quando não há `measureOn`: `id` na passagem 1,
+`id-rend<N>` depois).
+
+**`_Run` e a haste.** Um `_Run` agora fecha também num salto **na mesma
+página** (compasso seguinte, na ordem de documento, diferente do que a
+ocorrência realmente toca a seguir) — antes só fechava ao mudar de página.
+`curtainAt` já checava `next.page != run.page + 1` para decidir "sem haste";
+com runs quebrados nos saltos de mesma página, essa checagem passa a barrar
+a haste ali também, sem nenhuma mudança no próprio `curtainAt`.
+
+**`occurrencesOf(id)` novo**: resolve `id` (compasso, nota ou id expandido)
+ao compasso da cena; devolve todas as ocorrências dele, ou só a da passagem
+indicada se `id` veio com sufixo `-rend<N>` que precisou ser resolvido.
+
+**`ScorePlayer` não mudou.** `_publish` já indexava `timeline.measures` por
+`measureIndexAt`/`restPageAt`/`curtainAt` e já levava a vista à página de
+repouso (`goToPage`) quando `curtainAt` devolve `null`, e `continuousScroll`
+já chamava `scrollToId(measures[index].id, …)` — como essas consultas agora
+devolvem ocorrências corretas, o comportamento correto veio de graça. Só a
+doc de `currentMeasureIndex` foi reconferida (já dizia "índice em
+`measures`", que continua certo).
+
+**Critérios de aceite, com os dois fixtures novos**
+`test/fixtures/erik-satie.vsb` (já existia, regenerado em E01b) e
+`test/fixtures/maple-leaf-rag.vsb` (novo, `-x 42` para ids estáveis —
+medido: compasso de ordem de documento 19 = `qqplm6a`, começa a 2ª passagem
+em 39 900 ms, batendo com o número já citado no README/E01a/E01b):
+
+1. Gymnopédie 78 ocorrências (31 pass 2), Maple Leaf Rag 130 (45) — os dois
+   caminhos (`measureOn` e, no mesmo documento com o campo removido à mão,
+   pelas notas) dão listas **idênticas** id/pass/página em toda a extensão
+   (`test/score_timeline_occurrences_test.dart`).
+2. `startMs` estritamente crescente, `endMs` = `startMs` da seguinte, página
+   de cada ocorrência = página do compasso na cena — nas duas peças.
+3. Maple Leaf Rag: `restPageAt(45000) == 0`, `restPageAt(58000) == 1`,
+   `restPageAt(97500) == 1` (o salto da última página, a 2, de volta à 1).
+   A parte "e a vista mostra a página X" não ganhou teste de widget
+   dedicado: `_publish`/`goToPage` não mudaram uma linha (parágrafo acima)
+   e já são exercitados por outros testes de `ScorePlayer`/`ScoreView`
+   (ex.: "toca a peça toda e termina com tudo apagado"); testar de novo em
+   nível de widget só repetiria a mesma asserção sobre código que este
+   passo não tocou.
+4. Em 39 900 ms (`measureIndexAt`), a ocorrência corrente é o compasso 19 na
+   passagem 2 (`startMs == 39900`), e a anterior é outro compasso, na
+   passagem 1 — confirma o salto. A parte "e `scrollToId` recebe esse id"
+   é uma consequência direta de `_publish` (inalterado) chamar
+   `scrollToId(measures[index].id, …)`, já coberta pelos testes de
+   `continuousScroll` existentes em `score_view_test.dart`.
+5. **Regressão da haste**: medida com `git stash` — uma amostragem de
+   `curtainAt`/`restPageAt`/`measureIndexAt` a cada 50 ms nas 8 peças sem
+   expansão (`compare/out/s08`), calculada com o código de antes deste
+   passo e com o de depois. **0 diferenças** em nenhuma amostra de nenhuma
+   das 8 peças (script temporário, removido depois de usado — não faz
+   sentido como teste permanente, já que não há mais um "antes" para
+   comparar).
+6. `occurrencesOf`: compasso 19 → 2 ocorrências (passagens 1 e 2); uma nota
+   dele → as mesmas 2; o id `-rend2` dessa nota → só a da passagem 2; um
+   compasso de ocorrência única (casa 1) → 1.
+7. Nenhum teste existente de A05a/A05b precisou mudar de expectativa: o
+   teste genérico de `score_timeline_test.dart` ("índice de compassos") já
+   rodava sobre as 10 peças de `compare/out/s08` (sem `measureOn`,
+   exercitando o caminho de fallback) e continuou passando sem alteração,
+   inclusive para Gymnopédie/Maple Leaf Rag — sinal de que o caminho pelas
+   notas já produzia ocorrências válidas para essas duas peças mesmo antes
+   de eu confirmar os números exatos com os fixtures novos. `flutter
+   analyze` limpo, `flutter test` 227/227 (era 220; 7 testes novos em
+   `score_timeline_occurrences_test.dart`).
+
+**Fixture novo**: `test/fixtures/maple-leaf-rag.vsb` (`-x 42`, com
+`measureOn`), para os testes de ocorrência precisarem de números literais
+estáveis (compasso 19 = `qqplm6a`) em vez de reconstruir tudo a cada
+execução a partir do corpus.

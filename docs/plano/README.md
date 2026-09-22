@@ -206,17 +206,21 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
 | Scarlatti (MEI, 2 `section`) | 1 ritornelo | não expandia | **corrigido em E04a** | 68 → 99 |
 | Étude, Nocturne, Clair de Lune, Prelude | nenhuma | — | — | = nº de compassos |
 
-- No Dart de hoje, as notas `-rend2` são ignoradas (nada acende na 2ª
-  passagem: 73 s na Gymnopédie) e `ScoreTimeline` só conhece a 1ª ocorrência
-  de cada compasso. Na Maple Leaf Rag, de 39 900 a 57 900 ms a vista fica na
-  página 1 enquanto a música toca a página 0.
-- Saltos entre páginas: Maple Leaf Rag 34 → 19 (página 1 → 0) e 67 → 52
-  (página 2, **a última**, → 1). Saltos na mesma página: Gymnopédie 39 → 1,
-  Maple Leaf Rag 84 → 69 (a peça tem um compasso de anacruse antes do
-  compasso 1 marcado no arquivo, que conta como ocorrência 1 na ordem de
-  documento — por isso os índices de compasso ficam sempre uma unidade acima
-  do atributo `number` do MusicXML; corrigido em E01a, que tinha herdado
-  `83 → 69` de uma contagem sem a anacruse).
+- No Dart de antes da fase E, as notas `-rend2` eram ignoradas (nada acendia
+  na 2ª passagem) e `ScoreTimeline` só conhecia a 1ª ocorrência de cada
+  compasso — resolvido em E02a-E02c. A paginação e os saltos abaixo são os
+  de antes de P01b/P01c (sem os padrões `--header none --footer none
+  --no-instrument-labels`); **ver "Saltos e pontos de chegada (P01c)"
+  abaixo para os números atuais** — a paginação mudou (mais compassos cabem
+  por página) e vários saltos que cruzavam página deixaram de cruzar.
+- Saltos entre páginas (medido em 2026-09-21, **desatualizado, ver P01c**):
+  Maple Leaf Rag 34 → 19 (página 1 → 0) e 67 → 52 (página 2, a última, → 1).
+  Saltos na mesma página: Gymnopédie 39 → 1, Maple Leaf Rag 84 → 69 (a peça
+  tem um compasso de anacruse antes do compasso 1 marcado no arquivo, que
+  conta como ocorrência 1 na ordem de documento — por isso os índices de
+  compasso ficam sempre uma unidade acima do atributo `number` do MusicXML;
+  corrigido em E01a, que tinha herdado `83 → 69` de uma contagem sem a
+  anacruse).
 - Além desses três, `repeat-order.py` (E01a) lista mais três saltos "casa 1 →
   casa 2" na Maple Leaf Rag (33 → 35, 66 → 68, 83 → 85): a 2ª passagem de cada
   ritornello pula o compasso da casa 1 e salta direto para a casa 2, sempre na
@@ -227,6 +231,47 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
 - O corpus não tem D.C., D.S., coda, fine, `times` nem casas em MEI (E01a cria
   partituras mínimas para esses casos). `--expand-never` **não** é "tocar sem
   repetição": toca a ordem notada, com as duas casas.
+
+### Saltos e pontos de chegada (P01c, medido em 2026-09-22)
+
+Mesmo método de `repeat-order.py` (E01a), sobre os `.vsb` regenerados com os
+padrões do bridge (`--header none --footer none --no-instrument-labels`,
+D-VSB-PADRAO/P01b). A paginação mudou (mais compassos cabem por página), mas
+o total de páginas do corpus continua **34**: nenhuma peça ganhou nem perdeu
+página, só os pontos de quebra andaram. É a entrada de P02b (pontos de
+chegada das repetições).
+
+| Peça | Páginas | Salto (origem → destino) | Página origem → destino | Destino é 1º compasso de página normal? |
+| --- | --- | --- | --- | --- |
+| Gymnopédie | 2 | 39 → 1 | 0 → 0 (mesma página) | sim (compasso 1) |
+| | | 31 → 40 | 0 → 0 (mesma página) | não |
+| Maple Leaf Rag | 3 | 17 → 2 | 0 → 0 (mesma página) | não |
+| | | 16 → 18 | 0 → 0 (mesma página) | não |
+| | | 34 → 19 | 0 → 0 (mesma página) | não |
+| | | 33 → 35 | 0 → 0 (mesma página) | não |
+| | | 67 → 52 | 1 → 1 (mesma página) | não |
+| | | 66 → 68 | 1 → 1 (mesma página) | não |
+| | | **84 → 69** | **2 → 1** | não |
+| | | 83 → 85 | 2 → 2 (mesma página) | não |
+| Mazurka | 3 | 17 → 1 | 0 → 0 (mesma página) | sim (compasso 1) |
+| | | **42 → 18** | **1 → 0** | não |
+| Butterfly | 3 | 6 → 1 | 0 → 0 (mesma página) | sim (compasso 1) |
+| Little bird | 2 | 9 → 1 | 0 → 0 (mesma página) | sim (compasso 1) |
+| | | **30 → 10** | **1 → 0** | não |
+| Scarlatti | 3 | **31 → 1** | **1 → 0** | sim (compasso 1) |
+
+Negrito = salto que cruza página: 5 no total (Maple Leaf Rag, Mazurka, Little
+bird, Scarlatti; Butterfly não tem nenhum). A medição de 2026-09-21 (acima,
+"Repetições no corpus") não é comparável número a número com esta: além da
+paginação nova (P01b), ela foi feita **antes** de E04a/E04b corrigirem a
+expansão (a Maple Leaf Rag daquele dia perdia o 1º ritornelo, 130 em vez de
+145 ocorrências) — ainda assim, o padrão geral bate: a Maple Leaf Rag
+continua sendo a peça com mais saltos (8) e menos deles cruzando página (1
+de 8, contra 2 de 6 antes). Destino já sendo o 1º compasso de uma página
+normal (Gymnopédie, Mazurka, Butterfly, Little bird, Scarlatti - o compasso 1
+de cada peça, sempre) descarta a alternativa ali: a página normal já serve.
+Os saltos em negrito cujo destino **não** é o 1º compasso de página normal
+(Maple Leaf Rag 84 → 69) são candidatos reais a página alternativa (P02b).
 
 ## Decisões pendentes
 
@@ -339,7 +384,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P00](P00-visao-geral-paginas-alternativas.md) | **Visão geral da fase P** (leitura obrigatória, não executável) | — | — | — |
 | [P01a](P01a-titulo-sem-cabecalho.md) | `meta.title` sem depender do cabeçalho desenhado | — | D-META-TITULO resolvida | concluído |
 | [P01b](P01b-padroes-do-vsb.md) | Padrões do `.vsb`: sem cabeçalho, rodapé e rótulo | P01a | D-VSB-PADRAO resolvida | concluído |
-| [P01c](P01c-remedir-corpus.md) | Regenerar corpus e fixtures, re-medir paridade e fatos | P01b | — | pendente |
+| [P01c](P01c-remedir-corpus.md) | Regenerar corpus e fixtures, re-medir paridade e fatos | P01b | — | concluído |
 | [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | pendente |
 | [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | pendente |
 | [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | pendente |

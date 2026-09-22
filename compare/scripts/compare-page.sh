@@ -130,7 +130,11 @@ for font in "${FONTS[@]}"; do
 done
 
 echo "==> Renderizando SVG (página $PAGE)"
-"$VEROVIO_BIN" -t svg -p "$PAGE" -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" "$INPUT_FILE"
+# P01c: o .vsb de referência carrega os padrões do bridge (--header none
+# --footer none --no-instrument-labels, D-VSB-PADRAO) desde P01b; o SVG de
+# referência precisa das mesmas três flags, senão toda página diverge.
+"$VEROVIO_BIN" -t svg -p "$PAGE" -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" \
+    --header none --footer none --no-instrument-labels "$INPUT_FILE"
 if [[ ! -f "$TMP_PREFIX.svg" ]]; then
     echo "Falha ao gerar o SVG da página $PAGE (ver mensagem do Verovio acima;" >&2
     echo "página inexistente na peça também falha aqui)." >&2

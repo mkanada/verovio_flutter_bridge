@@ -289,6 +289,46 @@ Não é bug de exportador nem de renderizador — é dado de entrada.
   terceira investigação de R06b confirmou 0 pixels órfãos nas páginas
   afetadas depois da troca).
 
+## Atualização de 2026-09-22 — P01c: padrões do bridge (sem cabeçalho/rodapé/rótulo)
+
+P01b mudou o `.vsb` para sair, por padrão, com `--header none --footer none
+--no-instrument-labels` (D-VSB-PADRAO). P01c regenerou o corpus com esses
+padrões e re-mediu a paridade: a referência SVG passou a usar as mesmas três
+flags (senão toda página divergiria por causa do cabeçalho/rodapé/rótulo que
+só um dos dois lados desenharia).
+
+Comando: `CORPUS_DIR=compare/out/p01c/corpus compare/scripts/compare-corpus.sh
+128` (git-ignorado — não sobrescreve o `compare/corpus/` versionado de
+R06c/E05, que continua sendo a referência **sem** os padrões novos, já que a
+mudança de opções não é o que aqueles relatórios mediam). 34/34 páginas, nas
+mesmas 10 peças.
+
+| | Skia, sem os padrões (E05, 2026-09-22) | Skia, com os padrões (P01c) |
+| --- | --- | --- |
+| Páginas | 34/34 | 34/34 |
+| Min | 0,000128%* | 0,000128% |
+| Max | 0,038624% | 0,024964% |
+| Média | 0,008800% | **0,006402%** |
+| Páginas ≤ 0,01% | 27/34 | 27/34 |
+| Páginas ≤ 0,05% | 34/34 | 34/34 |
+
+\* A coluna "sem os padrões" repete a média/páginas-≤ de E05 (2026-09-22,
+mesmo valor de R06c/2026-09-20: 0,008800%, 27/34), mas min/max não tinham
+sido citados de novo em E05 — os valores de R06c (0,000481%/0,038624%) estão
+aí para referência, não são estritamente da mesma varredura que a coluna ao
+lado.
+
+**A média caiu** (0,008800% → 0,006402%, −27%), como o passo antecipava:
+menos texto desenhado (sem título, número de página, autor e rótulo de
+instrumento) é menos superfície sujeita ao piso de antialiasing de texto
+comum, a maior fonte de divergência residual (risco 1 do plano). O teto
+também caiu (0,038624% → 0,024964%): a pior página deixou de ser a que tinha
+mais texto de cabeçalho. **27/34 páginas continuam ≤ 0,01%** — mesma
+contagem, não necessariamente as mesmas páginas (a paginação mudou, então
+"página 1 do Clair de Lune" antes e depois não é o mesmo trecho musical).
+Nenhuma página passa de 0,05%: o portão de 99,99% continua satisfeito, com
+folga maior que antes.
+
 ## Comando exato
 
 ```

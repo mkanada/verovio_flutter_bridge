@@ -69,10 +69,13 @@ for INPUT_FILE in "${INPUT_FILES[@]}"; do
     # Sonda o número de páginas: `-a` gera um SVG por página num prefixo sem
     # pontos (RemoveExtension do verovio truncaria nomes com ponto). Só conta;
     # a comparação em si é toda dentro do compare-page.sh.
+    # P01c: mesmas três flags do compare-page.sh, senão a sondagem conta a
+    # paginação antiga (com cabeçalho/rodapé/rótulo) em vez da paginação real
+    # do .vsb (que já carrega os padrões do bridge desde P01b).
     TMP_PROBE="$CORPUS_DIR/_probe-tmp"
     rm -f "$TMP_PROBE".svg "$TMP_PROBE"_*.svg
     "$VEROVIO_BIN" -t svg -a -o "$TMP_PROBE" --resource-path "$RESOURCE_PATH" \
-        "$INPUT_FILE" >/dev/null
+        --header none --footer none --no-instrument-labels "$INPUT_FILE" >/dev/null
     shopt -s nullglob
     PROBE_SVGS=("$TMP_PROBE"_*.svg)
     shopt -u nullglob

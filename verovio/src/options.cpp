@@ -1070,6 +1070,11 @@ Options::Options()
     m_neumeAsNote.Init(false);
     this->Register(&m_neumeAsNote, "neumeAsNote", &m_general);
 
+    m_noInstrumentLabels.SetInfo(
+        "No instrument labels", "Do not draw the instrument/staff group labels (name or abbreviation) on systems");
+    m_noInstrumentLabels.Init(false);
+    this->Register(&m_noInstrumentLabels, "noInstrumentLabels", &m_general);
+
     m_noJustification.SetInfo("No justification", "Do not justify the system");
     m_noJustification.Init(false);
     this->Register(&m_noJustification, "noJustification", &m_general);

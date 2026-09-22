@@ -204,7 +204,9 @@ void View::DrawSystem(DeviceContext *dc, System *system)
     system->ResetDrawingList();
 
     if (firstMeasure) {
-        this->DrawScoreDef(dc, system->GetDrawingScoreDef(), firstMeasure, system->GetDrawingX(), NULL);
+        const bool noInstrumentLabels = m_doc->GetOptions()->m_noInstrumentLabels.GetValue();
+        this->DrawScoreDef(dc, system->GetDrawingScoreDef(), firstMeasure, system->GetDrawingX(), NULL, false, false,
+            noInstrumentLabels);
     }
 
     this->DrawSystemChildren(dc, system, system);

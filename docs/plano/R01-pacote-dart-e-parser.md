@@ -73,7 +73,7 @@ Nada de desenho ainda.
    por um script Python sobre o mesmo JSON (teste que roda os dois e compara).
 4. `byId` contém todos os ids do índice exportado em S04 (compare os conjuntos).
 5. Tempo de parse de cada peça do corpus registrado nas notas (`Stopwatch`,
-   3 execuções, mediana) — insumo do gate de P01.
+   3 execuções, mediana) — insumo para uma eventual decisão sobre encoding binário.
 
 ## Notas de execução
 
@@ -138,7 +138,7 @@ Nada de desenho ainda.
   tool/measure_parse_time.dart` (`main()` sem argumentos; diretório do
   corpus configurável por `CORPUS_DIR`, default `../compare/out/s08`).
   Medido uma vez, debug/JIT sob `flutter test` (não é número de release/AOT;
-  é só a primeira leitura de ordem de grandeza para o gate de P01):
+  é só a primeira leitura de ordem de grandeza para uma eventual decisão sobre encoding binário):
 
   | Peça | Bytes do `.vsb` | Mediana de parse (ms) |
   | --- | ---: | ---: |
@@ -155,7 +155,7 @@ Nada de desenho ainda.
 
   Sem relação clara e monotônica só com bytes do `.vsb` (o parse decodifica o
   zip + 3 JSONs, então o custo depende também da forma da árvore, não só do
-  tamanho comprimido) — dado bruto para P01 comparar contra o encoding
+  tamanho comprimido) — dado bruto para comparar contra um encoding
   binário, sem conclusão tirada aqui. (Tempos medidos sobre o corpus S07;
   tamanhos atualizados para S08 — a diferença entre os dois é só nas bboxes,
   ~1% dos bytes, sem efeito na ordem de grandeza.)

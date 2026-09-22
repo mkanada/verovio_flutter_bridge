@@ -64,7 +64,7 @@ Outros fatos úteis:
 
 - Investigar ou corrigir divergência (R06b).
 - Escrever o relatório (R06c).
-- Otimizar tamanho (P01).
+- Otimizar tamanho.
 
 ## Critérios de aceite
 

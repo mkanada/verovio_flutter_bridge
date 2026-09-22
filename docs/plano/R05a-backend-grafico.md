@@ -54,7 +54,7 @@ mesmas páginas, leve os dois números ao usuário e **não decida sozinho**.
 
 - Ajustar render para "melhorar a %" — se a % estiver ruim nos dois, o
   conserto é no passo da primitiva correspondente.
-- Backend do app de produção (P03 mede em dispositivo; aqui é só a
+- Backend do app de produção (o `zywny` mede em dispositivo; aqui é só a
   comparação).
 
 ## Critérios de aceite

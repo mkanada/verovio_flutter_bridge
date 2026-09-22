@@ -5,8 +5,9 @@ Dart bindings for the Verovio `Toolkit` — including this fork's native
 [`csa8820/verovio_flutter`](https://github.com/csa8820/verovio_flutter):
 a plain C API (`extern "C"`) wraps the C++ `Toolkit` class, compiled into a
 shared library, loaded from Dart with `dart:ffi`. See
-`../../../docs/plano/P02a-libverovio-e-wrapper.md` for the D-RUNTIME
-decision this exists to serve and for the measured build numbers.
+the (since removed) plan step P02a, recoverable from git history
+(`git show 70337de:docs/plano/P02a-libverovio-e-wrapper.md`), for the
+D-RUNTIME decision this exists to serve and for the measured build numbers.
 
 ## Layout
 
@@ -67,7 +68,7 @@ the freshly built `.so`: page count, SVG rendering, the `.vsb` package
 (zip `PK` magic plus the three mandatory entry names) and `vsb-json` (valid
 JSON whose page count matches `getPageCount()`). `score_bridge`, the real
 parser, needs `dart:ui` and cannot be imported from a plain `dart test`;
-the end-to-end parse check is recorded in P02a's execution notes.
+the end-to-end parse check was recorded in P02a's execution notes (git history).
 
 ## Platform coverage
 
@@ -75,7 +76,7 @@ the end-to-end parse check is recorded in P02a's execution notes.
 | --- | --- |
 | Linux (x86_64) | Built and tested here (`build_linux_so.sh`, `dart test` — see E01 execution notes) |
 | macOS / Windows desktop | Same CMake target (`-DBUILD_AS_LIBRARY=ON`) builds `libverovio.dylib`/`verovio.dll` there; `VerovioToolkit._openLibrary` already picks the right default name. Not built/tested in this environment (no macOS/Windows toolchain here). |
-| Android | Built here with `build_android_so.sh` (`-DBUILD_AS_ANDROID_LIBRARY=ON` + NDK toolchain, one `.so` per ABI under `android-libs/<abi>/`). See P02a's execution notes for the NDK version and the per-ABI sizes. No Gradle/JNI host project was written — that is P02b. |
+| Android | Built here with `build_android_so.sh` (`-DBUILD_AS_ANDROID_LIBRARY=ON` + NDK toolchain, one `.so` per ABI under `android-libs/<abi>/`). See P02a's execution notes (git history) for the NDK version and the per-ABI sizes. No Gradle/JNI host project was written — that belongs to the consuming app (`zywny`). |
 | iOS | Same `c_wrapper.h` an XCFramework would wrap; `_openLibrary` already falls back to `DynamicLibrary.process()` for a statically linked host. Not exercised here (no Xcode/iOS SDK in this environment). |
 | Web (WASM) | Out of scope: the `.vsb` path targets a Flutter app with a native library, not the browser. `../../emscripten/` still holds the upstream toolchain if it is ever needed. |
 

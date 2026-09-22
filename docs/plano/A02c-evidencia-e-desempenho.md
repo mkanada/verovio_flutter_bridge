@@ -47,7 +47,7 @@ diferente do fade**, convivendo — e medir se isso cabe no orçamento de frame.
 
 ## Fora de escopo
 
-- Medição em dispositivo (P03) — aqui é a máquina de desenvolvimento.
+- Medição em dispositivo (fica no `zywny`) — aqui é a máquina de desenvolvimento.
 - Playback automático pelo timemap (A05).
 
 ## Critérios de aceite
@@ -66,7 +66,7 @@ diferente do fade**, convivendo — e medir se isso cabe no orçamento de frame.
 
 Executado em 2026-09-21 com `flutter test tool/a02c_evidence.dart`.
 Máquina: Intel i5-4440 @ 3,1 GHz, 4 núcleos, Linux; `flutter_tester` (Skia,
-rasterização por software). **Não é** medição em dispositivo (P03).
+rasterização por software). **Não é** medição em dispositivo (fica no `zywny`).
 
 **Roteiro** (tempo simulado pelo relógio do teste; Gymnopédie, página 1)
 
@@ -95,7 +95,7 @@ distintas por frame) e ainda o confere a olho nos recortes.
 100 `pump` de 16 ms (tick + notificação + build + gravação do paint):
 **mediana 1,83 ms, média 2,02 ms, máximo 5,76 ms**, contra o orçamento de
 8 ms. Só a rasterização por software da página inteira custa ~46 ms (A01c),
-mas isso é o `flutter_tester` em CPU e fica para P03.
+mas isso é o `flutter_tester` em CPU e fica para o `zywny`.
 
 **`pictureBuilds`:** 98 antes e 98 depois de toda a sequência (5 capturas, 64
 notas animando, `clearAll`). Nenhum `Picture` estático recompilado.

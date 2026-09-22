@@ -189,7 +189,7 @@ de qualidade visual entre os dois projetos.
 | Gymnopédie No.1 (Satie) | 2 | 88,8 KB | 44,4 |
 
 Nenhum pacote passa de ~460 KB (7 páginas); a mediana fica perto de 70
-KB/página. Insumo bruto para P01a — não é medição de tempo de parse nem de
+KB/página. Insumo bruto para uma eventual decisão de encoding — não é medição de tempo de parse nem de
 memória, que ficam fora do escopo deste relatório.
 
 ## Divergências categorizadas
@@ -305,7 +305,7 @@ compilado (`cd verovio/tools && cmake ../cmake && make -j4`),
 
 ## Fora de escopo
 
-- Otimização de tamanho (P01) e desempenho (P03) — este relatório é sobre
+- Otimização de tamanho e desempenho — este relatório é sobre
   imagem, não sobre tempo/memória.
 - A mudança de arquitetura que zeraria a categoria 1 (texto comum como
   contorno vetorial) — decisão explícita do usuário, não tomada aqui.

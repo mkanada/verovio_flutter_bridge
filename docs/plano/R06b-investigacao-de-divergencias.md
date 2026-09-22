@@ -292,7 +292,7 @@ SMuFL — converter cada glifo de texto comum em contorno vetorial na
 exportação (reusar o mesmo dicionário glyphId→contorno) e desenhar como
 path preenchido no `score_bridge`, em vez de `TextPainter`. Isso é uma
 mudança de arquitetura (mexe em R04a-R04d e no formato), não uma correção
-pontual — do mesmo porte que D-BIN/D-RUNTIME. Não implementado sem decisão
+pontual — do mesmo porte que a decisão de encoding binário ou de runtime. Não implementado sem decisão
 explícita.
 
 **Critério 5 (parada honesta, reafirmado com causa mais precisa):** média

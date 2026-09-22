@@ -49,7 +49,7 @@ Empacotar `manifest.json` + `scene.json` + `glyphs.json` + `timemap.json` num
    módulo formatação).
 6. Tabela de tamanhos (por peça: nº de páginas, `scene.json` cru, `glyphs.json`
    cru, `.vsb` final, KB/página) registrada nas notas de execução — é o insumo
-   do gate de P01a/P01b.
+   para uma eventual decisão sobre encoding binário.
 
 ## Notas de execução
 
@@ -119,7 +119,7 @@ Empacotar `manifest.json` + `scene.json` + `glyphs.json` + `timemap.json` num
   é um bug pré-existente em `Att::StrToDbl` (afeta qualquer atributo `double`
   do MEI, não só tempo), fora do escopo do S07 (que não mexe em
   `View`/`DeviceContext`/parsing de atributo) — registrado aqui para quem for
-  cuidar de precisão numérica mais tarde (P01b) ou reabrir o assunto. Não afeta
+  cuidar de precisão numérica mais tarde ou reabrir o assunto. Não afeta
   nenhum `xml:id` endereçável.
 - **Critério 6**: tabela de tamanhos (páginas / `scene.json` cru / `glyphs.json`
   cru / `.vsb` final / KB por página):
@@ -143,5 +143,5 @@ Empacotar `manifest.json` + `scene.json` + `glyphs.json` + `timemap.json` num
   com texto JSON repetitivo (chaves, formatação numérica). `timemap.json` não
   entrou na soma "cru" por peça pois seu peso é marginal frente a
   `scene.json`/`glyphs.json` (dezenas de KB vs. centenas de KB a MB). Esses
-  números são o insumo direto do gate de P01a/P01b (D-BIN).
+  números são o insumo direto para uma eventual decisão sobre encoding binário.
 - Bloqueios: nenhum.

@@ -44,7 +44,7 @@ documento que o usuário vai ler para decidir se o projeto está de pé.
    - médias por peça;
    - **categorias de divergência**, cada uma com recorte de exemplo e causa;
    - comparação lado a lado com os números do `verovio_lottie`;
-   - tamanho dos pacotes (peça, páginas, KB, KB/página) — insumo de P01;
+   - tamanho dos pacotes (peça, páginas, KB, KB/página) — insumo para uma eventual decisão de encoding;
    - o comando exato que gerou o CSV, a data, o commit, o backend e as
      versões (Verovio, Flutter, resvg).
 2. Guardar a amostra de imagens em `docs/mesa-de-prova/<peça>/`.
@@ -54,7 +54,7 @@ documento que o usuário vai ler para decidir se o projeto está de pé.
 
 ## Fora de escopo
 
-- Otimizar tamanho (P01) e animação (fase A).
+- Otimizar tamanho e animação (fase A).
 - Medir desempenho — este relatório é sobre **imagem**, não sobre tempo.
 
 ## Critérios de aceite

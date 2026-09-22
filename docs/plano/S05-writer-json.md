@@ -54,7 +54,7 @@ arquivo consumível pelo Flutter.
 
 - CLI e Toolkit (S06) — aqui só a classe e um teste.
 - Zip (S07).
-- Qualquer otimização de encoding (P01).
+- Qualquer otimização de encoding (só com decisão do usuário).
 
 ## Critérios de aceite
 

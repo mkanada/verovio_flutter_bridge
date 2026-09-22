@@ -13,7 +13,7 @@ import 'package:verovio/verovio.dart';
 //
 // score_bridge (the real .vsb parser) needs dart:ui and therefore cannot be
 // imported from a plain `dart test`; these tests check the package shape
-// without it. The end-to-end parser check lives in P02a's execution notes.
+// without it. The end-to-end parser check lives in the git history of the removed plan step P02a.
 String _repoRoot() {
   var dir = Directory.current;
   while (!File('${dir.path}/CLAUDE.md').existsSync()) {

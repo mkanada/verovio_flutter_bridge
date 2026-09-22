@@ -45,8 +45,8 @@ Trate como fixas — não reabra sem confirmar com o usuário:
   o único que precisa bater a paridade).
 - **Encoding: JSON** (compacto, chaves legíveis, geometria em arrays planos de
   números), empacotado em zip no formato `.vsb`. Encoding binário só entra se o
-  passo de medição (P01a/P01b) mostrar necessidade real — **decisão do
-  usuário, não decida sozinho**.
+  uso real no app `zywny` mostrar necessidade — **decisão do usuário, não
+  decida sozinho**.
 - **Render no Flutter: `CustomPaint` em camadas** — conteúdo estático da página
   compilado uma vez em `ui.Picture` e reusado; elementos endereçáveis (notas)
   numa camada separada que repinta só quando uma cor muda. Widgets reais
@@ -73,7 +73,7 @@ Trate como fixas — não reabra sem confirmar com o usuário:
 - **Nome final do formato/extensão e flags de CLI:** `.vsb` (**Verovio Score
   Bridge**), `-t vsb` para o pacote zip e `-t vsb-json` para o JSON único;
   resolvido em S01 em 2026-09-17.
-- Encoding binário (P01a mede, P01b decide) — só após medição real.
+- Encoding binário — só após medição real no `zywny`; decisão do usuário.
 - Backend gráfico do Flutter para a comparação (Impeller vs. Skia) — resolvido
   em R05a (2026-09-19) como Impeller, **revisto em 2026-09-20 para Skia**
   (decisão do usuário: o Impeller no Linux não aplica antialiasing). O runner
@@ -82,8 +82,11 @@ Trate como fixas — não reabra sem confirmar com o usuário:
 - **Geração em runtime no app:** o app **gera o `.vsb` no dispositivo**, via
   FFI com `libverovio.so` (D-RUNTIME, opção (a), decisão do usuário em
   2026-09-20). Consequência: a `libverovio.so` e os dados de `verovio/data`
-  (fontes SMuFL e métricas de texto) precisam ser empacotados no app; P02a
-  produz a biblioteca e o wrapper C, P02b o empacotamento e o isolate.
+  (fontes SMuFL e métricas de texto) precisam ser empacotados no app. A
+  biblioteca e o wrapper C já existem (`verovio/bindings/dart/`); o
+  empacotamento e o isolate ficam no app `zywny`, fora deste repositório.
+  Não há app de exemplo neste projeto (decisão do usuário, 2026-09-21): o
+  consumidor é o `zywny`.
 
 ## Convenções de trabalho
 

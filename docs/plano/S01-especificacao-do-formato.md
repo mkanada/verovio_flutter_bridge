@@ -47,7 +47,7 @@ e produzir um exemplo mínimo validável à mão.
 ## Fora de escopo
 
 - Escrever qualquer código C++ ou Dart.
-- Encoding binário (P01a/P01b).
+- Encoding binário (só com decisão do usuário, após uso real no `zywny`).
 
 ## Critérios de aceite
 

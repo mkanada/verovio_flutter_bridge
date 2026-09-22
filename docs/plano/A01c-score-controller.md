@@ -132,7 +132,7 @@ páginas / máximo)
 
 Ler: o repaint custa o mesmo com 0, 1 ou 64 cores — o custo é percorrer os nós
 dinâmicos, não colori-los. A linha "raster" é só a ordem de grandeza da
-rasterização por CPU, a medir em dispositivo em P03. (A mediana de segmentos é
+rasterização por CPU, a medir em dispositivo, no `zywny`. (A mediana de segmentos é
 197 aqui contra 196 no plano: número par de páginas, escolha do elemento
 superior.)
 

@@ -13,6 +13,7 @@
 
 //----------------------------------------------------------------------------
 
+#include "bridgewriter.h"
 #include "doc.h"
 #include "docselection.h"
 #include "toolkitdef.h"
@@ -23,7 +24,6 @@
 namespace vrv {
 
 class BridgeDeviceContext;
-struct BridgeMeta;
 class EditorToolkit;
 class RuntimeClock;
 
@@ -918,10 +918,34 @@ private:
      * Repeat arrival points that need an alternate page sequence (docs/formato/
      * especificacao-v1.md §2.5, normative rule; P02b). Builds the three inputs
      * BridgeAlternates::FindAlternateStarts needs from `m_doc` and the timemap, then delegates.
-     * Debug-only for now (P02c renders the sequences and writes `alternates.json`); does not touch
-     * the `.vsb`/`vsb-json` output unless `--debug-alternate-starts` is set.
      */
     std::vector<std::string> ComputeAlternateStarts();
+
+    /**
+     * Renders every alternate sequence (§2.5, P02c) into `bridge`, one `Select`/`RedoLayout`/render
+     * per arrival point from ComputeAlternateStarts, and leaves the Doc back in its normal
+     * (unselected) state before returning (`Select("")` + `RedoLayout()`, unconditionally - even
+     * when there was nothing to render, so a caller can always keep using the same Toolkit
+     * afterwards).
+     *
+     * Must be called strictly after every normal page has already been rendered into `bridge` and
+     * after the timemap/meta have already been read from the unselected Doc
+     * (RenderToTimemap/ReadBridgeMeta) - a `Select`ed Doc's first page has no `pgHead`/`pgFoot` and
+     * a different `Score`/`scoreDef`, so both would read wrong otherwise.
+     *
+     * The returned BridgeAlternateSequence::pages point into `bridge.GetPages()`; this must be the
+     * last thing to push pages into `bridge` - the caller (including its own code for the normal
+     * pages) must build any BridgePage* into `bridge` only after this returns, or
+     * std::vector<BridgePage>'s own reallocation on push_back would invalidate pointers taken
+     * earlier.
+     *
+     * @param bridge The device context the normal pages were already rendered into.
+     * @return One entry per arrival point that rendered successfully (§2.5's own existence rule
+     *     already excludes ones that don't need a sequence; a `Select` that still fails despite
+     *     that - "Selection could not be made", or a sequence whose own page 0 does not start with
+     *     the arrival point - is skipped with a LogWarning, not an abort).
+     */
+    std::vector<BridgeAlternateSequence> RenderAlternatesToBridge(BridgeDeviceContext &bridge);
 
 public:
     //

@@ -656,6 +656,7 @@ public:
     OptionBool m_neumeAsNote;
     OptionBool m_noInstrumentLabels;
     OptionBool m_noJustification;
+    OptionBool m_noVsbAlternates;
     OptionBool m_openControlEvents;
     OptionBool m_outputFormatRaw;
     OptionInt m_outputIndent;

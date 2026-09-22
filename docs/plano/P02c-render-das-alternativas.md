@@ -100,4 +100,132 @@ nem um byte.
 
 ## Notas de execução
 
-_(preencher)_
+**Mecanismo.** `Toolkit::RenderAlternatesToBridge(BridgeDeviceContext &bridge)`
+(novo, `toolkit.cpp`/`.h`), chamado por `RenderToBridgeFile` (sempre) e por
+`RenderToBridgeJson` (só quando o intervalo pedido é o documento inteiro —
+`fromPage <= 1 && (toPage < 0 || toPage >= páginas normais)`; um intervalo
+parcial não tem "resto da peça" para uma sequência ir até o fim, e
+`ComputeAlternateStarts` deriva `firstOfNormalPage` do `Doc` inteiro,
+independente do intervalo pedido). Para cada ponto de chegada de P02b:
+`Select({"start": T, "end": <último compasso do documento>})` +
+`RedoLayout()`, renderiza todas as páginas da seleção no mesmo
+`BridgeDeviceContext` das páginas normais, confere que a página 0 realmente
+começa com `T` (1º nó de classe `measure` em pré-ordem — `FindFirstMeasureNode`,
+namespace anônimo em `toolkit.cpp`) e que `m_doc.HasSelection()` ficou
+verdadeiro (é como `InitSelectionDoc` sinaliza "Selection could not be made"
+sem lançar exceção: limpa `m_selectionStart`/`End` e retorna sem reativar).
+Qualquer uma das duas falhas pula a sequência com `LogWarning`, sem abortar
+o arquivo (item 5). No fim, sempre `Select("") + RedoLayout()` — usei string
+vazia, não `"{}"`: o comentário de `docselection.cpp` ("Empty string - we
+reset the selection") é o caminho que realmente reresulta em
+`DocSelection::Parse` devolvendo sucesso; `"{}"` (objeto JSON vazio) cai no
+`else if` de "Cannot extract a selection" e devolve falso (ainda reseta
+`m_selectionStart`/`End`, mas loga um aviso espúrio) — P00 citava `"{}"`
+informalmente, a nota lá deveria dizer string vazia.
+
+**Achado importante (evitado, não só documentado): pointer invalidation.**
+`BridgeDeviceContext::m_pages` é um `std::vector<BridgePage>`; qualquer
+`push_back` (cada `Select`+render de uma sequência) pode realocar e invalida
+todo `const BridgePage*` tirado antes. A primeira versão do código construía
+o vetor de ponteiros das páginas normais logo após renderizá-las — antes de
+chamar `RenderAlternatesToBridge` — o que corromperia silenciosamente
+`scene.json` (ponteiros pendurados) assim que a 1ª sequência fosse
+renderizada. Corrigido: `RenderAlternatesToBridge` só constrói seus próprios
+`BridgeAlternateSequence::pages` **depois** de terminar todo o `Select`/
+render (por índice, não por ponteiro, enquanto o vetor ainda pode crescer);
+o chamador (`RenderToBridgeFile`/`RenderToBridgeJson`) só constrói o vetor
+das páginas normais **depois** de `RenderAlternatesToBridge` retornar. Doc
+comment de ambos os métodos deixa esse contrato explícito para não
+reintroduzir o bug num passo futuro.
+
+**Escrita.** `BridgeWriter::WriteAlternates` (novo) serializa
+`{"sequences":[{"start", "pages":[...]}]}`, reusando `AppendPage` (mesmo
+código de `WriteScene`, `index` 0-based dentro de cada sequência).
+`WriteManifest`/`WriteSingleJson` ganham `hasAlternates`/`sequences`
+(parâmetros com default, aditivo — nenhuma outra chamada existente
+quebrou). `BridgeAlternateSequence` (struct novo, `bridgewriter.h`).
+
+**Opção `--no-vsb-alternates`** (`m_noVsbAlternates`, grupo geral, análoga a
+`--no-instrument-labels` de `4663537`): desliga a geração. Padrão é gerar.
+
+**Critério 1** (nº de sequências == pontos de chegada de P02b; página 0
+começa com `start`). Medido nas 6 peças com repetição — bate exatamente com
+a tabela de P02b (Gymnopédie 1, Maple Leaf Rag 8, Mazurka 1, Little bird 1,
+Butterfly 0, Scarlatti 0) e todo `start` confere com o 1º `measure` da
+página 0 de sua sequência, checado por script Python sobre o `.vsb` real
+(não uma reimplementação da regra — leitura direta do `scene`/`alternates`
+serializados).
+
+**Critério 2** (todo `xml:id` de nota/acorde/pausa/compasso numa página
+alternativa existe nas páginas normais; nenhum se repete dentro de uma
+sequência). Confirmado nas 4 peças com sequência de verdade (o script
+inicial testou **todo** `id` da árvore, não só nota/acorde/pausa/compasso, e
+"falhou" nos ids de `system`/`grpSym`/`label`/`clef`/`keySig`/`meterSig`
+sintetizados pela seleção — exatamente o que o critério já esperava que
+fossem novos, "Contexto" do passo e P00: "Os ids de system (e do
+score/scoreDef sintetizados) são novos". Refiz filtrando por classe
+`{note, chord, rest, measure}`: 0 ids faltando, 0 repetidos, em 11
+sequências de 4 peças (2 284 a 24 ids por sequência).
+
+**Critério 3** (`scene.json`/`timemap.json`/`meta.json`/manifest-menos-
+`files.alternates` byte-idênticos com/sem `--no-vsb-alternates`; `glyphs.json`
+com alternativas é superconjunto). Confirmado nas 10 peças do corpus
+(script Python comparando os dois `.vsb`, ignorando só o sufixo `-dirty` do
+`generator`). Isso só é garantido porque as páginas normais, o timemap e o
+`meta.json` são lidos **antes** de `RenderAlternatesToBridge` rodar (doc
+comment do método deixa isso como pré-condição).
+
+**Critério 4 (medido, com uma ressalva registrada).** Programa Dart avulso
+contra o binding FFI (`libverovio.so` reconstruído): um `Toolkit` que chama
+`renderToBridgeFile` (com alternativas) e depois `renderToSVG(1)` **não** dá
+SVG byte-idêntico a um `Toolkit` novo — mas só nos ids **auto-gerados** de
+elementos sem `xml:id` codificado (`system`, `grpSym`, `label`/`tspan`,
+`clef`, `keySig`, `keyAccid`, `meterSig`: todo elemento que o cast-off
+sempre recria do zero). **Nenhuma nota/acorde/pausa/compasso muda** (291
+`class="note"` idênticas, checado por diff). Com `--no-vsb-alternates` (ou
+`{"noVsbAlternates": true}`), o mesmo teste dá SVG **exatamente** igual —
+isolando a causa: `Object::s_xmlIDCounter` (`object.cpp`) é um contador
+**global do processo**, não por `Doc`; cada `Select`/`RedoLayout` de uma
+sequência cria um `Score`/`ScoreDef`/`System` novo (`Doc::ReactivateSelection`)
+que consome ids desse contador, e o `Select("")` final refaz o cast-off do
+documento normal a partir de um contador que avançou mais do que um
+`Toolkit` novo veria — gerando uma sequência diferente (mas igualmente
+válida) de auto-ids para os elementos sem id codificado. Isso é um efeito
+de qualquer uso de `Select`/`RedoLayout` no Verovio, não específico deste
+passo, e não corrigi (mexeria no contador estático de `Object`, fora do
+escopo de "só mais um `DeviceContext`" que rege este fork) — registrado
+aqui como achado, com o contorno já disponível: `ResetXmlIdSeed(seed)`
+antes de qualquer render subsequente no mesmo `Toolkit` que precise bater
+bytes com um `Toolkit` novo. O `.vsb` em si (critério 3) não é afetado,
+porque as páginas normais são lidas antes de qualquer `Select`.
+
+**Critério 5** — tabela (10 execuções por peça, 5 com e 5 sem
+`--no-vsb-alternates`, `--xml-id-seed 42`, binário já em `-O3 -DNDEBUG`
+— não há build separado de release neste fork):
+
+| Peça | Páginas normais | Sequências | Páginas alternativas | `.vsb` com (bytes) | `.vsb` sem (bytes) | Tempo com (s) | Tempo sem (s) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Gymnopédie | 2 | 1 | 1 | 56 911 | 49 371 | 0,166 | 0,121 |
+| Maple Leaf Rag | 3 | 8 | 13 | 813 804 | 188 458 | 1,908 | 0,524 |
+| Mazurka | 3 | 1 | 2 | 217 477 | 131 037 | 0,561 | 0,332 |
+| Butterfly | 3 | 0 | 0 | 127 059 | 127 059 | 0,290 | 0,277 |
+| Little bird | 2 | 1 | 2 | 142 427 | 85 830 | 0,351 | 0,206 |
+| Scarlatti | 3 | 0 | 0 | 100 847 | 100 847 | 0,230 | 0,225 |
+
+Custo cresce com o nº de sequências (cada uma é um relayout do trecho +
+um relayout do documento inteiro no reset final, que roda de novo a cada
+`T` já que `InitSelectionDoc` reseta antes de aplicar a próxima seleção).
+Maple Leaf Rag (8 sequências) é o pior caso do corpus: 3,6× o tempo e 4,3×
+o tamanho. D-RUNTIME (gerar no aparelho) torna esse custo real; relevante
+para o `zywny` decidir se gera na entrada do usuário na peça ou em
+background.
+
+**Critério 6** (peças sem repetição: sem `alternates.json`, `.vsb`
+byte-idêntico a P01c). Confirmado nas 4 peças sem repetição do corpus
+(Étude, Nocturne, Clair de Lune, Prelude): nenhuma tem `alternates.json`
+mesmo com o padrão (gerar) ligado, porque `ComputeAlternateStarts` já
+devolve lista vazia para elas (P02b).
+
+**Critério 7**: build sem avisos novos, conferido nas duas recompilações
+completas que este passo disparou (mudar `options.h`/`toolkit.h`, este
+incluído por quase todo o projeto).

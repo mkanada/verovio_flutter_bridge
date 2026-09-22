@@ -104,6 +104,7 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Padrões do bridge (P01b) | `Toolkit::ApplyBridgeDefaults` (`toolkit.cpp`), chamado no início de `LoadData` |
 | Título sem cabeçalho (P01a) | `Toolkit::ReadBridgeMeta` (`toolkit.cpp`): cai no `<pgHead func="first">` codificado ou gera um descartável com `GenerateFromMEIHeader` quando não há cabeçalho renderizado |
 | Pontos de chegada de repetição (P02b, fase P) | `include/vrv/bridgealternates.h` + `src/bridgealternates.cpp`: `BridgeAlternates::FindAlternateStarts` (função pura); `Toolkit::ComputeMeasureDocOrder`/`ComputeMeasureExecutionOrder`/`ComputeAlternateStarts` (`toolkit.cpp`) montam os três insumos a partir do `Doc` e do timemap. Debug-only por enquanto: `--debug-alternate-starts` grava `_executionOrder`/`_alternateStarts` só em `-t vsb-json` |
+| Renderização das páginas alternativas + `alternates.json` (P02c, fase P) | `Toolkit::RenderAlternatesToBridge` (`toolkit.cpp`): `Select`/`RedoLayout` por ponto de chegada de P02b, no mesmo `BridgeDeviceContext` das páginas normais; `BridgeWriter::WriteAlternates`/`BridgeAlternateSequence` (`bridgewriter.h`/`.cpp`). Opção `--no-vsb-alternates` desliga (padrão é gerar) |
 
 Fora do exportador, únicos pontos do fork que a fase E tocou: geração de
 expansão (repetições), em `src/expansionmap.cpp`/`include/vrv/expansionmap.h`
@@ -390,7 +391,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P01c](P01c-remedir-corpus.md) | Regenerar corpus e fixtures, re-medir paridade e fatos | P01b | — | concluído |
 | [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | concluído |
 | [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | concluído |
-| [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | pendente |
+| [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | concluído |
 | [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | pendente |
 | [P03a](P03a-modelo-e-parser-alternates.md) | Dart: modelo, parser e geometria das alternativas (`PageRef`) | P02a, P02c | — | pendente |
 | [P03b](P03b-vista-com-pageref.md) | Dart: `ScorePageView`/`ScoreView` exibem um `PageRef` | P03a, P02d | D-ALT-INDICE resolvida | pendente |

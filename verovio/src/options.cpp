@@ -1092,6 +1092,13 @@ Options::Options()
     m_noJustification.Init(false);
     this->Register(&m_noJustification, "noJustification", &m_general);
 
+    m_noVsbAlternates.SetInfo("No vsb alternates",
+        "-t vsb/-t vsb-json (whole document): skip rendering the repeat arrival points as alternate "
+        "page sequences (docs/formato/especificacao-v1.md §2.5) and writing alternates.json. On by "
+        "default; pass this to turn it off, e.g. for measuring the cost of generating them (P02c)");
+    m_noVsbAlternates.Init(false);
+    this->Register(&m_noVsbAlternates, "noVsbAlternates", &m_general);
+
     m_openControlEvents.SetInfo("Open control event", "Render open control events");
     m_openControlEvents.Init(false);
     this->Register(&m_openControlEvents, "openControlEvents", &m_general);

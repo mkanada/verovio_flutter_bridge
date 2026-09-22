@@ -619,9 +619,12 @@ std::string BridgeWriter::WriteMeta(const BridgeMeta &meta)
     return out;
 }
 
-std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta)
+std::string BridgeWriter::WriteManifest(
+    const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta, bool hasAlternates)
 {
     std::string out = "{\"format\":\"vsb\",\"version\":1,\"generator\":\"" + EscapeJsonString(generator) + "\"";
+    // §2.1: pageCount is scene.pages only - alternates.json's pages are never counted here, even
+    // when they exist.
     out += ",\"pageCount\":" + std::to_string(pageCount);
     out += ",\"files\":{\"scene\":\"scene.json\",\"glyphs\":\"glyphs.json\"";
     if (hasTimemap) {
@@ -630,21 +633,44 @@ std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCo
     if (hasMeta) {
         out += ",\"meta\":\"meta.json\"";
     }
+    if (hasAlternates) {
+        out += ",\"alternates\":\"alternates.json\"";
+    }
     out += "}}";
+    return out;
+}
+
+std::string BridgeWriter::WriteAlternates(const std::vector<BridgeAlternateSequence> &sequences)
+{
+    std::string out;
+    out += "{\"sequences\":[";
+    for (std::size_t s = 0; s < sequences.size(); ++s) {
+        if (s) out += ',';
+        const BridgeAlternateSequence &sequence = sequences[s];
+        out += "{\"start\":\"" + EscapeJsonString(sequence.start) + "\",\"pages\":[";
+        for (std::size_t p = 0; p < sequence.pages.size(); ++p) {
+            if (p) out += ',';
+            assert(sequence.pages[p]);
+            AppendPage(out, *sequence.pages[p], static_cast<int>(p));
+        }
+        out += "]}";
+    }
+    out += "]}";
     return out;
 }
 
 std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> &pages,
     const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator, const std::string &timemapJson,
-    const BridgeMeta &meta)
+    const BridgeMeta &meta, const std::vector<BridgeAlternateSequence> &sequences)
 {
     const bool hasTimemap = !timemapJson.empty();
     const bool hasMeta = !meta.IsEmpty();
+    const bool hasAlternates = !sequences.empty();
 
     std::string out;
     out.reserve(1 << 20);
     out += "{\"manifest\":";
-    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta);
+    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates);
     out += ",\"glyphs\":";
     out += WriteGlyphs(glyphs);
     out += ",\"scene\":";
@@ -656,6 +682,10 @@ std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> 
     if (hasMeta) {
         out += ",\"meta\":";
         out += WriteMeta(meta);
+    }
+    if (hasAlternates) {
+        out += ",\"alternates\":";
+        out += WriteAlternates(sequences);
     }
     out += '}';
     return out;

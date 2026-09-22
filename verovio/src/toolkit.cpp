@@ -2087,15 +2087,28 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
 
     BridgeDeviceContext bridge;
     if (!this->RenderPagesToBridge(bridge, fromPage, toPage)) return "";
-
-    std::vector<const BridgePage *> pages;
-    for (const BridgePage &page : bridge.GetPages()) {
-        pages.push_back(&page);
-    }
+    const std::size_t normalPageCount = bridge.GetPages().size();
 
     const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
-    std::string output = BridgeWriter::WriteSingleJson(
-        pages, bridge.GetGlyphs(), generator, "", this->ReadBridgeMeta());
+    const BridgeMeta meta = this->ReadBridgeMeta();
+
+    // §2.5/P02c: alternates only when the whole document was requested - a page range that isn't
+    // "every normal page" wouldn't have "the rest of the piece" to build a sequence into, and
+    // firstOfNormalPage (from ComputeAlternateStarts) is derived from the whole Doc regardless of
+    // fromPage/toPage, so a partial range's alternates.json would describe pages scene.json here
+    // doesn't even have.
+    const bool wholeDocument
+        = (fromPage <= 1) && (toPage < 0 || static_cast<std::size_t>(toPage) >= normalPageCount);
+    const std::vector<BridgeAlternateSequence> sequences
+        = wholeDocument ? this->RenderAlternatesToBridge(bridge) : std::vector<BridgeAlternateSequence>();
+
+    std::vector<const BridgePage *> pages;
+    pages.reserve(normalPageCount);
+    for (std::size_t i = 0; i < normalPageCount; ++i) {
+        pages.push_back(&bridge.GetPages()[i]);
+    }
+
+    std::string output = BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator, "", meta, sequences);
 
     // P02b, debug-only (--debug-alternate-starts): splice a "_alternateStarts" key into the
     // vsb-json output, outside BridgeWriter on purpose - it is not part of the documented format
@@ -2117,6 +2130,34 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     }
     return output;
 }
+
+namespace {
+    // True if one of `className`'s space-separated tokens is `token` (BridgeNode::className can
+    // carry more than one, e.g. "mdiv pageMilestone" - see BridgeDeviceContext's own callers).
+    bool HasClassToken(const std::string &className, const std::string &token)
+    {
+        std::istringstream stream(className);
+        std::string part;
+        while (stream >> part) {
+            if (part == token) return true;
+        }
+        return false;
+    }
+
+    // First "measure"-classed node in document order (pre-order, following BridgeChild::group the
+    // same way the tree was built) - what P02c's criterion 1 means by "start é o 1º nó de classe
+    // measure" of a sequence's page 0.
+    const BridgeNode *FindFirstMeasureNode(const BridgeNode &node)
+    {
+        if (HasClassToken(node.className, "measure")) return &node;
+        for (const BridgeChild &child : node.children) {
+            if (child.group) {
+                if (const BridgeNode *found = FindFirstMeasureNode(*child.group)) return found;
+            }
+        }
+        return nullptr;
+    }
+} // namespace
 
 std::map<std::string, int> Toolkit::ComputeMeasureDocOrder()
 {
@@ -2172,6 +2213,79 @@ std::vector<std::string> Toolkit::ComputeAlternateStarts()
 
     const std::vector<std::string> executionOrder = this->ComputeMeasureExecutionOrder(docOrder);
     return BridgeAlternates::FindAlternateStarts(executionOrder, docOrder, firstOfNormalPage);
+}
+
+std::vector<BridgeAlternateSequence> Toolkit::RenderAlternatesToBridge(BridgeDeviceContext &bridge)
+{
+    std::vector<BridgeAlternateSequence> sequences;
+
+    if (!m_options->m_noVsbAlternates.GetValue()) {
+        const std::vector<std::string> starts = this->ComputeAlternateStarts();
+        if (!starts.empty()) {
+            const ListOfObjects measures = m_doc.FindAllDescendantsByType(MEASURE, false);
+            assert(!measures.empty()); // starts is non-empty, so the Doc has at least one measure
+            const std::string lastMeasureId = measures.back()->GetID();
+
+            // Index ranges, not pointers: bridge.GetPages() is a std::vector<BridgePage>, and
+            // pushing more pages into it (the next Select/render, or the caller's own normal pages
+            // if it built them before calling this) can reallocate and invalidate any pointer taken
+            // earlier. Every BridgeAlternateSequence::pages pointer is built only at the very end,
+            // once nothing is going to push any more pages.
+            struct SequenceRange {
+                std::string start;
+                std::size_t first;
+                std::size_t count;
+            };
+            std::vector<SequenceRange> ranges;
+
+            for (const std::string &start : starts) {
+                const std::string selectionJson = "{\"start\":\"" + start + "\",\"end\":\"" + lastMeasureId + "\"}";
+                this->Select(selectionJson);
+                this->RedoLayout();
+
+                // docs/plano/P00 + doc.cpp's own InitSelectionDoc: a selection that could not be
+                // made (start/end not found, or too few pages resulting) clears m_selectionStart/
+                // End without reactivating anything - HasSelection() is the cheapest way to ask
+                // "did this actually apply" without re-deriving InitSelectionDoc's own logic here.
+                if (!m_doc.HasSelection()) {
+                    LogWarning("Alternate sequence for '%s' skipped: selection could not be made", start.c_str());
+                    continue;
+                }
+
+                const std::size_t first = bridge.GetPages().size();
+                if (!this->RenderPagesToBridge(bridge, 1, -1) || bridge.GetPages().size() == first) {
+                    LogWarning("Alternate sequence for '%s' skipped: rendering failed", start.c_str());
+                    continue;
+                }
+
+                const BridgeNode *firstMeasure = FindFirstMeasureNode(*bridge.GetPages()[first].root);
+                if (!firstMeasure || firstMeasure->id != start) {
+                    LogWarning(
+                        "Alternate sequence for '%s' skipped: page 0 does not start with it", start.c_str());
+                    continue;
+                }
+
+                ranges.push_back({ start, first, bridge.GetPages().size() - first });
+            }
+
+            for (const SequenceRange &range : ranges) {
+                BridgeAlternateSequence sequence;
+                sequence.start = range.start;
+                sequence.pages.reserve(range.count);
+                for (std::size_t i = 0; i < range.count; ++i) {
+                    sequence.pages.push_back(&bridge.GetPages()[range.first + i]);
+                }
+                sequences.push_back(std::move(sequence));
+            }
+        }
+    }
+
+    // Always leave the Doc back in its normal state, whether or not there was anything to render -
+    // the same Toolkit keeps being usable afterwards (D-RUNTIME: the host reuses it).
+    this->Select("");
+    this->RedoLayout();
+
+    return sequences;
 }
 
 BridgeMeta Toolkit::ReadBridgeMeta()
@@ -2231,11 +2345,7 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
 
     BridgeDeviceContext bridge;
     if (!this->RenderPagesToBridge(bridge, 1, -1)) return false;
-
-    std::vector<const BridgePage *> pages;
-    for (const BridgePage &page : bridge.GetPages()) {
-        pages.push_back(&page);
-    }
+    const std::size_t normalPageCount = bridge.GetPages().size();
 
     const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
 
@@ -2275,9 +2385,22 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     const BridgeMeta meta = this->ReadBridgeMeta();
     const bool hasMeta = !meta.IsEmpty();
 
+    // P02c (§2.5): must run after the normal pages/timemap/meta are all done reading from the
+    // unselected Doc, and must be the last thing to push pages into `bridge` - see
+    // RenderAlternatesToBridge's own doc comment for why. Only after this returns is it safe to
+    // take pointers into bridge.GetPages() at all, including for the normal pages below.
+    const std::vector<BridgeAlternateSequence> sequences = this->RenderAlternatesToBridge(bridge);
+    const bool hasAlternates = !sequences.empty();
+
+    std::vector<const BridgePage *> pages;
+    pages.reserve(normalPageCount);
+    for (std::size_t i = 0; i < normalPageCount; ++i) {
+        pages.push_back(&bridge.GetPages()[i]);
+    }
+
     ZipFileWriter zip;
     zip.AddFile("manifest.json",
-        BridgeWriter::WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta));
+        BridgeWriter::WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates));
     zip.AddFile("scene.json", BridgeWriter::WriteScene(pages));
     zip.AddFile("glyphs.json", BridgeWriter::WriteGlyphs(bridge.GetGlyphs()));
     if (hasTimemap) {
@@ -2285,6 +2408,9 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     }
     if (hasMeta) {
         zip.AddFile("meta.json", BridgeWriter::WriteMeta(meta));
+    }
+    if (hasAlternates) {
+        zip.AddFile("alternates.json", BridgeWriter::WriteAlternates(sequences));
     }
 
     return zip.Save(filename);

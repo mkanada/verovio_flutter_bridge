@@ -90,4 +90,45 @@ papel que S01 teve para o formato inteiro.
 
 ## Notas de execução
 
-_(preencher)_
+Feito só em documentação/schema, como previsto — nenhum código C++/Dart.
+
+**Spec:** §2.5 nova (`alternates.json`: `start`, `pages`, regra de existência
+normativa, e a nota de que o arquivo só oferece páginas, não decide rota —
+isso é do leitor, P00). §2.1 (`pageCount` explicitamente só das páginas
+normais; `files.alternates` na tabela de arquivos). §2.2 (`alternates` no
+JSON único). §5.5 (índice por sequência; registrado explicitamente que
+**não existe** índice único do documento, já que ids se repetem entre
+sequência e páginas normais por construção — evita um leitor tentar montar
+um `Map<String, Node>` global e pisar em ids repetidos). §9 (aditivo,
+leitor antigo ignora). Histórico de revisões, linha 2026-09-22.
+
+**Schema (`schema-v1.json`):** `$defs/alternateSequence` (`start` + `pages`,
+reusando `$defs/page`) e `$defs/alternatesDocument` (`{"sequences": [...]}`,
+`minItems: 1` — sem sequências, o arquivo inteiro é omitido, não existe um
+`alternates.json` vazio); `alternatesDocument` entra no `oneOf` da raiz (para
+validar `alternates.json` sozinho) e em `$defs/document.properties.alternates`
+(para o JSON único); `manifest.files.alternates` com `const:
+"alternates.json"`.
+
+**`exemplo-alternates.json`** (novo, escrito à mão): uma sequência
+(`start: "m5"`), uma página, copiando a pauta+glifo de `exemplo-minimo.json`
+e um compasso mínimo (`id: "m5"`, classe `measure`, uma nota dentro,
+`id: "m5-note-1"`) — pequeno o bastante para servir de fixture de P03a antes
+do C++ existir (P02c), grande o bastante para exercitar `start` + `pages` +
+um nó com `id` dentro da página.
+
+**Critério 2** (`exemplo-alternates.json` valida): `jsonschema` (Draft
+2020-12, mesma engine de S01; `check-jsonschema` não está instalado neste
+ambiente — `pip install` recusou por ser um Python gerenciado pelo SO, PEP
+668 — mas o pacote `jsonschema` 4.10.3 já estava disponível com o mesmo CLI
+`jsonschema -i <instância> <schema>`, então usei ele em vez de instalar
+algo novo):
+
+```
+jsonschema -i docs/formato/exemplo-alternates.json docs/formato/schema-v1.json
+```
+
+Passa sem saída (sucesso silencioso do CLI).
+
+**Critério 3** (`exemplo-minimo.json` continua validando): mesmo comando
+trocando o arquivo de instância — passa.

@@ -33,8 +33,8 @@ flags de saída são:
 
 | Formato de saída | Arquivo | Conteúdo |
 | --- | --- | --- |
-| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json` e `meta.json` |
-| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap` e `meta` |
+| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json`, `meta.json` e `alternates.json` |
+| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap`, `meta` e `alternates` |
 
 O `timemap.json` é **embutido no pacote** quando o Verovio produz um timemap
 não vazio. Se a peça não produzir timemap, o arquivo e a entrada correspondente
@@ -44,6 +44,11 @@ mesmo array é colocado na propriedade `timemap`.
 O `meta.json` (§2.3) leva o título e os autores da peça e segue a mesma regra
 de omissão: se o arquivo de origem não informa nenhum dos dois, o arquivo e a
 entrada do manifest não existem.
+
+O `alternates.json` (§2.5) leva as páginas alternativas do player, usadas só
+em saltos de repetição (P00-P05). Segue a mesma regra de omissão: uma peça
+sem nenhum salto que precise de página alternativa não tem o arquivo nem a
+entrada do manifest.
 
 ### 2.1 `manifest.json`
 
@@ -66,10 +71,12 @@ entrada do manifest não existem.
 - `version` é o inteiro `1`.
 - `generator` identifica a versão do Verovio e do bridge que produziu o
   documento.
-- `pageCount` é o número de páginas em `scene.pages`.
-- `files.scene` e `files.glyphs` são obrigatórios. `files.timemap` e
-  `files.meta` existem somente quando o pacote contém `timemap.json` e
-  `meta.json`, respectivamente.
+- `pageCount` é o número de páginas em `scene.pages` (as páginas **normais**;
+  não conta nenhuma página de `alternates.json`).
+- `files.scene` e `files.glyphs` são obrigatórios. `files.timemap`,
+  `files.meta` e `files.alternates` existem somente quando o pacote contém
+  `timemap.json`, `meta.json` e `alternates.json`, respectivamente (§2.4,
+  §2.3, §2.5).
 - No JSON único, `manifest.files` mantém os nomes lógicos acima mesmo sem
   arquivos físicos separados.
 
@@ -83,14 +90,16 @@ A raiz de `-t vsb-json` é:
   "glyphs": { "...": "dicionário de glifos" },
   "scene": { "pages": [] },
   "timemap": [],
-  "meta": { "title": "..." }
+  "meta": { "title": "..." },
+  "alternates": { "sequences": [] }
 }
 ```
 
-`timemap` e `meta` são opcionais e seguem exatamente o conteúdo de
-`timemap.json` e `meta.json`. O parser deve aceitar tanto a raiz única quanto os
-documentos individuais `scene.json`, `glyphs.json`, `manifest.json`,
-`timemap.json` e `meta.json`.
+`timemap`, `meta` e `alternates` são opcionais e seguem exatamente o
+conteúdo de `timemap.json`, `meta.json` e `alternates.json`. O parser deve
+aceitar tanto a raiz única quanto os documentos individuais `scene.json`,
+`glyphs.json`, `manifest.json`, `timemap.json`, `meta.json` e
+`alternates.json`.
 
 ### 2.3 `meta.json`
 
@@ -216,6 +225,55 @@ E01a-corpus-de-repeticoes.md`/`E01b-timemap-com-compassos.md`), então o
 formato não ganha um `expansion.json` à parte — o mapa completo do Verovio
 lista todo elemento clonado (pauta, camada, haste…), não só os ids do
 timemap, e pesa 50-207 KB por peça no corpus.
+
+### 2.5 `alternates.json`
+
+Páginas **alternativas**, usadas só pelo player quando um salto de repetição
+muda de página (`docs/plano/P00-visao-geral-paginas-alternativas.md`): em vez
+de voltar para a página normal de destino (onde o compasso de chegada pode
+estar no meio), o player mostra uma página redesenhada que começa exatamente
+nele.
+
+```json
+{
+  "sequences": [
+    {
+      "start": "d1e3853",
+      "pages": [ { "index": 0, "...": "igual a scene.pages[i] (§5)" } ]
+    }
+  ]
+}
+```
+
+- `start`: `xml:id` **notado** (sem sufixo `-rendN`; §2.4) do compasso de
+  chegada, que é o primeiro compasso da página `0` da sequência.
+- `pages`: a paginação do trecho `start` → fim da peça (D-ALT-EXTENSAO: uma
+  sequência nunca é cortada antes do fim, mesmo que páginas do meio nunca
+  sejam exibidas por nenhum salto real). Cada página tem exatamente a forma
+  de `scene.pages[i]` (§5): mesmos campos, mesma árvore, mesmos glifos do
+  **mesmo** `glyphs.json` (nenhum dicionário próprio). `index` é 0-based
+  **dentro da sequência**, não um índice global.
+- Os `xml:id` de notas, acordes, compassos etc. dentro de uma sequência são
+  os mesmos das páginas normais (o mesmo documento, apenas reselecionado e
+  paginado de novo). Os ids de `system` e do `score`/`scoreDef` sintetizados
+  pela seleção (`Doc::ReactivateSelection`) são **novos**: não correspondem a
+  nada nas páginas normais nem em outra sequência.
+- Dentro de **uma** sequência, cada id aparece uma vez (é uma paginação
+  completa e independente do trecho). **Entre** sequências, e entre uma
+  sequência e as páginas normais, os ids de nota/compasso se repetem **por
+  construção** — não é uma inconsistência a resolver, é o motivo de existir
+  uma sequência por ponto de chegada.
+- `sequences` está em ordem de documento do `start` de cada uma, sem `start`
+  repetido.
+- **Regra de existência (normativa):** só existe sequência para um compasso
+  que é destino de algum salto na execução (a ordem de `measureOn` do
+  timemap, §2.4) **e** que não é já o primeiro compasso de alguma página
+  normal — ali a página normal já serve, sem precisar de alternativa. Uma
+  peça sem nenhuma sequência **omite o arquivo inteiro** e a entrada do
+  manifest (mesma regra de omissão do timemap e do `meta.json`, §2.1).
+- O arquivo **não** diz qual página exibir em qual momento: isso é decidido
+  pelo leitor (regra em P00), a partir de `alternates` e da ordem de execução
+  do timemap. `alternates.json` só oferece as páginas.
 
 ## 3. Unidades e ajuste de página
 
@@ -488,6 +546,15 @@ percorrer(nó):
 O pacote Dart `score_bridge` expõe o resultado em `ScenePage.elements`, ao
 lado de `ScenePage.byId` (`xml:id` → nó), ambos construídos nessa passada.
 
+O índice é sempre **por sequência**: as páginas normais (`scene.pages`) têm o
+seu, e cada sequência de `alternates.json` (§2.5) tem o seu próprio, contado
+do zero e independente das normais e de qualquer outra sequência — a mesma
+regra de derivação, aplicada à árvore daquela página. Como os `xml:id` de
+nota/compasso se repetem entre uma sequência e as páginas normais (por
+construção, §2.5), **não existe** um índice único "de todo o documento": um
+`xml:id` só identifica um nó dentro do escopo de uma página normal **ou**
+de uma sequência específica, nunca dos dois ao mesmo tempo.
+
 
 ## 6. Ordem de pintura e estado herdado
 
@@ -607,6 +674,11 @@ explicitamente.
 - O schema JSON Schema draft 2020-12 que acompanha esta especificação é o
   critério mecânico de forma para o fixture e para as saídas dos passos
   seguintes.
+- Um leitor que não conhece `alternates` (versões anteriores a P02a) o
+  ignora: é uma propriedade/arquivo aditivo a mais, como `meta`. Um leitor
+  que conhece `alternates` mas não encontra o arquivo/propriedade trata a
+  peça como "sem páginas alternativas" — mostra sempre a página normal de
+  destino num salto, o comportamento de antes da fase P (E03).
 
 ## Histórico de revisões
 
@@ -623,3 +695,4 @@ explicitamente.
 | 2026-09-20 | `meta.title` passa a ser derivado do cabeçalho **renderizado** (`Page::GetHeader()` da página 1), seguindo `--header`: ausente com `none`, primeira linha do bloco de título com `auto`, título do cabeçalho codificado com `encoded`. Antes vinha do `<meiHead>`, o que dava título mesmo com o cabeçalho desligado e nenhum título nas peças MusicXML que só têm `<credit-words>` (4 das 5 do corpus, agora todas com título). `creators` continua vindo do `<meiHead>`. Sem mudança de forma: schema, fixture e leitor Dart inalterados. |
 | 2026-09-21 | E01b: §2.4 (nova) documenta o timemap embutido — sempre pedido com `includeMeasures: true` (preenche `measureOn`) e a regra de sufixo `-rend<N>` que resolve um id expandido do timemap ao nó da cena (D-EXPMAP, decisão do usuário: regra documentada, sem `expansion.json` à parte). Mudança aditiva: `version` continua `1`, o formato do pacote não muda, só o conteúdo de `timemap.json` ganha mais um campo por instante. |
 | 2026-09-22 | P01a (D-META-TITULO, opção (a)): `meta.title` deixa de depender de `--header`. Passa a ser o título que o cabeçalho mostraria com `--header auto` — do `<pgHead func="first">`/`<credit>` codificado se a peça já traz um, senão de um `PgHead` descartável gerado do mesmo jeito que `Doc::GenerateHeader()` faria — calculado mesmo com `--header none`. Motivo: P01b torna `--header none` o padrão do `.vsb` (D-VSB-PADRAO), e o host precisa do título mesmo sem cabeçalho desenhado. Medido nas 10 peças do corpus: `title` passa a ser igual com `none`, `auto` e `encoded` (30/30; antes, `encoded` saía sem título nas 5 peças MEI, que não têm `<pgHead>` codificado). `creators` não muda (já independia de `--header`). `scene.json`, `glyphs.json` e `-t svg` byte-idênticos nos 3 valores de `--header` (o desenho não muda). |
+| 2026-09-22 | P02a (D-ALT/D-ALT-EXTENSAO): `alternates.json` (§2.5, novo) — páginas alternativas do player para saltos de repetição que mudam de página, cada sequência do compasso de chegada até o fim da peça, mesma forma de `scene.pages[i]` e mesmo `glyphs.json`. `files.alternates`/propriedade `alternates` opcionais (§2.1/§2.2), mesma regra de omissão do timemap/`meta`. §5.5 explicita que o índice de elementos é por sequência (não existe índice único do documento, já que ids se repetem entre sequências e páginas normais por construção). §9: aditivo, leitor antigo ignora. Mudança só de documentação e schema (`$defs/alternateSequence`, `$defs/alternatesDocument`, reuso de `$defs/page`) — nenhum código ainda; `docs/formato/exemplo-alternates.json` (novo) é o primeiro documento a validar contra o schema novo. |

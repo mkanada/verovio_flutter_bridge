@@ -385,7 +385,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P01a](P01a-titulo-sem-cabecalho.md) | `meta.title` sem depender do cabeçalho desenhado | — | D-META-TITULO resolvida | concluído |
 | [P01b](P01b-padroes-do-vsb.md) | Padrões do `.vsb`: sem cabeçalho, rodapé e rótulo | P01a | D-VSB-PADRAO resolvida | concluído |
 | [P01c](P01c-remedir-corpus.md) | Regenerar corpus e fixtures, re-medir paridade e fatos | P01b | — | concluído |
-| [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | pendente |
+| [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | concluído |
 | [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | pendente |
 | [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | pendente |
 | [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | pendente |

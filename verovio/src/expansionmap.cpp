@@ -114,6 +114,17 @@ Object *ExpansionMap::Expand(Expansion *expansion, xsdAnyURI_List &existingList,
         LogDebug("Looking for element in @plist: %s", id.c_str());
         if (id.rfind("#", 0) == 0) id = id.substr(1, id.size() - 1); // remove leading hash from id
         Object *currSect = parent->FindDescendantByID(id); // find section pointer for id string
+        // E04a: GenerateExpansionFor can now build a repeat out of measures that started in a
+        // *different* <section> than the one the expansion itself lives in (several consecutive
+        // <section> elements, the pattern the MEI corpus converter produces) - the new child
+        // section created for such a repeat is a descendant of that other section, not of
+        // `parent`. Widen the search to the whole score before giving up; this is a pure
+        // fallback (only tried when the direct lookup fails), so a plist entirely inside `parent`
+        // - every case before E04a - resolves exactly as before.
+        if (currSect == NULL) {
+            Object *scoreAncestor = parent->GetFirstAncestor(SCORE);
+            if (scoreAncestor) currSect = scoreAncestor->FindDescendantByID(id);
+        }
         if (currSect == NULL) {
             // Warn about referenced element not found and continue
             LogWarning("ExpansionMap::Expand: Element referenced in @plist not found: %s", id.c_str());
@@ -373,65 +384,118 @@ void ExpansionMap::GenerateExpansionFor(Score *score)
         return;
     }
 
-    if (score->FindAllDescendantsByType(SECTION).size() > 1) {
-        LogWarning("An expansion cannot be generated with more than one section");
-        return;
+    // E04a: several consecutive <section> elements (the pattern produced by the converter that
+    // made the MEI corpus - each ritornello section of its own) used to make GenerateExpansionFor
+    // bail out entirely. We now walk measures and <ending> groups in document order *across*
+    // section boundaries, so a repeat that starts in one <section> and ends in the next (or
+    // starts exactly where a new one begins, as in the corpus) is still found. Nothing here
+    // touches how many <section> elements exist in the drawn document - CreateSection() below
+    // only ever adds a new child section, moving existing measures/endings into it.
+    ListOfObjects sectionChildren = score->FindAllDescendantsByType(SECTION);
+    if (sectionChildren.empty()) return;
+    std::vector<Section *> sections;
+    for (Object *object : sectionChildren) sections.push_back(vrv_cast<Section *>(object));
+
+    // Flatten the direct measure/ending children of every <section>, in document order, into one
+    // list with stable iterators (CreateSection mutates the tree as we go; a std::list keeps
+    // `first`/`last`/`groupStart` valid across that).
+    ListOfObjects items;
+    for (Section *section : sections) {
+        for (Object *child : section->GetChildrenForModification()) {
+            if (child->Is(MEASURE) || child->Is(ENDING)) items.push_back(child);
+        }
     }
-
-    Section *section = vrv_cast<Section *>(score->FindDescendantByType(SECTION, 1));
-    assert(section);
-
-    ArrayOfObjects childrenArray = section->GetChildrenForModification();
-    ListOfObjects children(childrenArray.begin(), childrenArray.end());
+    if (items.empty()) return;
 
     Expansion *expansion = new Expansion();
 
-    ListOfObjects::iterator first = children.begin();
-    ListOfObjects::iterator last = children.begin();
+    ListOfObjects::iterator first = items.begin();
+    ListOfObjects::iterator last = items.begin();
 
     bool isStartFromPrevious = false;
 
-    for (auto current = children.begin(); current != children.end(); current++) {
-        if ((*current)->Is(MEASURE)) {
-            Measure *measure = vrv_cast<Measure *>(*current);
-            // The current measure has a repeat end on its left
-            if (ExpansionMap::IsPreviousRepeatEnd(measure)) {
-                std::string ref = "#" + this->CreateSection(section, first, last);
-                expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
-                expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
+    for (auto current = items.begin(); current != items.end();) {
+        if ((*current)->Is(ENDING)) {
+            // Gather the consecutive run of <ending> siblings (casa 1, casa 2, ...): a group,
+            // not individual measures, because only entire endings are ever cited in the plist
+            // (E04a; a repeat ending on some *other* note inside an ending, or more than one
+            // casa in a single <ending>, is out of scope - see E04a "Fora de escopo").
+            std::vector<Ending *> endings;
+            while (current != items.end() && (*current)->Is(ENDING)) {
+                endings.push_back(vrv_cast<Ending *>(*current));
+                ++current;
             }
-            if (isStartFromPrevious || ExpansionMap::IsRepeatStart(measure)) {
-                first = current;
+            if (!endings.empty() && ExpansionMap::EndingHasRepeatEnd(endings.front())) {
+                // The shared material before the endings repeats once per casa: [shared, casa 1,
+                // shared, casa 2, ..., casa N] - Expand() places the first ref of a given id as-is
+                // and clones every later one, so this alternation is what turns into "play the
+                // shared part, casa 1, the shared part again, casa 2" without a second CreateSection
+                // call or any bookkeeping of which pass we are on.
+                std::string sharedRef = "#" + this->CreateSection(first, last);
+                for (size_t i = 0; i < endings.size(); ++i) {
+                    expansion->GetPlistInterface()->AddRefAllowDuplicate(sharedRef);
+                    expansion->GetPlistInterface()->AddRefAllowDuplicate("#" + endings.at(i)->GetID());
+                }
             }
-            // The current measure has a repeat start on its right
-            isStartFromPrevious = ExpansionMap::IsNextRepeatStart(measure);
+            // Either way, whatever comes after this ending group starts a fresh span (a repeat
+            // cannot itself begin inside an ending in the corpus - out of scope otherwise).
+            first = current;
             last = current;
-            if (ExpansionMap::IsRepeatEnd(measure)) {
-                std::string ref = "#" + this->CreateSection(section, first, last);
-                expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
-                expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
-            }
+            continue;
         }
+
+        Measure *measure = vrv_cast<Measure *>(*current);
+        // The current measure has a repeat end on its left
+        if (ExpansionMap::IsPreviousRepeatEnd(measure)) {
+            std::string ref = "#" + this->CreateSection(first, last);
+            expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
+            expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
+        }
+        if (isStartFromPrevious || ExpansionMap::IsRepeatStart(measure)) {
+            first = current;
+        }
+        // The current measure has a repeat start on its right
+        isStartFromPrevious = ExpansionMap::IsNextRepeatStart(measure);
+        last = current;
+        if (ExpansionMap::IsRepeatEnd(measure)) {
+            std::string ref = "#" + this->CreateSection(first, last);
+            expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
+            expansion->GetPlistInterface()->AddRefAllowDuplicate(ref);
+        }
+        ++current;
     }
 
     if (expansion->GetPlist().empty()) {
         delete expansion;
     }
     else {
-        section->InsertChild(expansion, 0);
+        // Same convention as before E04a (single section): the expansion lives at the very start
+        // of the first <section>, regardless of which section(s) the repeated spans came from.
+        sections.front()->InsertChild(expansion, 0);
     }
 }
 
-std::string ExpansionMap::CreateSection(
-    Section *section, const ListOfObjects::iterator &first, const ListOfObjects::iterator &last)
+std::string ExpansionMap::CreateSection(const ListOfObjects::iterator &first, const ListOfObjects::iterator &last)
 {
+    Object *anchorParent = (*first)->GetParent();
+    assert(anchorParent);
     Section *subSection = new Section();
-    section->InsertBefore(*first, subSection);
-    for (auto sectionCurrent = first; sectionCurrent != std::next(last); sectionCurrent++) {
-        section->DetachChild((*sectionCurrent)->GetIdx());
-        subSection->AddChild(*sectionCurrent);
+    anchorParent->InsertBefore(*first, subSection);
+    for (auto current = first; current != std::next(last); current++) {
+        Object *parent = (*current)->GetParent();
+        assert(parent);
+        parent->DetachChild((*current)->GetIdx());
+        subSection->AddChild(*current);
     }
     return subSection->GetID();
+}
+
+bool ExpansionMap::EndingHasRepeatEnd(Ending *ending)
+{
+    for (Object *child : ending->GetChildren()) {
+        if (child->Is(MEASURE) && ExpansionMap::IsRepeatEnd(vrv_cast<Measure *>(child))) return true;
+    }
+    return false;
 }
 
 //----------------------------------------------------------------------------

@@ -102,6 +102,13 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Bindings C | `tools/c_wrapper.cpp`: `vrvToolkit_renderToBridgeFile` L296, `vrvToolkit_renderToBridgeJson` L307 |
 | Binding Dart FFI | `verovio/bindings/dart/`: `VerovioToolkit` (`lib/src/verovio_toolkit.dart`), assinaturas em `lib/src/verovio_bindings.dart`, builds em `build_linux_so.sh` / `build_android_so.sh` |
 
+Fora do exportador, único ponto do fork que a fase E tocou: geração de
+expansão (repetições), em `src/expansionmap.cpp`/`include/vrv/expansionmap.h`
+(E04a) — `GenerateExpansionFor` atravessa várias `<section>` e grupos de
+`<ending>`; `EndingHasRepeatEnd` é novo; `Expand()` ganhou um fallback de
+busca pelo `Score` ancestral quando o id referenciado não é descendente da
+seção onde a expansão vive.
+
 ### Referência de verdade (não alterar — é o que a paridade compara)
 
 | Conceito | Onde |
@@ -186,15 +193,15 @@ A cena é desenhada do documento **notado**. O timemap vem de uma cópia
 expandida (`Toolkit::SetMidiDoc`), em que cada trecho repetido é um clone com
 ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 1:
 
-| Peça | Marcação | Verovio hoje | Ocorrências de compasso: hoje → esperado |
-| --- | --- | --- | --- |
-| Gymnopédie (MusicXML) | 1 ritornelo, casas 1 (32-39) e 2 (40-47) | correto | 78 → 78 |
-| Maple Leaf Rag (MusicXML) | 4 ritornelos, 4 casas 1, 3 casas 2 | perde o 1º ritornelo (casa 1 sem casa 2) | 130 → 145 |
-| Mazurka (MEI, 3 `section`) | 2 ritornelos | **não expande** (várias `section`) | 75 → 117 |
-| Butterfly (MEI, 2 `section`) | 1 ritornelo | **não expande** | 42 → 48 |
-| Little bird (MEI, 3 `section`) | 2 ritornelos | **não expande** | 39 → 69 |
-| Scarlatti (MEI, 2 `section`) | 1 ritornelo | **não expande** | 68 → 99 |
-| Étude, Nocturne, Clair de Lune, Prelude | nenhuma | — | = nº de compassos |
+| Peça | Marcação | Verovio em 2026-09-21 | Verovio depois de E04a/E04b | Ocorrências de compasso |
+| --- | --- | --- | --- | --- |
+| Gymnopédie (MusicXML) | 1 ritornelo, casas 1 (32-39) e 2 (40-47) | correto | correto | 78 |
+| Maple Leaf Rag (MusicXML) | 4 ritornelos, 4 casas 1, 3 casas 2 | perde o 1º ritornelo (casa 1 sem casa 2) | corrigido em E04b | 130 → 145 |
+| Mazurka (MEI, 3 `section`) | 2 ritornelos | não expandia (várias `section`) | **corrigido em E04a** | 75 → 117 |
+| Butterfly (MEI, 2 `section`) | 1 ritornelo | não expandia | **corrigido em E04a** | 42 → 48 |
+| Little bird (MEI, 3 `section`) | 2 ritornelos | não expandia | **corrigido em E04a** | 39 → 69 |
+| Scarlatti (MEI, 2 `section`) | 1 ritornelo | não expandia | **corrigido em E04a** | 68 → 99 |
+| Étude, Nocturne, Clair de Lune, Prelude | nenhuma | — | — | = nº de compassos |
 
 - No Dart de hoje, as notas `-rend2` são ignoradas (nada acende na 2ª
   passagem: 73 s na Gymnopédie) e `ScoreTimeline` só conhece a 1ª ocorrência
@@ -226,7 +233,7 @@ ids `<id>-rend<N>` (N-ésima execução). Compassos em ordem de documento, base 
 | D-BIN | Vale trocar JSON por encoding binário? | — | Em aberto, sem passo no plano: só decidir com números reais do `zywny` na mão (decisão do usuário) |
 | D-RUNTIME | O app gera `.vsb` em runtime (FFI) ou consome pré-gerado? | — | Resolvida (2026-09-20): **(a) gera no dispositivo**, via FFI com `libverovio.so`. Biblioteca e wrapper C existem em `verovio/bindings/dart/`; empacotamento e isolate ficam no `zywny` |
 | D-EXPMAP | Como o leitor chega do id `-rend<N>` do timemap ao nó da cena: regra do sufixo documentada na spec, ou `expansion.json` embutido? | E01b, E02a | Resolvida (2026-09-21): **regra do sufixo**, documentada em `especificacao-v1.md` §2.4 e implementada em `score_bridge` (`VsbDocument.sceneIdOf`/`passOf`, E02a); 0 divergências contra o `-t expansionmap` em 12 388 ids (10 peças + as 13 partituras de E01a); o mapa completo pesa 50-207 KB por peça e teria de ser filtrado |
-| D-EXPAND | Corrigir a geração de expansão no fork (MEI com várias `section`/`<ending>`; MusicXML com casa 1 sem casa 2)? | E04a, E04b | **Sim, no fork, isolado** em `expansionmap.cpp`/`iomusxml.cpp`, sem tocar `View`/DCs; desenho byte-idêntico; patch pronto para PR upstream (enviar é decisão do usuário) |
+| D-EXPAND | Corrigir a geração de expansão no fork (MEI com várias `section`/`<ending>`; MusicXML com casa 1 sem casa 2)? | E04a, E04b | Resolvida (2026-09-22): **sim, no fork, isolado** em `expansionmap.cpp`/`iomusxml.cpp`, sem tocar `View`/DCs; desenho byte-idêntico (E04a: as 4 peças MEI do corpus); patch pronto para PR upstream (enviar é decisão do usuário) |
 | D-SALTO | O que a vista faz quando a execução salta para outra página? | E03a, E03b | Resolvida (2026-09-22): **haste generalizada** — a mesma regra de A05b com a página de destino atrás (`SweepCurtain.targetPageIndex`, E03a); salto na mesma página não mexe na vista; quando a haste anda nos saltos é E03b |
 | D-TOQUE | Qual passagem `seekToElement` escolhe para um elemento tocado mais de uma vez? | E02c | Resolvida (2026-09-22): **a mesma passagem da posição atual, se existir; senão a primeira**; `pass:` explícito sempre ganha; implementada em `ScorePlayer.seekToElement` |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
@@ -321,7 +328,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E02c](E02c-tocar-a-partir-de-elemento.md) | Tocar a partir de um elemento repetido (`seekToElement`) | E02b | D-TOQUE resolvida | concluído |
 | [E03a](E03a-haste-com-pagina-de-destino.md) | Haste com página de destino (mecanismo) | E02b | D-SALTO resolvida | concluído |
 | [E03b](E03b-regra-da-haste-nos-saltos.md) | Regra da haste nos saltos e evidências | E03a | — | concluído |
-| [E04a](E04a-expansao-mei.md) | Expansão de MEI com várias `section` e `<ending>` (fork) | E01a | D-EXPAND | pendente |
+| [E04a](E04a-expansao-mei.md) | Expansão de MEI com várias `section` e `<ending>` (fork) | E01a | D-EXPAND resolvida | concluído |
 | [E04b](E04b-expansao-musicxml-casa-unica.md) | MusicXML: casa 1 sem casa 2 (fork) | E04a | — | pendente |
 | [E05](E05-portao-das-repeticoes.md) | Portão da fase E: repetições de ponta a ponta | E02c, E03b, E04b | — | pendente |
 

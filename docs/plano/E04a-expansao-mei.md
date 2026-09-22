@@ -115,4 +115,119 @@ Este passo corrige o gerador **no fork**, sem tocar em nada do desenho.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**D-EXPAND resolvida pelo usuário: (a) sim, no fork, isolado.**
+
+**`GenerateExpansionFor` reescrito em torno de uma lista achatada.** Em vez
+de operar só nos filhos diretos de uma única `<section>`, a função agora:
+
+1. Coleta todas as `<section>` da partitura (`score->FindAllDescendantsByType(SECTION)`
+   — a mesma chamada que antes só servia para o bloqueio de ">1 seção").
+2. Achata os filhos diretos de cada uma (`Measure`/`Ending`, em ordem de
+   documento) numa única `ListOfObjects` (`std::list`, iteradores estáveis
+   mesmo com `CreateSection` mutando a árvore).
+3. Percorre essa lista com a **mesma lógica de sempre**
+   (`IsPreviousRepeatEnd`/`IsRepeatStart`/`IsNextRepeatStart`/`IsRepeatEnd`)
+   para compassos soltos — agora atravessando fronteiras de `<section>` sem
+   perceber a diferença — mais um ramo novo para grupos de `<ending>`
+   consecutivos.
+
+**`<ending>` (casas).** Ao encontrar um grupo de `<ending>` consecutivos,
+verifica se a **primeira casa** tem um compasso com `rptend`
+(`EndingHasRepeatEnd`, novo). Se tiver, o trecho compartilhado antes das
+casas vira uma `<section>` nova (via `CreateSection`) e o `plist` recebe
+`[compartilhado, casa 1, compartilhado, casa 2, …, casa N]` — a alternância
+de refs, não uma segunda extração. Isso funciona **sem tocar em `Expand()`
+para esse caso**: como cada ref nova é usada no lugar (1ª vez) e clonada
+logo depois do `prevSect` anterior (2ª vez em diante), o `plist` alternado
+já posiciona cada casa exatamente onde precisa, porque as casas nunca saem
+do lugar onde já estavam na árvore (só o trecho compartilhado é clonado).
+Verificado à mão com r03/r04 antes de rodar: bate com o resultado real.
+
+**`Expand()` precisou de uma mudança (a exceção "a menos que inevitável"
+do passo).** Uma repetição que atravessa `<section>` pode extrair seu
+trecho compartilhado para dentro de uma seção que **não** é descendente de
+`expansion->GetParent()` (a 1ª seção da partitura, de onde o `<expansion>`
+sempre é lido) — `parent->FindDescendantByID(id)` falhava
+("Element referenced in @plist not found") para qualquer ref criada a
+partir da 2ª seção em diante. Corrigido com um **fallback aditivo**: se a
+busca em `parent` falhar, busca de novo a partir do `Score` ancestral,
+antes de desistir. Para todo caso anterior a E04a (uma seção só), a busca
+em `parent` **sempre** dá certo, então o fallback nunca é exercitado — 0
+mudança de comportamento no caminho antigo (testado: nenhuma peça
+MusicXML mudou nada, ver critério 3/4). `GeneratePredictableIDs` não foi
+tocado.
+
+**Por que `CreateSection` não precisou de mais mudança para o caso
+cross-section:** ela já pegava o pai **atual** de `*first`
+(`(*first)->GetParent()`), então inserir a seção nova "onde o trecho
+compartilhado estava" já funciona não importa de qual `<section>` original
+o trecho veio — o problema era só a *busca* em `Expand()`, não a
+*extração*.
+
+**`.clang-format` do fork:** não existe no repositório (`find` não achou
+nenhum, e a máquina não tem `clang-format` instalado) — a instrução do
+`CLAUDE.md` pressupõe um arquivo que este fork não trouxe do
+`verovio_lottie`. O patch foi formatado à mão para bater com o estilo ao
+redor (2 espaços, `//` de uma linha para comentários curtos, sem chaves em
+`if` de uma linha só, como o resto de `expansionmap.cpp`).
+
+**Critérios de aceite:**
+
+1. `repeat-order.py --expected` passa em r02, r04, r07, r11, r12 (E01a).
+2. Corpus MEI: Mazurka **117**, Butterfly **48**, Little bird **69**,
+   Scarlatti **99** ocorrências, cada uma batendo com o `.esperado`. O
+   aviso `An expansion cannot be generated with more than one section`
+   sumiu das quatro (não sobrou nenhuma peça do corpus emitindo esse
+   aviso). Étude (MEI, uma seção, sem repetição) inalterada: `1-67`.
+3. **O desenho não muda**: comparado o binário antes/depois (`git stash`)
+   nas 10 peças (MusicXML com `--xml-id-seed 42`): `scene.json`,
+   `glyphs.json` e `meta.json` **byte-idênticos** nas 10.
+4. Timemap das 5 peças MusicXML **byte-idêntico** (mesmo `--xml-id-seed`):
+   Gymnopédie, Maple Leaf Rag, Nocturne, Clair de Lune, Prelude. O Étude
+   (MEI sem repetição) também ficou idêntico — só as 4 peças MEI **com**
+   repetição tiveram o timemap alterado (crescendo, do jeito esperado).
+5. `-t expansionmap` das 4 peças MEI deixa de ser `{}`.
+   `compare/scripts/check-suffix-rule.py` (E02a) confirma **0
+   divergências em 13 847 ids** no corpus inteiro + as 13 partituras de
+   E01a (antes de E04a: 12 388, sem os ids novos das 4 peças MEI que
+   passaram a expandir).
+6. Patch restrito a `expansionmap.cpp`/`.h` (mais o fallback de duas
+   linhas em `Expand()`, justificado acima). Descrição de PR upstream:
+
+   > **Título:** Support repeat generation across multiple `<section>` and
+   > with `<ending>` (voltas)
+   >
+   > **Motivo:** `ExpansionMap::GenerateExpansionFor` refuses to generate a
+   > repeat expansion for any score with more than one top-level
+   > `<section>`, and silently ignores measures inside an `<ending>`. Both
+   > patterns are common in MEI produced by MusicXML-to-MEI converters
+   > (one `<section>` per formal section, `<ending>` for first/second
+   > endings), so such scores play back (MIDI, timemap, `-t expansionmap`)
+   > without any of their written repeats.
+   >
+   > **Mudança:** `GenerateExpansionFor` now flattens the direct
+   > measure/ending children of every `<section>` in document order before
+   > looking for repeat barlines, so a repeat spanning (or starting at) a
+   > section boundary is still found. A run of `<ending>` elements whose
+   > first casa ends in a repeat barline is expanded into
+   > `[shared, ending 1, shared, ending 2, …]`. `Expand()` gets a one-line
+   > fallback: if the referenced id is not a descendant of the expansion's
+   > own parent section, search the whole score before giving up (needed
+   > because a repeat can now create its child section under a *different*
+   > original `<section>`).
+   >
+   > **Casos de teste:** `corpus/repeticoes/r02/r04/r07/r11/r12` (novas
+   > partituras mínimas de um projeto downstream, um caso por padrão:
+   > seção única, `<ending>` sem `<expansion>` codificada, quebra de
+   > página no meio de uma repetição, várias `<section>` em sequência,
+   > `<expansion>` codificada explícita); mais 4 peças reais do
+   > `MEI Sample Collection` (Mazurka, Butterfly, Little bird, Scarlatti)
+   > que já tinham repetição encoded incorretamente ignorada. Nenhuma
+   > mudou de desenho (`-t svg` byte-idêntico); só o timemap/MIDI/
+   > `-t expansionmap`.
+
+   Enviar ou não ao `rism-digital/verovio` é decisão do usuário — o patch
+   está pronto, mas nada foi submetido.
+
+**Fora de escopo, como previsto:** D.C./D.S./coda/fine em MEI (o corpus
+não tem; não implementado). MusicXML (E04b, próximo passo).

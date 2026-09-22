@@ -17,6 +17,7 @@
 
 namespace vrv {
 
+class Ending;
 class Score;
 class Section;
 
@@ -92,8 +93,21 @@ private:
     /** Ads an id string to an original/notated id */
     bool AddExpandedIDToExpansionMap(const std::string &origXmlId, std::string newXmlId);
 
-    std::string CreateSection(
-        Section *section, const ListOfObjects::iterator &first, const ListOfObjects::iterator &last);
+    /**
+     * Extract the items in [first, last] (measures and/or endings, possibly from different
+     * <section> elements once GenerateExpansionFor started reading across section boundaries -
+     * E04a) into a new <section>, inserted right before the current position of *first, and
+     * return its xml:id. Mirrors what a repeated span becomes: a citable child that Expand() can
+     * place once and clone for later passes.
+     */
+    std::string CreateSection(const ListOfObjects::iterator &first, const ListOfObjects::iterator &last);
+
+    /**
+     * Whether any measure directly inside `ending` has a repeat end on its right (E04a): the
+     * signal that the ending group is the "casa 1 [, casa 2, ...]" of a repeat, and not just a
+     * plain first/second-ending pair played straight through.
+     */
+    static bool EndingHasRepeatEnd(Ending *ending);
 
 public:
     /** The expansion map indicates which xmlId has been repeated (expanded) elsewhere */

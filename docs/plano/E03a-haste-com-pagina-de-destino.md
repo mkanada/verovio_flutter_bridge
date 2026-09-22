@@ -91,4 +91,59 @@ fazer" antes de executar.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**D-SALTO resolvida pelo usuário: (a) haste generalizada.**
+
+**Código.** `SweepCurtain` ganha `targetPageIndex` (nullable, em `==`/
+`hashCode`/`toString`). `ScoreViewState` ganha `_targetOf(c)` (
+`c.targetPageIndex ?? c.pageIndex + 1`) e `_isValidCurtain(c)` (destino
+dentro de `[0, pageCount)` e diferente da própria página — substitui o
+antigo `c.pageIndex < _pageCount - 1`, que agora só bloquearia a última
+página **sem** destino explícito). `_onCurtainChanged` usa `_targetOf(c)`
+em vez de `c.pageIndex + 1` na conclusão. `_buildSweep` pinta
+`_centered(_targetOf(curtain), box)` como fundo, em vez de
+`_centered(a + 1, box)`.
+
+**Cache de páginas (tarefa 4) não precisou de nenhuma linha nova.** Cada
+página já é montada sob uma `GlobalKey` estável por índice (`_keyOf`,
+A03c) — enquanto `_buildSweep` referenciar aquele índice em qualquer lugar
+da árvore, o `ScorePageView`/`PageLayers` daquela página continua vivo;
+quando deixa de ser referenciado (a haste termina e a página antiga não é
+mais nem a corrente nem o destino de nada), o Flutter desmonta a
+subárvore e o `dispose()` de sempre roda. Trocar `a + 1` por
+`_targetOf(curtain)` foi suficiente para o destino (por mais distante que
+esteja de A) entrar e sair do cache exatamente como A05b já fazia com
+`A + 1`.
+
+**`goToPage` animado (a haste manual de A03b) não mudou**: continua
+sempre `SweepCurtain(pageIndex: _sweepPage, edgeX: …)`, sem
+`targetPageIndex`, então cai no `?? pageIndex + 1` de sempre.
+
+**Critérios de aceite** (`test/score_view_test.dart`, grupo "página de
+destino (E03a)", 4 testes novos):
+
+1. `SweepCurtain(pageIndex: 1, edgeX: midX(1), targetPageIndex: 0)`:
+   verificado **estruturalmente**, não por sonda de pixel — o
+   `ScorePageView` sob o `ClipRect` (a metade direita) tem `pageIndex ==
+   1`, e o que não está sob nenhum `ClipRect` (o fundo, a metade
+   esquerda) tem `pageIndex == 0`. Trocado o pixel-probing sugerido no
+   passo por uma checagem direta dos parâmetros do widget: mais precisa
+   (não depende de onde uma nota colorida cai) e não depende de nenhum
+   fixture novo.
+2. Página 6 (a última de 7, índice 0-based) sem `targetPageIndex`:
+   recusada (`ClipRect` ausente, porque o destino implícito, 7, não
+   existe). Com `targetPageIndex: 1`: aceita.
+3. Conclusão (`edgeX >= sweepEndX(...)`) com `targetPageIndex: 1` a
+   partir da página 6: `currentPage` e `onPageChanged` vão para 1, não
+   para 7.
+4. Nenhum teste de A03b mudou: os 239 testes da suíte (todos os arquivos)
+   continuam batendo depois da mudança, incluindo os goldens/pixel-a-pixel
+   de A03a e os 5 testes de haste normal de A03b — `SweepCurtain` sem
+   `targetPageIndex` é byte-idêntico a antes (`==`/`hashCode` incluem o
+   campo novo, mas comparam `null == null`).
+5. Salto sintético 5 → 0 numa peça de 7 páginas (Nocturne): com a haste
+   ativa, as duas páginas (5 e 0) aparecem como `ScorePageView` na
+   árvore; na conclusão, só a 0 permanece e `PictureStats.live` volta a 0
+   depois de desmontar a `ScoreView` — sem vazamento.
+
+`flutter analyze` limpo, `flutter test` 239/239 (era 235; 4 testes
+novos).

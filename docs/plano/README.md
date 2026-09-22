@@ -138,6 +138,7 @@ de uma `<ending>` para de descartar `m_repeatInfo`.
 | Ids expandidos (`-rendN`) | `expansion.dart` (E02a): `IdExpansion`, exposto como `VsbDocument.sceneIdOf`/`passOf` — regra do sufixo de D-EXPMAP, usada por `ScoreController`, `ScoreGeometry.elementOf`/`pageOf`/`rectForId` e `animatableIdsFromTimemap(..., document: ...)` |
 | Ocorrências e toque num elemento repetido | `score_timeline.dart` (E02b/E02c): `MeasureInfo.pass`/`.timemapId`, `ScoreTimeline.occurrencesOf`/`onsetsOf`; `score_player.dart`: `ScorePlayer.seekToElement` |
 | Haste com página de destino | `score_view.dart` (E03a): `SweepCurtain.targetPageIndex`, `ScoreViewState._targetOf`/`_isValidCurtain` |
+| Modelo/parser/geometria das páginas alternativas (P03a, fase P) | `model.dart`: `PageRef`, `AlternateSequence`, `VsbDocument.alternates`/`pageAt`/`geometryOf`/`alternateStartingAt` (parse preguiçoso: `alternates` é `late final`); `parser.dart`: `parseAlternatesDocument`; `hit_test.dart`: `ScoreGeometry.forPages` (geometria por conjunto de páginas, não só por documento) |
 
 ### Comparação visual
 
@@ -393,7 +394,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | concluído |
 | [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | concluído |
 | [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | pendente |
-| [P03a](P03a-modelo-e-parser-alternates.md) | Dart: modelo, parser e geometria das alternativas (`PageRef`) | P02a, P02c | — | pendente |
+| [P03a](P03a-modelo-e-parser-alternates.md) | Dart: modelo, parser e geometria das alternativas (`PageRef`) | P02a, P02c | — | concluído |
 | [P03b](P03b-vista-com-pageref.md) | Dart: `ScorePageView`/`ScoreView` exibem um `PageRef` | P03a, P02d | D-ALT-INDICE resolvida | pendente |
 | [P04a](P04a-rota-na-timeline.md) | Dart: rota de exibição na `ScoreTimeline` | P03b | — | pendente |
 | [P04b](P04b-player-com-alternativas.md) | Dart: `ScorePlayer` segue a rota | P04a | — | pendente |

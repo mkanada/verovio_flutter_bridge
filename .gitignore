@@ -10,3 +10,6 @@ compare/build/
 compare/svg_render/target/
 **/.dart_tool/
 build/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

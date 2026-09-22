@@ -8,6 +8,7 @@
 #ifndef __VRV_TOOLKIT_H__
 #define __VRV_TOOLKIT_H__
 
+#include <map>
 #include <string>
 
 //----------------------------------------------------------------------------
@@ -897,6 +898,30 @@ private:
      * in effect (P01a, D-META-TITULO) - see BridgeWriter::ExtractMeta.
      */
     BridgeMeta ReadBridgeMeta();
+
+    /**
+     * Measure id -> 0-based position in document order (`m_doc.FindAllDescendantsByType(MEASURE,
+     * false)`'s own order), one of the three inputs BridgeAlternates::FindAlternateStarts needs
+     * (P02b).
+     */
+    std::map<std::string, int> ComputeMeasureDocOrder();
+
+    /**
+     * Measure ids, one per occurrence, in execution order - the same sequence score_bridge's
+     * ScoreTimeline.measures[i].id builds (P02b, criterion 3). Reads the timemap
+     * (`RenderToTimemap`) and resolves each `measureOn` to the notated measure id via §2.4's
+     * `-rendN` suffix rule against `docOrder`'s domain.
+     */
+    std::vector<std::string> ComputeMeasureExecutionOrder(const std::map<std::string, int> &docOrder);
+
+    /**
+     * Repeat arrival points that need an alternate page sequence (docs/formato/
+     * especificacao-v1.md §2.5, normative rule; P02b). Builds the three inputs
+     * BridgeAlternates::FindAlternateStarts needs from `m_doc` and the timemap, then delegates.
+     * Debug-only for now (P02c renders the sequences and writes `alternates.json`); does not touch
+     * the `.vsb`/`vsb-json` output unless `--debug-alternate-starts` is set.
+     */
+    std::vector<std::string> ComputeAlternateStarts();
 
 public:
     //

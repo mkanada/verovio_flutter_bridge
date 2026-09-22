@@ -101,6 +101,9 @@ O que **já existe** e foi escrito pelos passos concluídos. Se uma linha
 | Glifos SMuFL (dados) | `Resources::GetGlyph` (`include/vrv/resources.h`), `Glyph::GetXML` (`src/glyph.cpp`), `Glyph::SetBoundingBox` L95 (a bbox ×10 de S08), dados em `data/<fonte>/*.xml` |
 | Bindings C | `tools/c_wrapper.cpp`: `vrvToolkit_renderToBridgeFile` L296, `vrvToolkit_renderToBridgeJson` L307 |
 | Binding Dart FFI | `verovio/bindings/dart/`: `VerovioToolkit` (`lib/src/verovio_toolkit.dart`), assinaturas em `lib/src/verovio_bindings.dart`, builds em `build_linux_so.sh` / `build_android_so.sh` |
+| Padrões do bridge (P01b) | `Toolkit::ApplyBridgeDefaults` (`toolkit.cpp`), chamado no início de `LoadData` |
+| Título sem cabeçalho (P01a) | `Toolkit::ReadBridgeMeta` (`toolkit.cpp`): cai no `<pgHead func="first">` codificado ou gera um descartável com `GenerateFromMEIHeader` quando não há cabeçalho renderizado |
+| Pontos de chegada de repetição (P02b, fase P) | `include/vrv/bridgealternates.h` + `src/bridgealternates.cpp`: `BridgeAlternates::FindAlternateStarts` (função pura); `Toolkit::ComputeMeasureDocOrder`/`ComputeMeasureExecutionOrder`/`ComputeAlternateStarts` (`toolkit.cpp`) montam os três insumos a partir do `Doc` e do timemap. Debug-only por enquanto: `--debug-alternate-starts` grava `_executionOrder`/`_alternateStarts` só em `-t vsb-json` |
 
 Fora do exportador, únicos pontos do fork que a fase E tocou: geração de
 expansão (repetições), em `src/expansionmap.cpp`/`include/vrv/expansionmap.h`
@@ -386,7 +389,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P01b](P01b-padroes-do-vsb.md) | Padrões do `.vsb`: sem cabeçalho, rodapé e rótulo | P01a | D-VSB-PADRAO resolvida | concluído |
 | [P01c](P01c-remedir-corpus.md) | Regenerar corpus e fixtures, re-medir paridade e fatos | P01b | — | concluído |
 | [P02a](P02a-especificacao-alternates.md) | Especificação: `alternates.json` | — | D-ALT resolvida | concluído |
-| [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | pendente |
+| [P02b](P02b-pontos-de-chegada.md) | C++: pontos de chegada das repetições | P01c, P02a | — | concluído |
 | [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | pendente |
 | [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | pendente |
 | [P03a](P03a-modelo-e-parser-alternates.md) | Dart: modelo, parser e geometria das alternativas (`PageRef`) | P02a, P02c | — | pendente |

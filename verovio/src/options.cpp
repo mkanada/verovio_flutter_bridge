@@ -1028,6 +1028,15 @@ Options::Options()
     m_condenseTempoPages.Init(false);
     this->Register(&m_condenseTempoPages, "condenseTempoPages", &m_general);
 
+    m_debugAlternateStarts.SetInfo("Debug alternate starts",
+        "P02b (fase P, páginas alternativas): grava um campo extra \"_alternateStarts\" (lista de "
+        "xml:id de compasso) na saída de -t vsb-json, com os pontos de chegada de repetição que "
+        "precisam de sequência alternativa (docs/formato/especificacao-v1.md §2.5). Só para "
+        "depuração/teste deste passo - o .vsb normal nunca leva esse campo, e vale só para "
+        "vsb-json, nunca para vsb");
+    m_debugAlternateStarts.Init(false);
+    this->Register(&m_debugAlternateStarts, "debugAlternateStarts", &m_general);
+
     m_evenNoteSpacing.SetInfo("Even note spacing", "Align notes and rests without adding duration based space");
     m_evenNoteSpacing.Init(false);
     this->Register(&m_evenNoteSpacing, "evenNoteSpacing", &m_general);

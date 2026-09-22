@@ -81,4 +81,95 @@ uma função pura e testável. Nada é renderizado ainda (P02c).
 
 ## Notas de execução
 
-_(preencher)_
+**Arquivos novos.** `verovio/include/vrv/bridgealternates.h` +
+`verovio/src/bridgealternates.cpp`: `BridgeAlternates::FindAlternateStarts`,
+função pura (sem `Doc`) exatamente com a assinatura do passo. No `Toolkit`
+(`toolkit.h`/`toolkit.cpp`), três métodos privados novos:
+
+- `ComputeMeasureDocOrder()` — `xml:id` de compasso → posição em
+  `m_doc.FindAllDescendantsByType(MEASURE, false)`;
+- `ComputeMeasureExecutionOrder(docOrder)` — lê `RenderToTimemap({"includeMeasures":
+  true})`, aplica a regra do sufixo (§2.4) a cada `measureOn` e monta a
+  sequência de ids resolvidos, uma por ocorrência;
+- `ComputeAlternateStarts()` — monta `firstOfNormalPage` (1ª `MEASURE`
+  descendente de cada `Page`) e chama `BridgeAlternates::FindAlternateStarts`
+  com os três.
+
+Nenhum dos três mexe no `.vsb`/`vsb-json` normal.
+
+**Depuração (item 3).** Opção nova `--debug-alternate-starts`
+(`m_debugAlternateStarts`, `options.h`/`options.cpp`, grupo geral). Só
+`Toolkit::RenderToBridgeJson` a lê: quando ligada, costura duas chaves a
+mais no JSON de saída — `_executionOrder` (a sequência completa, útil para
+o critério 3) e `_alternateStarts` (o resultado final) — por fora do
+`BridgeWriter` de propósito (não é o formato documentado; `alternates.json`
+de verdade é P02c). `-t vsb` nunca ganha essas chaves, com ou sem a opção.
+
+**Critério 1** (23 fontes: 10 peças do corpus + 13 partituras de E01a,
+`--xml-id-seed 42`, `--breaks encoded` extra em r06/r07). Comparei a saída
+de `--debug-alternate-starts` contra uma derivação independente em Python
+reaproveitando `SceneIndex`/`find_jumps` de `compare/scripts/repeat-order.py`
+(gera `.vsb`, lê `scene.json`+`timemap.json`, acha os saltos e filtra os que
+já são 1º compasso de alguma página) — **23/23 batem exatamente**, incluindo
+a ordem (o resultado já sai em ordem de documento dos dois lados). Tabela:
+
+| Peça/partitura | Pontos de chegada obtidos |
+| --- | --- |
+| Chopin Étude Op.10 No.9 | `[]` |
+| Chopin Mazurka Op.6 No.1 | `['d1e3853']` |
+| Grieg Butterfly Op.43 No.1 | `[]` |
+| Grieg Little bird Op.43 No.4 | `['d418889e2505']` |
+| Scarlatti Sonata in C major | `[]` |
+| Chopin Nocturne Op.9 No.1 | `[]` |
+| Clair de Lune, Debussy | `[]` |
+| Erik Satie Gymnopédie No.1 | `['lkh51fy']` |
+| Maple Leaf Rag, Joplin | `['q1t6l0ej', 'ock08kg', 'qqplm6a', 'qhi6f7l', 'y12vaz72', 'm1bcumr2', 'jn8k16x', 'd132vz0f']` (8) |
+| Prelude I BWV 846 | `[]` |
+| r01-r02 (ritornelo) | `[]` (o destino, compasso 1, já é a 1ª página) |
+| r03-r05 (casas) | `['m5']` |
+| r06/r07 (salto de página) | `[]` (destino já é 1ª página, mesmo cruzando página no salto) |
+| r08 (D.C. al fine) | `[]` |
+| r09 (D.S. al coda) | `['m2', 'm5']` |
+| r10 (3 vezes) | `[]` |
+| r11 (várias sections) | `['m5']` |
+| r12 (expansion codificada) | `[]` |
+| r13 (1 compasso) | `[]` |
+
+Achado que vale registrar: a regra normativa de §2.5 **não** filtra por
+"cruza página" — só por "já é 1º compasso de página normal". Por isso a
+Maple Leaf Rag sai com 8 pontos de chegada (todos os saltos da peça, a
+maioria na mesma página), não só o único que cruza página (medido em P01c).
+Isso é deliberado: o mesmo compasso pode ser alcançado a partir de estados
+de página diferentes em execuções futuras (a peça tem 4 ritornelos), e o
+exportador não tenta prever em que página o player estará quando o salto
+acontecer — ele gera uma sequência para todo destino elegível e deixa o
+player (P03b/P04a) decidir, em runtime, se precisa dela (regra de P00: "1.
+T está na página exibida → fica", sem consultar `alternates.json`).
+
+**Critério 2** (peças sem repetição: Étude, Nocturne, Clair de Lune,
+Prelude): lista vazia nas 4 — confirmado na tabela acima.
+
+**Critério 3** (`executionOrder` do C++ == `ScoreTimeline.measures` ids do
+Dart, 23 fixtures). Script descartável em `score_bridge/test/` (apagado
+depois) que carrega cada fixture de `test/fixtures/repeticoes/` e imprime
+`tl.measures.map((m) => m.id)`; comparado ids a ids, em ordem, com
+`_executionOrder` do C++ sobre as mesmas 23 fontes/flags. **23/23 idênticos**
+(comprimentos de 3 a 145 ocorrências). Nenhuma pequena reordenação nem
+divergência de um só id.
+
+**Critério 4** (`.vsb` sem a opção nova, byte-idêntico a antes deste
+passo). Gerado antes/depois via `git stash` dos 4 arquivos tocados
+(`options.h`, `toolkit.h`, `options.cpp`, `toolkit.cpp`) nas 10 peças do
+corpus, `-t vsb`, `--xml-id-seed 42`. `scene.json`, `glyphs.json`,
+`timemap.json` e `meta.json` byte-idênticos em todas; só `manifest.json`
+diferiu, e só no sufixo `-dirty` do `generator` (embutido pelo
+`git describe` no momento do build, conforme a árvore de trabalho estava
+suja ou não naquele instante) — mesmo artefato de build já observado em
+P01a/P01b, sem relação com o código deste passo.
+
+**Critério 5**: build sem avisos novos (conferido nas duas recompilações
+completas que este passo disparou, por mudar `options.h`, incluído por
+quase todo o projeto).
+
+`flutter analyze` limpo (script descartável removido antes da checagem
+final).

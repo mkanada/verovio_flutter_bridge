@@ -14,7 +14,9 @@
 #include <cctype>
 #include <fstream>
 #include <locale>
+#include <map>
 #include <regex>
+#include <set>
 #include <sstream>
 #include <unordered_set>
 
@@ -37,6 +39,7 @@
 #include "iopae.h"
 #include "iovolpiano.h"
 #include "layer.h"
+#include "bridgealternates.h"
 #include "bridgedevicecontext.h"
 #include "bridgewriter.h"
 #include "measure.h"
@@ -2091,8 +2094,84 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     }
 
     const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
-    return BridgeWriter::WriteSingleJson(
+    std::string output = BridgeWriter::WriteSingleJson(
         pages, bridge.GetGlyphs(), generator, "", this->ReadBridgeMeta());
+
+    // P02b, debug-only (--debug-alternate-starts): splice a "_alternateStarts" key into the
+    // vsb-json output, outside BridgeWriter on purpose - it is not part of the documented format
+    // (§2.5's real alternates.json/P02c is the normative path) and must never appear unasked.
+    if (m_options->m_debugAlternateStarts.GetValue()) {
+        const std::map<std::string, int> docOrder = this->ComputeMeasureDocOrder();
+        jsonxx::Array executionOrder;
+        for (const std::string &id : this->ComputeMeasureExecutionOrder(docOrder)) {
+            executionOrder << id;
+        }
+        jsonxx::Array alternateStarts;
+        for (const std::string &id : this->ComputeAlternateStarts()) {
+            alternateStarts << id;
+        }
+        assert(!output.empty() && output.back() == '}');
+        output.pop_back();
+        output += ",\"_executionOrder\":" + executionOrder.json();
+        output += ",\"_alternateStarts\":" + alternateStarts.json() + "}";
+    }
+    return output;
+}
+
+std::map<std::string, int> Toolkit::ComputeMeasureDocOrder()
+{
+    std::map<std::string, int> docOrder;
+    ListOfObjects measures = m_doc.FindAllDescendantsByType(MEASURE, false);
+    int index = 0;
+    for (Object *object : measures) {
+        docOrder[object->GetID()] = index++;
+    }
+    return docOrder;
+}
+
+std::vector<std::string> Toolkit::ComputeMeasureExecutionOrder(const std::map<std::string, int> &docOrder)
+{
+    // §2.4's suffix rule, applied to `measureOn` (always a measure id, notated or a `-rendN`
+    // clone): resolve each occurrence to the notated measure id - the same sequence, one entry
+    // per occurrence, that score_bridge's ScoreTimeline.measures[i].id builds from the same
+    // timemap (P02b, criterion 3).
+    static const std::regex rendSuffix("^(.*)-rend([0-9]+)$");
+    std::vector<std::string> executionOrder;
+    jsonxx::Array timemap;
+    if (timemap.parse(this->RenderToTimemap("{\"includeMeasures\": true}"))) {
+        for (std::size_t i = 0; i < timemap.size(); ++i) {
+            if (!timemap.has<jsonxx::Object>(i)) continue;
+            const jsonxx::Object &entry = timemap.get<jsonxx::Object>(i);
+            if (!entry.has<jsonxx::String>("measureOn")) continue;
+            const std::string measureOn = entry.get<jsonxx::String>("measureOn");
+
+            if (docOrder.count(measureOn)) {
+                executionOrder.push_back(measureOn);
+                continue;
+            }
+            std::smatch match;
+            if (std::regex_match(measureOn, match, rendSuffix) && docOrder.count(match[1].str())) {
+                executionOrder.push_back(match[1].str());
+            }
+        }
+    }
+    return executionOrder;
+}
+
+std::vector<std::string> Toolkit::ComputeAlternateStarts()
+{
+    const std::map<std::string, int> docOrder = this->ComputeMeasureDocOrder();
+
+    std::set<std::string> firstOfNormalPage;
+    for (int i = 0; i < this->GetPageCount(); ++i) {
+        const Page *page = vrv_cast<const Page *>(m_doc.GetPages()->GetChild(i));
+        assert(page);
+        const Object *firstMeasure = page->FindDescendantByType(MEASURE);
+        if (firstMeasure) firstOfNormalPage.insert(firstMeasure->GetID());
+    }
+
+    const std::vector<std::string> executionOrder = this->ComputeMeasureExecutionOrder(docOrder);
+    return BridgeAlternates::FindAlternateStarts(executionOrder, docOrder, firstOfNormalPage);
 }
 
 BridgeMeta Toolkit::ReadBridgeMeta()

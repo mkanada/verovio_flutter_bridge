@@ -87,6 +87,26 @@ Trate como fixas — não reabra sem confirmar com o usuário:
   empacotamento e o isolate ficam no app `zywny`, fora deste repositório.
   Não há app de exemplo neste projeto (decisão do usuário, 2026-09-21): o
   consumidor é o `zywny`.
+- **Fase E (repetições), quatro decisões, todas em 2026-09-21/22:**
+  - **D-EXPMAP** — como o leitor resolve um id expandido (`-rend<N>`) do
+    timemap ao nó da cena: **regra do sufixo**, documentada em
+    `docs/formato/especificacao-v1.md` §2.4, sem `expansion.json` à parte
+    (0 divergências contra `-t expansionmap` em 14 149 ids do corpus +
+    partituras de teste). Implementada em `VsbDocument.sceneIdOf`/`passOf`
+    (E02a).
+  - **D-EXPAND** — corrigir a geração de expansão no fork: **sim, isolado**
+    em `expansionmap.cpp`/`.h` (MEI, E04a) e `iomusxml.cpp` (MusicXML,
+    E04b), sem tocar `View`/`DeviceContext`; o desenho continua
+    byte-idêntico. Patch pronto para PR upstream em
+    `rism-digital/verovio` — enviar ou não é decisão à parte, ainda não
+    tomada.
+  - **D-SALTO** — o que a vista faz num salto de repetição para outra
+    página: **haste generalizada** (`SweepCurtain.targetPageIndex`, E03a),
+    a mesma regra de A05b com a página de destino do salto atrás, em vez
+    de sempre `A + 1`; sem haste quando o salto é na mesma página.
+  - **D-TOQUE** — qual passagem `seekToElement` escolhe num elemento
+    repetido: **a mesma passagem da posição atual, senão a 1ª** (`pass:`
+    explícito sempre ganha), em `ScorePlayer.seekToElement` (E02c).
 
 ## Convenções de trabalho
 

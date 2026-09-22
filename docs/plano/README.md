@@ -187,7 +187,7 @@ que ninguém precise ler este README inteiro para executar um passo.
 | Formas desenhadas por página | mediana 1 345, máximo 2 463 |
 | Nós dinâmicos (ids do timemap) por página | mediana 308, máximo 719 |
 | Segmentos alternados por página (A01a) | mediana **196**, máximo **545** |
-| Ids do timemap **ausentes** da cena | Gymnopédie 180, Maple Leaf Rag 883 (sufixo `-rend2`, repetição/expansão; hoje ignorados, a fase E os resolve) |
+| Ids do timemap **ausentes** da cena | Gymnopédie 180, Maple Leaf Rag 883 (sufixo `-rend2`, repetição/expansão) — resolvidos pela regra do sufixo desde E02a (`VsbDocument.sceneIdOf`/`passOf`); a fase E inteira (E01a-E05) fechou a execução dessas repetições de ponta a ponta |
 | `measureOn` no timemap | preenchido desde E01b (`includeMeasures: true`); Gymnopédie 78 entradas com `measureOn` (31 `-rend2`), igual ao nº de ocorrências de compasso |
 
 ### Repetições no corpus (medido em 2026-09-21, base da fase E)
@@ -333,7 +333,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [E03b](E03b-regra-da-haste-nos-saltos.md) | Regra da haste nos saltos e evidências | E03a | — | concluído |
 | [E04a](E04a-expansao-mei.md) | Expansão de MEI com várias `section` e `<ending>` (fork) | E01a | D-EXPAND resolvida | concluído |
 | [E04b](E04b-expansao-musicxml-casa-unica.md) | MusicXML: casa 1 sem casa 2 (fork) | E04a | — | concluído |
-| [E05](E05-portao-das-repeticoes.md) | Portão da fase E: repetições de ponta a ponta | E02c, E03b, E04b | — | pendente |
+| [E05](E05-portao-das-repeticoes.md) | Portão da fase E: repetições de ponta a ponta | E02c, E03b, E04b | — | concluído |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -359,7 +359,12 @@ S08 já foi executado e o corpus em `compare/out/s08/` traz as bboxes
 corrigidas; todo número de bbox medido antes dele (S07) está errado.
 R06c fechou o portão de paridade em 2026-09-20 (média 0,008456%, ver
 [`docs/relatorio-paridade.md`](../relatorio-paridade.md)) — a fase A está
-liberada, começando por A01a.
+liberada, começando por A01a. **Fase E concluída em 2026-09-22**
+(E01a-E05): a varredura de paridade repetida em E05 sobre os `.vsb`
+regenerados deu média **0,008800%** (Skia), idêntica à medição de
+R06c/2026-09-20 — nenhuma página mudou de percentual, confirmando que
+nenhuma mudança da fase E (toda em `score_bridge`/`expansionmap.cpp`/
+`iomusxml.cpp`) afetou o desenho.
 
 **Passos pequenos de propósito.** Cada arquivo acima cabe numa sessão de
 trabalho e tem critérios de aceite executáveis. Não junte dois passos "porque

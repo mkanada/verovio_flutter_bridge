@@ -107,6 +107,39 @@ Trate como fixas — não reabra sem confirmar com o usuário:
   - **D-TOQUE** — qual passagem `seekToElement` escolhe num elemento
     repetido: **a mesma passagem da posição atual, senão a 1ª** (`pass:`
     explícito sempre ganha), em `ScorePlayer.seekToElement` (E02c).
+- **Fase P (páginas alternativas), cinco decisões, todas em 2026-09-22 —
+  visão geral e regras completas em
+  `docs/plano/P00-visao-geral-paginas-alternativas.md`, fechada no portão
+  P05:**
+  - **D-ALT** — o `.vsb` carrega as páginas normais (como sempre) **e**
+    páginas alternativas (`alternates.json`, §2.5), usadas só pelo player
+    num salto de repetição que muda de página.
+  - **D-ALT-INDICE** — a indexação que o usuário vê (`goToPage`,
+    `currentPage`, `pageCount`) continua só nas páginas normais; a
+    alternativa só existe no modo player, via `PageRef`/`displayedPage`
+    (`ScoreViewController.showPage`/`.displayedPage`, P03b;
+    `MeasureInfo.view`/`ScoreTimeline.restViewAt`, P04a).
+  - **D-ALT-EXTENSAO** — cada sequência alternativa começa no compasso de
+    chegada e vai até o **fim da peça**, mesmo que páginas do meio nunca
+    sejam exibidas por nenhum salto real (§2.5, P02b/P02c).
+  - **D-VSB-PADRAO** — o `.vsb` é gerado por padrão com `--header none
+    --footer none --no-instrument-labels` (`Toolkit::ApplyBridgeDefaults`,
+    P01b): sem isso as páginas alternativas (que o Verovio sempre desenha
+    sem cabeçalho) ficariam visualmente diferentes das normais.
+  - **D-ALT-MECANISMO** — as páginas alternativas saem do
+    `Toolkit::Select()` do próprio Verovio sobre o `Doc` já carregado,
+    renderizado pelo mesmo `View`/`BridgeDeviceContext` das páginas
+    normais (`Toolkit::RenderAlternatesToBridge`, P02c) — nunca um
+    fatiador ou um caminho de desenho próprios; é isso que garante a
+    mesma paridade visual das páginas normais (medida em P02d/P05:
+    ≥99,99% nas duas, praticamente a mesma média).
+  - **D-META-TITULO** (a decisão que a fase P precisou primeiro, porque
+    D-VSB-PADRAO tira o cabeçalho de onde `meta.title` vinha) — resolvida
+    já citada acima; ver `especificacao-v1.md` §2.3.
+  - Custo medido (não decidido): gerar as alternativas custa zero nas
+    peças sem repetição "de verdade", e de +15% a +330% de tamanho/tempo
+    nas que têm, proporcional ao número de sequências — números completos
+    em `docs/relatorio-paginas-alternativas.md`. D-BIN continua em aberto.
 
 ## Convenções de trabalho
 

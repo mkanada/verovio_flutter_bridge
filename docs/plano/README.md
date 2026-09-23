@@ -144,6 +144,7 @@ de uma `<ending>` para de descartar `m_repeatInfo`.
 | Rota de exibição na timeline (P04a, fase P) | `score_timeline.dart`: `MeasureInfo.view`/`.isJump`, `ScoreTimeline(document, {useAlternates})`, `restViewAt`, `_resolveJump`/`_pageInView`/`_firstMeasurePage` (regra de P00); `curtainAt`/`SweepCurtain` passam `sequence`/`targetSequence` de `_Run.view` (migrado de `int page`). Testado em `test/score_timeline_route_test.dart` e `test/score_timeline_jump_curtain_test.dart` (atualizado) |
 | `ScorePlayer` segue a rota (P04b, fase P) | `score_player.dart`: `ScorePlayer({..., useAlternates})`, `_publish` usa `restViewAt`/`v.showPage` no lugar de `restPageAt`/`v.goToPage`. Testado em `test/score_player_alternates_test.dart` |
 | Evidências visuais (P04c, fase P) | `tool/generate_examples.dart`: `_repeticaoAlternativaExample`, gera `docs/exemplos/repeticao-alternativa/{MapleLeafRag,Mazurka}/`; fixture nova `test/fixtures/mazurka.vsb` (`-x 42`, 1 sequência alternativa) |
+| Portão da fase P (P05) | `test/paginas_alternativas_test.dart`: invariantes de P04a e `ScorePlayer` de ponta a ponta sobre as 23 fixtures de `repeticoes/`, regeneradas com `-x 42` (agora com `alternates.json`: 7 das 23 têm sequência). Custo de tamanho/tempo em [`relatorio-paginas-alternativas.md`](../relatorio-paginas-alternativas.md); nota para o host em [`nota-para-zywny-fase-p.md`](../nota-para-zywny-fase-p.md) |
 
 ### Comparação visual
 
@@ -294,7 +295,7 @@ Os saltos em negrito cujo destino **não** é o 1º compasso de página normal
 | D-EXPAND | Corrigir a geração de expansão no fork (MEI com várias `section`/`<ending>`; MusicXML com casa 1 sem casa 2)? | E04a, E04b | Resolvida (2026-09-22): **sim, no fork, isolado** em `expansionmap.cpp`/`iomusxml.cpp`, sem tocar `View`/DCs; desenho byte-idêntico (E04a: as 4 peças MEI do corpus); patch pronto para PR upstream (enviar é decisão do usuário) |
 | D-SALTO | O que a vista faz quando a execução salta para outra página? | E03a, E03b | Resolvida (2026-09-22): **haste generalizada** — a mesma regra de A05b com a página de destino atrás (`SweepCurtain.targetPageIndex`, E03a); salto na mesma página não mexe na vista; quando a haste anda nos saltos é E03b |
 | D-TOQUE | Qual passagem `seekToElement` escolhe para um elemento tocado mais de uma vez? | E02c | Resolvida (2026-09-22): **a mesma passagem da posição atual, se existir; senão a primeira**; `pass:` explícito sempre ganha; implementada em `ScorePlayer.seekToElement` |
-| D-ALT, D-ALT-INDICE, D-ALT-EXTENSAO, D-VSB-PADRAO, D-ALT-MECANISMO | Páginas alternativas do player nas repetições (fase P) | P01-P05 | Resolvidas pelo usuário (2026-09-22) — ver [`P00`](P00-visao-geral-paginas-alternativas.md): o `.vsb` carrega páginas normais + sequências alternativas (via `Toolkit::Select`), cada uma do compasso de chegada até o fim da peça; indexação do usuário inalterada, alternativas só no player; `.vsb` por padrão com `--header none --footer none --no-instrument-labels` |
+| D-ALT, D-ALT-INDICE, D-ALT-EXTENSAO, D-VSB-PADRAO, D-ALT-MECANISMO | Páginas alternativas do player nas repetições (fase P) | P01-P05 | Resolvidas pelo usuário (2026-09-22) — ver [`P00`](P00-visao-geral-paginas-alternativas.md): o `.vsb` carrega páginas normais + sequências alternativas (via `Toolkit::Select`), cada uma do compasso de chegada até o fim da peça; indexação do usuário inalterada, alternativas só no player; `.vsb` por padrão com `--header none --footer none --no-instrument-labels`. Fase P inteira fechada em P05 (2026-09-22): paridade das alternativas idêntica às normais (34/34 e 18/18 páginas ≥ 99,99%), custo de tamanho/tempo medido em [`relatorio-paginas-alternativas.md`](../relatorio-paginas-alternativas.md) (zero em 6/10 peças do corpus, até +330% no pior caso, 8 sequências) |
 | D-META-TITULO | Com `--header none` por padrão, de onde vem `meta.title`? | P01a | Resolvida (2026-09-22, usuário): **(a)** o título que o cabeçalho `auto` mostraria (ou o codificado), sem desenhar; implementada em `Toolkit::ReadBridgeMeta` |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
 
@@ -404,7 +405,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P04a](P04a-rota-na-timeline.md) | Dart: rota de exibição na `ScoreTimeline` | P03b | — | concluído |
 | [P04b](P04b-player-com-alternativas.md) | Dart: `ScorePlayer` segue a rota | P04a | — | concluído |
 | [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | concluído |
-| [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | pendente |
+| [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | concluído |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -444,7 +445,12 @@ liberada, começando por A01a. **Fase E concluída em 2026-09-22**
 regenerados deu média **0,008800%** (Skia), idêntica à medição de
 R06c/2026-09-20 — nenhuma página mudou de percentual, confirmando que
 nenhuma mudança da fase E (toda em `score_bridge`/`expansionmap.cpp`/
-`iomusxml.cpp`) afetou o desenho.
+`iomusxml.cpp`) afetou o desenho. **Fase P concluída em 2026-09-22**
+(P01a-P05): páginas alternativas com a mesma paridade das normais (34/34 e
+18/18 páginas ≥ 99,99%, médias 0,006402%/0,006514% — ver
+[`relatorio-paridade.md`](../relatorio-paridade.md)); custo de
+tamanho/tempo medido, não otimizado (D-BIN continua aberta), em
+[`relatorio-paginas-alternativas.md`](../relatorio-paginas-alternativas.md).
 
 **Passos pequenos de propósito.** Cada arquivo acima cabe numa sessão de
 trabalho e tem critérios de aceite executáveis. Não junte dois passos "porque

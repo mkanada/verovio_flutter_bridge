@@ -375,6 +375,29 @@ sendo a maior fonte, risco 1 do plano). As piores páginas (Maple Leaf Rag,
 0,018-0,022%) são justamente as sequências mais cedo no documento, com mais
 texto/dinâmica por página — mesma assinatura das piores páginas normais.
 
+## Atualização de 2026-09-22 — P05: portão da fase P (páginas alternativas)
+
+Confirmação, não re-medição: entre P02d e este portão (P03a-P04c) nenhum
+passo tocou `verovio/src` nem o exportador — só `score_bridge` (Dart) e
+`tool/generate_examples.dart`. A varredura completa (normais + alternativas)
+foi rodada de novo mesmo assim, como o portão pede, com o mesmo comando de
+P02d (`CORPUS_DIR=compare/out/p05-parity SWEEP_ALTERNATES=1
+compare/scripts/compare-corpus.sh 128`, git-ignorado):
+
+| | Páginas normais | Páginas alternativas |
+| --- | --- | --- |
+| Páginas | 34/34 | 18/18 |
+| Min | 0,000128% | 0,000096% |
+| Max | 0,024964% | 0,021789% |
+| Média | 0,006402% | 0,006514% |
+| Páginas ≤ 0,01% | 27/34 (79%) | 14/18 (78%) |
+| Páginas ≤ 0,05% | 34/34 | 18/18 |
+
+**Idêntico, byte a byte, a P01c (normais) e P02d (alternativas)** — como
+esperado: nenhuma página mudou de percentual. O portão de paridade da fase
+P inteira (P01a-P04c) fica satisfeito com a mesma folga de R06c/E05
+(≥99,99% em todas as páginas, normais e alternativas).
+
 ## Comando exato
 
 ```

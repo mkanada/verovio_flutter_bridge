@@ -98,4 +98,38 @@ continua 100% em páginas normais (D-ALT-INDICE).
 
 ## Notas de execução
 
-_(preencher)_
+Implementado como planejado, sem desvios do "O que fazer": `ScorePageView`
+ganhou `sequence`; `SweepCurtain` ganhou `sequence`/`targetSequence` e os
+getters `page`/`target` (`PageRef`); `ScoreViewState` ganhou `_shown`,
+`displayedPage`, `showPage`, e `_keyOf`/`_fit`/`_centered`/`_page`/`_endX`
+todos migrados de `int` para `PageRef`; `ScoreViewController` expõe
+`showPage`/`displayedPage`. `ScoreCursor` não precisou de mudança: sua
+geometria já vinha de `ScorePageView._withInteraction`, que já resolve
+`document.geometryOf(widget.sequence)`.
+
+Os 7 critérios foram verificados em
+`score_bridge/test/score_view_pageref_test.dart` (documento
+`maple-leaf-rag.vsb`, 8 sequências alternativas), um teste por critério:
+
+| Critério | Teste | Resultado |
+| --- | --- | --- |
+| 1 (estrutural) | `showPage(PageRef(0, sequence: 0))` monta... | `ScorePageView.sequence == 0`, `pageIndex == 0`; `currentPage` = `doc.geometry.pageOf(alternates[0].start)` |
+| 2 (paridade de widget) | paridade de widget — página alternativa idêntica ao harness | 0 pixels de diferença contra o harness `ScenePainter` direto (mesma prova de R05c/P02d, sem passar pelo binário `compare` porque o teste já roda no mesmo processo Dart) |
+| 3 (haste) | haste com `targetSequence` mostra a alternativa atrás | com a haste parada no meio há 2 `ScorePageView` na árvore; na conclusão `displayedPage == PageRef(0, sequence: 3)` |
+| 4 (volta ao normal) | `goToPage` depois de uma alternativa volta às páginas normais | `displayedPage.isAlternate` cai para `false`; `displayedPage == PageRef(1)`, `currentPage == 1` |
+| 5 (destaque) | destaque acende a nota na alternativa exibida | `controller.highlight(id)` com a alternativa exibida acende pixels vermelhos na bbox de `geometryOf(0).rectOf(...)` |
+| 6 (sem vazamento) | `PictureStats.live` volta ao patamar depois de normal → alternativa → normal | `live` depois do ciclo é igual ao antes de qualquer `showPage` |
+| 7 (qualidade) | — | `flutter analyze`: nenhum problema; `flutter test` (suíte inteira, 285 casos): todos passam |
+
+Correção ao critério 2 original: o texto previa comparar contra o binário
+`compare scene-to-png --alternate` (harness de processo separado, como em
+P02d). Na prática o teste de widget já roda no mesmo isolate Dart do
+`score_bridge`, então a comparação foi feita chamando `ScenePainter`
+diretamente sobre `alternates[0].pages[0]` (a mesma rotina que o harness usa
+por baixo) — mesma metodologia, sem o passo extra de invocar outro processo;
+a prova de paridade contra o `resvg`/SVG de referência já foi feita, para a
+mesma sequência, em P02d.
+
+Nenhum teste ou golden pré-existente mudou: a suíte completa (`flutter test`,
+285 casos, incluindo A03/A04/E03/repouso pixel-idêntico do corpus inteiro)
+passou sem alterações fora do arquivo novo.

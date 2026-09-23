@@ -133,13 +133,14 @@ de uma `<ending>` para de descartar `m_repeatInfo`.
 | Modelo imutável | `score_bridge/lib/src/model.dart` (R01): `VsbDocument`, `ScenePage`, `SceneNode`, `ScenePath`/`SceneRect`/`SceneEllipse`/`SceneGlyphUse`/`SceneText`, `ScenePaint`, `GlyphDef`, `TimemapEntry`, `IndexEntry` |
 | Parser | `score_bridge/lib/src/parser.dart` (R01): `parseVsbDocumentBytes`, `parseSceneDocument`, `_asRect` para bboxes da cena e `_parseGlyphBBox` para os metadados brutos de glifo (S08) |
 | API pública | `score_bridge/lib/score_bridge.dart` (só o que o app pode importar) |
-| Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`; fixture real em `test/fixtures/erik-satie.vsb` |
+| Testes existentes | `score_bridge/test/`: `exemplo_minimo_test.dart`, `corpus_fixture_test.dart`, `parser_errors_test.dart`, `roundtrip_count_test.dart`, `alternates_test.dart` (P03a), `score_view_pageref_test.dart` (P03b); fixtures reais em `test/fixtures/erik-satie.vsb` e `test/fixtures/maple-leaf-rag.vsb` (com `alternates.json`) |
 | Medição de parse | `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não com `dart run`) |
 | Já criados nas fases R/A | `geometry.dart` (R02a), `scene_painter.dart` (R02b/c), `dash.dart` (R02c), `glyph_cache.dart` (R03a), `text_font.dart` (R04a), `scene_walk.dart` (A01a: percurso único, extraído do `scene_painter.dart`), `segmentation.dart` (A01a), `page_layers.dart` + `score_page_view.dart` (A01b), `score_controller.dart` (A01c/A02b), `highlight_engine.dart` (A02a). `score_view.dart` (A03a/b/c: `ScoreView`, `ScoreViewController`, `SweepCurtain`), `hit_test.dart` (A04a: `ScoreGeometry`, via `VsbDocument.geometry`), `score_cursor.dart` (A04b), `score_timeline.dart` + `score_player.dart` (A05a/b). Fase A **concluída** |
 | Ids expandidos (`-rendN`) | `expansion.dart` (E02a): `IdExpansion`, exposto como `VsbDocument.sceneIdOf`/`passOf` — regra do sufixo de D-EXPMAP, usada por `ScoreController`, `ScoreGeometry.elementOf`/`pageOf`/`rectForId` e `animatableIdsFromTimemap(..., document: ...)` |
 | Ocorrências e toque num elemento repetido | `score_timeline.dart` (E02b/E02c): `MeasureInfo.pass`/`.timemapId`, `ScoreTimeline.occurrencesOf`/`onsetsOf`; `score_player.dart`: `ScorePlayer.seekToElement` |
 | Haste com página de destino | `score_view.dart` (E03a): `SweepCurtain.targetPageIndex`, `ScoreViewState._targetOf`/`_isValidCurtain` |
 | Modelo/parser/geometria das páginas alternativas (P03a, fase P) | `model.dart`: `PageRef`, `AlternateSequence`, `VsbDocument.alternates`/`pageAt`/`geometryOf`/`alternateStartingAt` (parse preguiçoso: `alternates` é `late final`); `parser.dart`: `parseAlternatesDocument`; `hit_test.dart`: `ScoreGeometry.forPages` (geometria por conjunto de páginas, não só por documento) |
+| Vista exibe um `PageRef` (P03b, fase P) | `score_page_view.dart`: `ScorePageView.sequence`; `score_view.dart`: `SweepCurtain.sequence`/`.targetSequence`/`.page`/`.target`, `ScoreViewState._shown`/`.displayedPage`/`.showPage`/`._keyOf`/`._fit`/`._centered`/`._page`/`._endX` (todos migrados de `int` para `PageRef`), `ScoreViewController.showPage`/`.displayedPage`. Testado em `test/score_view_pageref_test.dart` (7 critérios) |
 
 ### Comparação visual
 
@@ -396,7 +397,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P02c](P02c-render-das-alternativas.md) | C++: renderizar as sequências e gravar `alternates.json` | P02b | D-ALT-MECANISMO resolvida | concluído |
 | [P02d](P02d-paridade-das-alternativas.md) | Referência SVG (`--select-from`) e paridade das alternativas | P02c, P03a | — | concluído |
 | [P03a](P03a-modelo-e-parser-alternates.md) | Dart: modelo, parser e geometria das alternativas (`PageRef`) | P02a, P02c | — | concluído |
-| [P03b](P03b-vista-com-pageref.md) | Dart: `ScorePageView`/`ScoreView` exibem um `PageRef` | P03a, P02d | D-ALT-INDICE resolvida | pendente |
+| [P03b](P03b-vista-com-pageref.md) | Dart: `ScorePageView`/`ScoreView` exibem um `PageRef` | P03a, P02d | D-ALT-INDICE resolvida | concluído |
 | [P04a](P04a-rota-na-timeline.md) | Dart: rota de exibição na `ScoreTimeline` | P03b | — | pendente |
 | [P04b](P04b-player-com-alternativas.md) | Dart: `ScorePlayer` segue a rota | P04a | — | pendente |
 | [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | pendente |

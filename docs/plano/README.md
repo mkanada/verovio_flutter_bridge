@@ -143,6 +143,7 @@ de uma `<ending>` para de descartar `m_repeatInfo`.
 | Vista exibe um `PageRef` (P03b, fase P) | `score_page_view.dart`: `ScorePageView.sequence`; `score_view.dart`: `SweepCurtain.sequence`/`.targetSequence`/`.page`/`.target`, `ScoreViewState._shown`/`.displayedPage`/`.showPage`/`._keyOf`/`._fit`/`._centered`/`._page`/`._endX` (todos migrados de `int` para `PageRef`), `ScoreViewController.showPage`/`.displayedPage`. Testado em `test/score_view_pageref_test.dart` (7 critérios) |
 | Rota de exibição na timeline (P04a, fase P) | `score_timeline.dart`: `MeasureInfo.view`/`.isJump`, `ScoreTimeline(document, {useAlternates})`, `restViewAt`, `_resolveJump`/`_pageInView`/`_firstMeasurePage` (regra de P00); `curtainAt`/`SweepCurtain` passam `sequence`/`targetSequence` de `_Run.view` (migrado de `int page`). Testado em `test/score_timeline_route_test.dart` e `test/score_timeline_jump_curtain_test.dart` (atualizado) |
 | `ScorePlayer` segue a rota (P04b, fase P) | `score_player.dart`: `ScorePlayer({..., useAlternates})`, `_publish` usa `restViewAt`/`v.showPage` no lugar de `restPageAt`/`v.goToPage`. Testado em `test/score_player_alternates_test.dart` |
+| Evidências visuais (P04c, fase P) | `tool/generate_examples.dart`: `_repeticaoAlternativaExample`, gera `docs/exemplos/repeticao-alternativa/{MapleLeafRag,Mazurka}/`; fixture nova `test/fixtures/mazurka.vsb` (`-x 42`, 1 sequência alternativa) |
 
 ### Comparação visual
 
@@ -402,7 +403,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P03b](P03b-vista-com-pageref.md) | Dart: `ScorePageView`/`ScoreView` exibem um `PageRef` | P03a, P02d | D-ALT-INDICE resolvida | concluído |
 | [P04a](P04a-rota-na-timeline.md) | Dart: rota de exibição na `ScoreTimeline` | P03b | — | concluído |
 | [P04b](P04b-player-com-alternativas.md) | Dart: `ScorePlayer` segue a rota | P04a | — | concluído |
-| [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | pendente |
+| [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | concluído |
 | [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):

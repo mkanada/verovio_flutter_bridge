@@ -64,4 +64,37 @@ navega nas páginas normais como antes.
 
 ## Notas de execução
 
-_(preencher)_
+Implementado exatamente como o "O que fazer" descreve — sem desvios:
+`ScorePlayer` ganhou `useAlternates` (repassado a `ScoreTimeline`); `_publish`
+troca `restPageAt`/`goToPage` por `restViewAt`/`showPage` (compara com
+`v.displayedPage`, não `v.currentPage`); o modo contínuo continua igual
+(`scrollToId` na faixa normal); `pause`/`dispose` não precisaram de nada
+novo. Os doc-comments do topo do arquivo ganharam um parágrafo "PÁGINAS
+ALTERNATIVAS" explicando a relação `displayedPage`/`currentPage`.
+
+Critérios verificados em `test/score_player_alternates_test.dart` (novo),
+com `test/fixtures/maple-leaf-rag.vsb` (8 sequências):
+
+1. e 2. `pagedSweep` e `pagedSlide`, tocando a peça toda a 4× (passos de
+   200 ms): a sequência de `displayedPage` observada (deduplicada por
+   mudança) bate, item a item, com a sequência de `MeasureInfo.view`
+   deduplicada de `ScoreTimeline` (a rota de P04a) — nenhuma exceção, chega
+   em `player.duration`. `continuousScroll`: `displayedPage.isAlternate`
+   nunca vira `true`, do início ao fim.
+3. `seek(160000ms)` (dentro da sequência 6, depois do salto de 153900ms):
+   `displayedPage == PageRef(0, sequence: 6)` — a `view` que
+   `ScoreTimeline.measures[measureIndexAt(160000)]` também dá — com a nota
+   ativa (`noteIds.first` daquela ocorrência) destacada e com bbox dentro
+   da página 0 da sequência 6 (`geometryOf(6).elementOf(id)!.page == 0`),
+   sonda de pixel vermelho na tela confirma.
+4. `useAlternates: false`: `displayedPage.isAlternate` fica `false` do
+   início ao fim, tocando a peça inteira — e a suíte inteira (295 casos,
+   incluindo os testes de E03b que usam `ScorePlayer` sem passar
+   `useAlternates`, portanto com o padrão `true`) continua verde, porque
+   nenhuma delas consulta `displayedPage`/`view` (só `currentPage`/`page`,
+   inalterados).
+5. `PictureStats.live`: depois de tocar a peça toda (que passa pela
+   alternativa) e desmontar a árvore, volta a 0.
+6. `flutter analyze`: nenhum problema. `flutter test` (suíte inteira, 295
+   casos — os 289 de P04a + os 6 novos de
+   `test/score_player_alternates_test.dart`): todos passam.

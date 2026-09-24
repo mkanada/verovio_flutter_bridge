@@ -290,7 +290,9 @@
             "glyphs": { "const": "glyphs.json" },
             "timemap": { "const": "timemap.json" },
             "meta": { "const": "meta.json" },
-            "alternates": { "const": "alternates.json" }
+            "alternates": { "const": "alternates.json" },
+            "debugOptions": { "const": "debug-options.json" },
+            "debugSource": { "const": "debug-source.txt" }
           },
           "additionalProperties": false
         }
@@ -481,6 +483,15 @@
       },
       "additionalProperties": false
     },
+    "debug": {
+      "type": "object",
+      "required": ["options", "source"],
+      "properties": {
+        "options": { "type": "object" },
+        "source": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "document": {
       "type": "object",
       "required": ["manifest", "glyphs", "scene"],
@@ -490,7 +501,8 @@
         "scene": { "$ref": "#/$defs/sceneDocument" },
         "timemap": { "$ref": "#/$defs/timemapDocument" },
         "meta": { "$ref": "#/$defs/metaDocument" },
-        "alternates": { "$ref": "#/$defs/alternatesDocument" }
+        "alternates": { "$ref": "#/$defs/alternatesDocument" },
+        "debug": { "$ref": "#/$defs/debug" }
       },
       "additionalProperties": false
     }

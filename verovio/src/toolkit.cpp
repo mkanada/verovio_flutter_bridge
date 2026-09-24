@@ -548,6 +548,14 @@ bool Toolkit::LoadData(const std::string &data, bool resetLogBuffer)
 
     this->ApplyBridgeDefaults();
 
+    // docs/formato/especificacao-v1.md §2.6 (debug mode): capture the document exactly as it
+    // reaches this point - LoadFile has already decoded UTF-16 and decompressed a zip container
+    // into this same string, so this is the one entry point every load path funnels through, and
+    // the simplest form a debug regeneration tool can feed back to Verovio (plain text, content
+    // sniffing handles the rest, see Toolkit::IdentifyInputFrom). Cleared when the flag is off, so
+    // a reused Toolkit (D-RUNTIME) never leaks a previous document into a later debug-less render.
+    m_debugSourceData = m_options->m_vsbDebug.GetValue() ? data : std::string();
+
     std::string newData;
     Input *input = NULL;
 
@@ -2108,7 +2116,13 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
         pages.push_back(&bridge.GetPages()[i]);
     }
 
-    std::string output = BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator, "", meta, sequences);
+    // §2.6, debug mode (--vsb-debug): the caller must have set it before LoadData/LoadFile for
+    // m_debugSourceData to hold anything (Toolkit::LoadData captures it there); GetOptions() itself
+    // needs no such timing since it just reads the current option values.
+    const std::string debugOptionsJson = m_options->m_vsbDebug.GetValue() ? this->GetOptions() : "";
+
+    std::string output = BridgeWriter::WriteSingleJson(
+        pages, bridge.GetGlyphs(), generator, "", meta, sequences, debugOptionsJson, m_debugSourceData);
 
     // P02b, debug-only (--debug-alternate-starts): splice a "_alternateStarts" key into the
     // vsb-json output, outside BridgeWriter on purpose - it is not part of the documented format
@@ -2407,9 +2421,15 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
         pages.push_back(&bridge.GetPages()[i]);
     }
 
+    // §2.6, debug mode (--vsb-debug): embed the effective Toolkit options and the source document
+    // exactly as loaded (m_debugSourceData, captured by LoadData), so a render can be reproduced -
+    // e.g. for the Flutter/SVG parity comparison - from the .vsb file alone.
+    const bool hasDebug = m_options->m_vsbDebug.GetValue();
+
     ZipFileWriter zip;
     zip.AddFile("manifest.json",
-        BridgeWriter::WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates));
+        BridgeWriter::WriteManifest(
+            generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug));
     zip.AddFile("scene.json", BridgeWriter::WriteScene(pages));
     zip.AddFile("glyphs.json", BridgeWriter::WriteGlyphs(bridge.GetGlyphs()));
     if (hasTimemap) {
@@ -2420,6 +2440,10 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     }
     if (hasAlternates) {
         zip.AddFile("alternates.json", BridgeWriter::WriteAlternates(sequences));
+    }
+    if (hasDebug) {
+        zip.AddFile("debug-options.json", this->GetOptions());
+        zip.AddFile("debug-source.txt", m_debugSourceData);
     }
 
     return zip.Save(filename);

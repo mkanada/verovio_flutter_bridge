@@ -1254,6 +1254,15 @@ Options::Options()
     m_usePgHeaderForAll.Init(false);
     this->Register(&m_usePgHeaderForAll, "usePgHeaderForAll", &m_general);
 
+    m_vsbDebug.SetInfo("Vsb debug",
+        "-t vsb/-t vsb-json: embed the effective Toolkit options (Toolkit::GetOptions) and the "
+        "source document exactly as loaded (Toolkit::LoadData) in the package, so the render can be "
+        "reproduced (e.g. for the Flutter/SVG parity comparison) from the .vsb file alone, without "
+        "the original input file or CLI flags. Off by default: it duplicates the source document "
+        "inside the package");
+    m_vsbDebug.Init(false);
+    this->Register(&m_vsbDebug, "vsbDebug", &m_general);
+
     m_xmlIdChecksum.SetInfo(
         "XML IDs based on checksum", "Seed the generator for XML IDs using the checksum of the input data");
     m_xmlIdChecksum.Init(false);

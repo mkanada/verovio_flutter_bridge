@@ -85,6 +85,7 @@ int main(int argc, char **argv)
     bool allPages = false;
     std::optional<int> page;
     bool showVersion = false;
+    std::string optionsFile;
 
     // Create the toolkit instance without loading the font because
     // the resource path might be specified in the parameters
@@ -109,7 +110,7 @@ int main(int argc, char **argv)
 
     // TODO: Use std::to_array to get rid of the explicit array dimension, once MSVC supports it
     // See the final comment in https://github.com/rism-digital/verovio/pull/4023
-    static const std::array<option, 13> baseOptions = {
+    static const std::array<option, 14> baseOptions = {
         OptionStruct(&options->m_allPages, optionNames), //
         OptionStruct(&options->m_inputFrom, optionNames), //
         OptionStruct(&options->m_help, optionNames), //
@@ -123,6 +124,11 @@ int main(int argc, char **argv)
         OptionStruct(&options->m_xmlIdSeed, optionNames), //
         // standard input - long options only or - as filename
         { "stdin", no_argument, 0, 'z' }, //
+        // docs/formato/especificacao-v1.md §2.6 (debug mode): load a JSON file in the same shape
+        // as Toolkit::GetOptions()'s output (e.g. a .vsb's embedded debug-options.json) and apply
+        // it via Toolkit::SetOptions before the input file is loaded - long options only, no short
+        // flag, the same as --stdin.
+        { "options-file", required_argument, 0, 'j' }, //
         { 0, 0, 0, 0 } //
     };
 
@@ -162,7 +168,7 @@ int main(int argc, char **argv)
     vrv::Option *opt = NULL;
     vrv::OptionBool *optBool = NULL;
     std::string resourcePath = toolkit.GetResourcePath();
-    while ((c = getopt_long(argc, argv, "ab:f:h:l:o:p:r:s:t:vx:z", longOptions.data(), &optionIndex)) != -1) {
+    while ((c = getopt_long(argc, argv, "ab:f:h:j:l:o:p:r:s:t:vx:z", longOptions.data(), &optionIndex)) != -1) {
         switch (c) {
             case 0:
                 key = longOptions[optionIndex].name;
@@ -195,6 +201,8 @@ int main(int argc, char **argv)
                     exit(1);
                 };
                 break;
+
+            case 'j': optionsFile = std::string(optarg); break;
 
             case 'l': vrv::EnableLog(vrv::StrToLogLevel(std::string(optarg))); break;
 
@@ -279,6 +287,30 @@ int main(int argc, char **argv)
         std::cerr << "The music font could not be loaded; please check the contents of the resource directory."
                   << std::endl;
         exit(1);
+    }
+
+    // docs/formato/especificacao-v1.md §2.6 (debug mode): apply a Toolkit::GetOptions()-shaped
+    // JSON file (e.g. a .vsb's embedded debug-options.json) so a render can be reproduced with the
+    // exact options that produced it. Deliberately after SetResourcePath: SetOptions has its own
+    // font-loading side effects (it re-resolves "font"/"fontFallback"/... against the resource
+    // path whenever the JSON has those keys, which GetOptions() output always does), and doing
+    // that before the resource path is set crashes trying to load fonts from the compiled-in
+    // default path. Consequence: this overrides any other option flag also on the command line for
+    // a key it sets, regardless of where --options-file appears - the intended use is
+    // `--options-file <path> <source>` on its own, without other option flags. GetOptions() never
+    // emits inputFrom/outputTo/page, so -t/-f/-p are unaffected either way.
+    if (!optionsFile.empty()) {
+        std::ifstream optionsIn(optionsFile.c_str());
+        if (!optionsIn.is_open()) {
+            std::cerr << "Unable to open options file '" << optionsFile << "'." << std::endl;
+            exit(1);
+        }
+        std::ostringstream optionsStream;
+        optionsStream << optionsIn.rdbuf();
+        if (!toolkit.SetOptions(optionsStream.str())) {
+            std::cerr << "Unable to parse options file '" << optionsFile << "'." << std::endl;
+            exit(1);
+        }
     }
 
     const std::vector<std::string> outformats

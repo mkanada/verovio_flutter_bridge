@@ -978,6 +978,15 @@ private:
 
     Options *m_options;
 
+    /**
+     * The document exactly as passed to LoadData (docs/formato/especificacao-v1.md §2.6, debug
+     * mode): captured there, once, regardless of whether it came from LoadFile (zip/UTF-16
+     * decoded to the text LoadData actually parses) or a direct LoadData call. Empty unless
+     * `m_options->m_vsbDebug` is set, and cleared again when it is not - a reused Toolkit
+     * (D-RUNTIME) must not leak a previous document's source into a later debug-less render.
+     */
+    std::string m_debugSourceData;
+
     std::optional<std::locale> m_previousLocale;
 
     /**

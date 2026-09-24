@@ -620,7 +620,7 @@ std::string BridgeWriter::WriteMeta(const BridgeMeta &meta)
 }
 
 std::string BridgeWriter::WriteManifest(
-    const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta, bool hasAlternates)
+    const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta, bool hasAlternates, bool hasDebug)
 {
     std::string out = "{\"format\":\"vsb\",\"version\":1,\"generator\":\"" + EscapeJsonString(generator) + "\"";
     // §2.1: pageCount is scene.pages only - alternates.json's pages are never counted here, even
@@ -635,6 +635,9 @@ std::string BridgeWriter::WriteManifest(
     }
     if (hasAlternates) {
         out += ",\"alternates\":\"alternates.json\"";
+    }
+    if (hasDebug) {
+        out += ",\"debugOptions\":\"debug-options.json\",\"debugSource\":\"debug-source.txt\"";
     }
     out += "}}";
     return out;
@@ -661,16 +664,18 @@ std::string BridgeWriter::WriteAlternates(const std::vector<BridgeAlternateSeque
 
 std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> &pages,
     const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator, const std::string &timemapJson,
-    const BridgeMeta &meta, const std::vector<BridgeAlternateSequence> &sequences)
+    const BridgeMeta &meta, const std::vector<BridgeAlternateSequence> &sequences,
+    const std::string &debugOptionsJson, const std::string &debugSource)
 {
     const bool hasTimemap = !timemapJson.empty();
     const bool hasMeta = !meta.IsEmpty();
     const bool hasAlternates = !sequences.empty();
+    const bool hasDebug = !debugOptionsJson.empty();
 
     std::string out;
     out.reserve(1 << 20);
     out += "{\"manifest\":";
-    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates);
+    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug);
     out += ",\"glyphs\":";
     out += WriteGlyphs(glyphs);
     out += ",\"scene\":";
@@ -686,6 +691,11 @@ std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> 
     if (hasAlternates) {
         out += ",\"alternates\":";
         out += WriteAlternates(sequences);
+    }
+    if (hasDebug) {
+        out += ",\"debug\":{\"options\":";
+        out += debugOptionsJson;
+        out += ",\"source\":\"" + EscapeJsonString(debugSource) + "\"}";
     }
     out += '}';
     return out;

@@ -63,6 +63,15 @@ estiver rodando outro backend. Detalhes que o script preserva: nomes com
 ponto (renderiza em prefixo temporário), lista de 8 fontes +
 `--pin-serif-family "Liberation Serif"` (não mexa sem revalidar os números).
 
+**Modo debug (§2.6):** `<arquivo>` também aceita um `.vsb` gerado com
+`--vsb-debug` — nesse caso a comparação sai só dele, sem a partitura original
+nem as flags do Verovio usadas para gerá-lo (o script extrai
+`debug-source.txt`/`debug-options.json` de dentro do pacote e os usa em vez
+de `--header none --footer none --no-instrument-labels`, via a flag de CLI
+`--options-file`). Útil para reportar/depurar uma divergência sem precisar
+reconstruir o comando original: `verovio -t vsb --vsb-debug ... peça.mei -o
+peça` e depois `compare-page.sh compare/out/peça.vsb 1`.
+
 ## Varredura do corpus (R06a)
 
 `compare-corpus.sh [tolerância]` chama o `compare-page.sh` por página (34

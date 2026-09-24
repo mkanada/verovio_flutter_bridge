@@ -94,9 +94,13 @@ public:
     /**
      * Serializes manifest.json. `generator` identifies the Verovio/bridge version; S06's
      * Toolkit/CLI integration supplies it, this class does not invent one.
+     *
+     * `hasDebug` (§2.6, debug mode, `--vsb-debug`) adds the `debugOptions`/`debugSource` file
+     * entries: the effective Toolkit options and the source document exactly as loaded, embedded
+     * so the render can be reproduced from the package alone.
      */
     static std::string WriteManifest(const std::string &generator, int pageCount, bool hasTimemap,
-        bool hasMeta = false, bool hasAlternates = false);
+        bool hasMeta = false, bool hasAlternates = false, bool hasDebug = false);
 
     /**
      * Serializes alternates.json (§2.5): one entry per sequence, `start` plus its own pages
@@ -107,15 +111,22 @@ public:
 
     /**
      * Serializes the single-file `-t vsb-json` document: {manifest, glyphs, scene[, timemap][,
-     * meta][, alternates]}. `timemapJson` is the raw JSON array already produced by
+     * meta][, alternates][, debug]}. `timemapJson` is the raw JSON array already produced by
      * Toolkit::RenderToTimemap; passing an empty string (the default, meaning no timemap) omits the
      * "timemap" key entirely - a timemap is never written as an empty array. An empty `meta` omits
      * "meta" the same way, and an empty `sequences` omits "alternates".
+     *
+     * `debugOptionsJson` (§2.6, debug mode, `--vsb-debug`) is the raw JSON object already produced
+     * by Toolkit::GetOptions; `debugSource` is the source document exactly as Toolkit::LoadData
+     * received it. Both empty (the default) omits the "debug" key entirely - passing one without
+     * the other still writes it as an empty value, on the caller (only Toolkit::RenderToBridgeJson
+     * calls this with the flag on, and always supplies both together).
      */
     static std::string WriteSingleJson(const std::vector<const BridgePage *> &pages,
         const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator,
         const std::string &timemapJson = "", const BridgeMeta &meta = BridgeMeta(),
-        const std::vector<BridgeAlternateSequence> &sequences = {});
+        const std::vector<BridgeAlternateSequence> &sequences = {}, const std::string &debugOptionsJson = "",
+        const std::string &debugSource = "");
 };
 
 } // namespace vrv

@@ -7,6 +7,16 @@
 #     → compare/out/<peça>-p<N>-diff.png     (imagem de diferença)
 #     → estatística no stdout + linha final estável para R06a agregar em CSV
 #
+# <arquivo>: uma partitura (MEI/MusicXML/.mxl) OU um `.vsb` gerado com
+# `--vsb-debug` (docs/formato/especificacao-v1.md §2.6). No segundo caso a
+# comparação inteira sai só do `.vsb` — nem a partitura original nem as flags
+# do Verovio usadas para gerá-lo são necessárias: o script extrai
+# `debug-source.txt`/`debug-options.json` de dentro do pacote e os usa no
+# lugar do arquivo de entrada e de `--header none --footer none
+# --no-instrument-labels`, via `--options-file` (Toolkit::SetOptions). Um
+# `.vsb` sem esses dois arquivos (gerado sem `--vsb-debug`) é rejeitado com
+# uma mensagem clara.
+#
 # --alternate <start-id> (P02d, §2.5): compara a página <página> da sequência
 # alternativa cujo compasso de chegada é esse `xml:id`, não a página normal.
 # A referência SVG usa `--select-from <start-id>` (o mesmo mecanismo que
@@ -132,21 +142,65 @@ mkdir -p "$OUT_DIR"
 BASENAME="$(basename "$INPUT_FILE")"
 NAME="${BASENAME%.*}"
 
+# Modo debug (--vsb-debug, docs/formato/especificacao-v1.md §2.6): quando
+# $INPUT_FILE já é um .vsb, a comparação sai só dele - debug-source.txt vira
+# o arquivo que os `verovio` abaixo carregam, e debug-options.json (via
+# --options-file/Toolkit::SetOptions) substitui as flags manuais de layout
+# (--header none --footer none --no-instrument-labels e qualquer outra opção
+# usada para gerar o pacote, ex. tamanho de página/espaçamento). Um .vsb sem
+# os dois é rejeitado com uma mensagem clara antes de qualquer renderização.
+SOURCE_FILE="$INPUT_FILE"
+DEBUG_OPTIONS=""
+if [[ "$INPUT_FILE" == *.vsb ]]; then
+    DEBUG_SOURCE="$OUT_DIR/_compare-page-tmp-debug-source"
+    DEBUG_OPTIONS="$OUT_DIR/_compare-page-tmp-debug-options.json"
+    python3 - "$INPUT_FILE" "$DEBUG_SOURCE" "$DEBUG_OPTIONS" <<'PYEOF'
+import sys
+import zipfile
+
+vsb_path, source_out, options_out = sys.argv[1:4]
+with zipfile.ZipFile(vsb_path) as z:
+    names = z.namelist()
+    if "debug-source.txt" not in names or "debug-options.json" not in names:
+        sys.exit(
+            f"{vsb_path} não tem debug-source.txt/debug-options.json - "
+            "gere com --vsb-debug para comparar só a partir do .vsb"
+        )
+    with open(source_out, "wb") as f:
+        f.write(z.read("debug-source.txt"))
+    with open(options_out, "wb") as f:
+        f.write(z.read("debug-options.json"))
+PYEOF
+    SOURCE_FILE="$DEBUG_SOURCE"
+fi
+VSB_OPTIONS_ARGS=()
+if [[ -n "$DEBUG_OPTIONS" ]]; then
+    VSB_OPTIONS_ARGS=(--options-file "$DEBUG_OPTIONS")
+fi
+
 # .vsb sempre primeiro quando há --alternate: precisamos dele para achar o
 # índice K da sequência (só para nomear a saída) antes de montar $PREFIX.
 #
 # --xml-id-seed fixo (42, a mesma semente usada em todo o resto do projeto -
-# ver check-suffix-rule.py) só neste modo: sem ele, os `xml:id` sintéticos
-# (system/score/scoreDef da seleção, e qualquer id ausente do arquivo de
-# origem) sairiam diferentes a cada `verovio` chamado nesta função, e o
-# `start` que o `.vsb` deste script gera nunca bateria com o que
-# compare-corpus.sh descobriu num `.vsb` separado. Sem --alternate isso não
-# importa (a comparação é só de pixel, nunca por id).
+# ver check-suffix-rule.py) só neste modo, e só fora do modo debug: sem ele,
+# os `xml:id` sintéticos (system/score/scoreDef da seleção, e qualquer id
+# ausente do arquivo de origem) sairiam diferentes a cada `verovio` chamado
+# nesta função, e o `start` que o `.vsb` deste script gera nunca bateria com
+# o que compare-corpus.sh descobriu num `.vsb` separado. Sem --alternate isso
+# não importa (a comparação é só de pixel, nunca por id); no modo debug,
+# --options-file sempre vence sobre --xml-id-seed nesta mesma chamada
+# (Toolkit::SetOptions é aplicado depois de getopt_long inteiro em
+# tools/main.cpp - ver o comentário lá), então passar os dois juntos seria
+# enganoso: a semente usada é a que já estava gravada em debug-options.json.
 ALT_XML_ID_SEED=42
+ALT_SEED_ARGS=(--xml-id-seed "$ALT_XML_ID_SEED")
+if [[ -n "$DEBUG_OPTIONS" ]]; then
+    ALT_SEED_ARGS=()
+fi
 TMP_PREFIX="$OUT_DIR/_compare-page-tmp"
 if [[ -n "$ALTERNATE" ]]; then
-    "$VEROVIO_BIN" -t vsb --xml-id-seed "$ALT_XML_ID_SEED" -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" \
-        "$INPUT_FILE"
+    "$VEROVIO_BIN" -t vsb "${ALT_SEED_ARGS[@]}" "${VSB_OPTIONS_ARGS[@]}" -o "$TMP_PREFIX" \
+        --resource-path "$RESOURCE_PATH" "$SOURCE_FILE"
     if [[ ! -f "$TMP_PREFIX.vsb" ]]; then
         echo "Falha ao gerar o .vsb (ver mensagem do Verovio acima)." >&2
         exit 1
@@ -200,15 +254,42 @@ done
 echo "==> Renderizando SVG (página $PAGE${ALTERNATE:+, sequência $ALTERNATE})"
 # P01c: o .vsb de referência carrega os padrões do bridge (--header none
 # --footer none --no-instrument-labels, D-VSB-PADRAO) desde P01b; o SVG de
-# referência precisa das mesmas três flags, senão toda página diverge.
-# --alternate (P02d): --select-from troca a paginação normal pela da
-# sequência antes do -p N, o mesmo mecanismo que o exportador usa (P02c).
-SELECT_FROM_ARGS=()
-if [[ -n "$ALTERNATE" ]]; then
-    SELECT_FROM_ARGS=(--select-from "$ALTERNATE" --xml-id-seed "$ALT_XML_ID_SEED")
+# referência precisa das mesmas três flags (ou, no modo debug, de todas as
+# opções gravadas em debug-options.json - as três incluídas), senão toda
+# página diverge. --alternate (P02d): --select-from troca a paginação normal
+# pela da sequência antes do -p N, o mesmo mecanismo que o exportador usa
+# (P02c).
+if [[ -n "$DEBUG_OPTIONS" ]]; then
+    if [[ -n "$ALTERNATE" ]]; then
+        # --options-file sempre vence sobre qualquer outra flag desta mesma
+        # chamada (mesma razão do ALT_SEED_ARGS acima), então --select-from
+        # não pode ir como flag separada aqui - precisa estar dentro do JSON.
+        # A semente fica a que já estava em debug-options.json (não importa
+        # para o diff de pixel; ver o comentário de ALT_SEED_ARGS).
+        DEBUG_OPTIONS_ALT="$OUT_DIR/_compare-page-tmp-debug-options-alt.json"
+        python3 - "$DEBUG_OPTIONS" "$DEBUG_OPTIONS_ALT" "$ALTERNATE" <<'PYEOF'
+import json
+import sys
+
+options_in, options_out, alternate = sys.argv[1:4]
+with open(options_in) as f:
+    options = json.load(f)
+options["selectFrom"] = alternate
+with open(options_out, "w") as f:
+    json.dump(options, f)
+PYEOF
+        HEADER_ARGS=(--options-file "$DEBUG_OPTIONS_ALT")
+    else
+        HEADER_ARGS=(--options-file "$DEBUG_OPTIONS")
+    fi
+else
+    HEADER_ARGS=(--header none --footer none --no-instrument-labels)
+    if [[ -n "$ALTERNATE" ]]; then
+        HEADER_ARGS+=(--select-from "$ALTERNATE" --xml-id-seed "$ALT_XML_ID_SEED")
+    fi
 fi
 "$VEROVIO_BIN" -t svg -p "$PAGE" -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" \
-    --header none --footer none --no-instrument-labels "${SELECT_FROM_ARGS[@]}" "$INPUT_FILE"
+    "${HEADER_ARGS[@]}" "$SOURCE_FILE"
 if [[ ! -f "$TMP_PREFIX.svg" ]]; then
     echo "Falha ao gerar o SVG da página $PAGE (ver mensagem do Verovio acima;" >&2
     echo "página inexistente na peça/sequência também falha aqui)." >&2
@@ -218,7 +299,7 @@ mv "$TMP_PREFIX.svg" "$PREFIX.svg"
 
 if [[ -z "$ALTERNATE" ]]; then
     echo "==> Renderizando .vsb (todas as páginas; a seleção é no scene-to-png)"
-    "$VEROVIO_BIN" -t vsb -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" "$INPUT_FILE"
+    "$VEROVIO_BIN" -t vsb "${VSB_OPTIONS_ARGS[@]}" -o "$TMP_PREFIX" --resource-path "$RESOURCE_PATH" "$SOURCE_FILE"
     if [[ ! -f "$TMP_PREFIX.vsb" ]]; then
         echo "Falha ao gerar o .vsb (ver mensagem do Verovio acima)." >&2
         exit 1

@@ -275,6 +275,47 @@ nele.
   pelo leitor (regra em P00), a partir de `alternates` e da ordem de execução
   do timemap. `alternates.json` só oferece as páginas.
 
+### 2.6 Modo debug (`--vsb-debug`)
+
+Opcional, ligado por `--vsb-debug` (`OptionBool Options::m_vsbDebug`, desligado
+por padrão). Embute no pacote os dois insumos que faltam para reproduzir a
+renderização a partir **só** do `.vsb`, sem o arquivo de origem nem as flags
+do Verovio usadas para gerá-lo — o caso de uso é rodar a comparação
+Flutter×SVG (`compare/scripts/compare-page.sh`) tendo só o pacote em mãos.
+
+| Formato de saída | Arquivo/propriedade | Conteúdo |
+| --- | --- | --- |
+| `-t vsb` | `debug-options.json` | saída de `Toolkit::GetOptions()`: todo valor de opção corrente, não só os explicitamente setados |
+| `-t vsb` | `debug-source.txt` | o documento exatamente como chegou a `Toolkit::LoadData` (texto puro — um `.mxl` de entrada já sai descomprimido, um MEI/MusicXML UTF-16 já sai convertido para UTF-8; a farejada de formato do Verovio, `Toolkit::IdentifyInputFrom`, lê o conteúdo, não a extensão, então isso já basta para recarregar) |
+| `-t vsb-json` | propriedade `debug` | `{"options": {...}, "source": "..."}`, mesmo conteúdo dos dois arquivos acima |
+
+Segue a mesma regra de omissão do timemap/`meta.json`/`alternates.json`: sem
+`--vsb-debug`, nem o arquivo/propriedade nem a entrada do manifest
+(`files.debugOptions`/`files.debugSource`) existem.
+
+**Reproduzindo um render a partir do `.vsb`:** `verovio` ganhou uma flag de
+CLI companheira, `--options-file <caminho>` (`tools/main.cpp`), que lê um
+JSON no formato de `Toolkit::GetOptions()`/`debug-options.json` e aplica via
+`Toolkit::SetOptions` — depois de `--resource-path` ser resolvido (`SetOptions`
+recarrega fonte quando o JSON tem `font`/`fontFallback`/etc., e fazer isso
+antes do recurso path estar pronto falha) e **depois de todo o resto da linha
+de comando**, então `--options-file` vence qualquer outra flag de opção da
+mesma chamada, não importa a ordem em que aparecem — o uso pretendido é
+`--options-file <caminho> <fonte>` sozinho, sem outras flags de opção
+misturadas (`-t`/`-f`/`-p` não são afetadas: `GetOptions()` nunca emite
+`inputFrom`/`outputTo`/`page`). Para gerar a referência SVG de uma sequência
+alternativa (`--alternate` do `compare-page.sh`) é preciso `selectFrom` no
+próprio JSON (não como flag separada) — o script monta essa cópia.
+
+Limite conhecido: `xmlIdSeed` só é reproduzido quando a geração original já
+usou `-x`/`--xml-id-seed` explícito. Sem isso, `Object::SeedID` sorteia a
+semente internamente (`std::random_device`) e nunca a escreve de volta em
+`m_options`, então `debug-options.json` grava o sentinel de "não setado" — os
+`xml:id` sintéticos (elementos sem id na fonte) saem diferentes a cada
+render, original ou reproduzido. Nunca afeta o critério de correção (§
+"Critério de correção é visual" no `CLAUDE.md`), que compara pixels, não ids;
+só importa se algo além do diff de pixel depender desses ids.
+
 ## 3. Unidades e ajuste de página
 
 Todas as coordenadas de desenho estão em **unidades de viewBox** — exatamente
@@ -696,3 +737,4 @@ explicitamente.
 | 2026-09-21 | E01b: §2.4 (nova) documenta o timemap embutido — sempre pedido com `includeMeasures: true` (preenche `measureOn`) e a regra de sufixo `-rend<N>` que resolve um id expandido do timemap ao nó da cena (D-EXPMAP, decisão do usuário: regra documentada, sem `expansion.json` à parte). Mudança aditiva: `version` continua `1`, o formato do pacote não muda, só o conteúdo de `timemap.json` ganha mais um campo por instante. |
 | 2026-09-22 | P01a (D-META-TITULO, opção (a)): `meta.title` deixa de depender de `--header`. Passa a ser o título que o cabeçalho mostraria com `--header auto` — do `<pgHead func="first">`/`<credit>` codificado se a peça já traz um, senão de um `PgHead` descartável gerado do mesmo jeito que `Doc::GenerateHeader()` faria — calculado mesmo com `--header none`. Motivo: P01b torna `--header none` o padrão do `.vsb` (D-VSB-PADRAO), e o host precisa do título mesmo sem cabeçalho desenhado. Medido nas 10 peças do corpus: `title` passa a ser igual com `none`, `auto` e `encoded` (30/30; antes, `encoded` saía sem título nas 5 peças MEI, que não têm `<pgHead>` codificado). `creators` não muda (já independia de `--header`). `scene.json`, `glyphs.json` e `-t svg` byte-idênticos nos 3 valores de `--header` (o desenho não muda). |
 | 2026-09-22 | P02a (D-ALT/D-ALT-EXTENSAO): `alternates.json` (§2.5, novo) — páginas alternativas do player para saltos de repetição que mudam de página, cada sequência do compasso de chegada até o fim da peça, mesma forma de `scene.pages[i]` e mesmo `glyphs.json`. `files.alternates`/propriedade `alternates` opcionais (§2.1/§2.2), mesma regra de omissão do timemap/`meta`. §5.5 explicita que o índice de elementos é por sequência (não existe índice único do documento, já que ids se repetem entre sequências e páginas normais por construção). §9: aditivo, leitor antigo ignora. Mudança só de documentação e schema (`$defs/alternateSequence`, `$defs/alternatesDocument`, reuso de `$defs/page`) — nenhum código ainda; `docs/formato/exemplo-alternates.json` (novo) é o primeiro documento a validar contra o schema novo. |
+| 2026-09-24 | Modo debug (§2.6, novo): `--vsb-debug` embute `debug-options.json` (`Toolkit::GetOptions()`) e `debug-source.txt` (o documento como `Toolkit::LoadData` o recebeu) no `.vsb`, e a propriedade `debug` no JSON único, para reproduzir um render só a partir do pacote (uso: `compare/scripts/compare-page.sh` com um `.vsb` em vez da partitura + flags originais). Nova flag `--options-file` no `verovio` (`tools/main.cpp`) aplica esse JSON via `Toolkit::SetOptions`. Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.debugOptions`/`.debugSource`, `$defs/debug` no schema. |

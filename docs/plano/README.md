@@ -407,6 +407,8 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P04b](P04b-player-com-alternativas.md) | Dart: `ScorePlayer` segue a rota | P04a | — | concluído |
 | [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | concluído |
 | [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | concluído |
+| [G01](G01-gravador-de-notas-midi.md) | `notes.json` no `.vsb`: pitch/pauta/canal/ligadura por nota | — | — | pendente |
+| [G02](G02-notas-no-score-bridge.md) | `score_bridge`: modelo e parser de `notes.json` | G01 | — | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -425,7 +427,18 @@ R02a → R02b → R02c → R02d → R03a → R03b → R03c
         P01a → P01b → P01c ─┐                    (fase P: páginas alternativas;
         P02a ───────────────┴→ P02b → P02c ─┐     leia P00 antes de qualquer P*)
                               P03a ─────────┴→ P02d → P03b → P04a → P04b → P04c → P05
+
+        G01 → G02                                 (fase G: notas MIDI para tocar,
+                                                    independente das demais)
 ```
+
+A fase G grava, por nota, o pitch MIDI (já com 8va/transposição), pauta,
+camada, canal, programa, velocity e papel na ligadura num `notes.json`
+opcional do `.vsb` (G01, C++) e o lê no `score_bridge` (G02, Dart). Não
+depende de F/S/R/A/E/P nem é consumida por nenhuma delas — é o host (zywny)
+quem usa `notes.json` para tocar a partitura por soundfont, mandar MIDI para
+um teclado externo e avaliar o aluno (`docs/plano/N01`..`N03` do zywny,
+cross-repo).
 
 A fase P faz o player, num salto de repetição para outra página, mostrar uma
 página **redesenhada** que começa no compasso de chegada, em vez da página

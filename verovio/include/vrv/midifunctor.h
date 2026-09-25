@@ -341,6 +341,53 @@ using MIDINoteSequence = std::list<MIDINote>;
 struct MIDIHeldNote {
     int m_pitch = 0;
     double m_stopTime = 0;
+    // G01 (docs/plano/G01-gravador-de-notas-midi.md): the id/log index of this held note's own
+    // MIDIEventRecord, so its "offQ" can be patched once the actual note-off is emitted (either by
+    // another note stealing the course, or at the end of the layer). Unused when there is no log.
+    std::string m_id;
+    std::size_t m_eventIndex = 0;
+    bool m_hasEvent = false;
+};
+
+/**
+ * G01 (docs/plano/G01-gravador-de-notas-midi.md, `midi.json` in the .vsb): one event exactly as
+ * GenerateMIDIFunctor would emit it to the MidiFile, carrying the originating xml:id. Times
+ * (`onQ`/`offQ`) are in quarter notes from the start of the piece, the same unit as
+ * GenerateMIDIFunctor's own `m_totalTime`/`note->GetScoreTimeOnset()` - conversion to milliseconds
+ * (via the tempo breakpoints in MIDIEventLog::tempos) happens once, after export, in
+ * BridgeWriter::WriteMidi.
+ */
+struct MIDIEventRecord {
+    enum class Type { Note, PedalDown, PedalUp };
+    Type type = Type::Note;
+    // xml:id of the originating note/pedal (the expanded document's id, same as the timemap).
+    std::string id;
+    double onQ = 0.0;
+    // Only meaningful for Type::Note.
+    double offQ = 0.0;
+    int pitch = 0;
+    int staff = 0;
+    int layer = 0;
+    int channel = 0;
+    int program = 0;
+    int velocity = 0;
+    // True for a note synthesized from a trill/tremolo expansion (GenerateMIDIFunctor's
+    // m_expandedNotes) - several records then share the same id.
+    bool ornament = false;
+    // Ids of the tied continuation notes folded into this event, in order (the head note's own
+    // onQ/offQ already spans the whole chain, since note->GetScoreTimeTiedDuration() does).
+    std::vector<std::string> tied;
+};
+
+/**
+ * G01: the event log a GenerateMIDIFunctor instance fills when SetEventLog() is given a non-null
+ * pointer (nullptr by default - zero behavior change on the .mid). `tempos` mirrors every tempo
+ * change actually written to the MidiFile (VisitMeasure's own `addTempo` calls, plus the initial
+ * tempo Doc::ExportMIDI seeds before the per-staff loop), as (quarterTime, bpm) pairs.
+ */
+struct MIDIEventLog {
+    std::vector<MIDIEventRecord> events;
+    std::vector<std::pair<double, double>> tempos;
 };
 
 /**
@@ -385,6 +432,8 @@ public:
     void SetTransSemi(int transSemi) { m_transSemi = transSemi; }
     void SetInstrDef(const InstrDef *instrDef) { m_instrDef = instrDef; }
     void SetCustomTuning(const CustomTuning *customTuning) { m_customTuning = customTuning; }
+    // G01: nullptr (the default) means no recording, i.e. no change to the .mid output.
+    void SetEventLog(MIDIEventLog *eventLog) { m_eventLog = eventLog; }
     ///@}
 
     /*
@@ -430,6 +479,26 @@ private:
      */
     int GetMIDIPitch(const Note *note);
 
+    /**
+     * G01: record one note event (a plain note, a tablature-held note, or one sub-note of an
+     * expanded ornament). When `tieOpen` is true, later continuations of this tie (found by pitch,
+     * via LogTiedContinuation) attach their id to this event's `tied` list. No-op when there is no
+     * event log.
+     */
+    void LogNoteEvent(const std::string &id, double onQ, double offQ, int pitch, int velocity, bool ornament,
+        bool tieOpen);
+
+    /**
+     * G01: attach a tied continuation's id to the currently open head event of the same pitch (see
+     * LogNoteEvent's `tieOpen`), if any. No-op when there is no event log or no open head.
+     */
+    void LogTiedContinuation(int pitch, const std::string &id);
+
+    /**
+     * G01: record one sustain pedal event. No-op when there is no event log.
+     */
+    void LogPedalEvent(const std::string &id, double timeQ, bool down);
+
 public:
     //
 private:
@@ -472,6 +541,12 @@ private:
     const InstrDef *m_instrDef;
     // Current custom tuning
     const CustomTuning *m_customTuning;
+    // G01: optional event log; nullptr (the default, set in the constructor) means no recording.
+    MIDIEventLog *m_eventLog;
+    // G01: index (in m_eventLog->events) of the currently open tie head event, by MIDI pitch - see
+    // LogNoteEvent/LogTiedContinuation. Staff/layer are not part of the key: a single
+    // GenerateMIDIFunctor instance only ever processes one fixed (staff, layer) pair.
+    std::map<int, std::size_t> m_openTieHeadEvent;
 };
 
 //----------------------------------------------------------------------------

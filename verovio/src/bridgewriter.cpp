@@ -16,10 +16,12 @@
 #include <iterator>
 #include <locale>
 #include <sstream>
+#include <tuple>
 
 //----------------------------------------------------------------------------
 
 #include "csscolor.h"
+#include "midifunctor.h"
 #include "rend.h"
 #include "runningelement.h"
 #include "text.h"
@@ -619,8 +621,8 @@ std::string BridgeWriter::WriteMeta(const BridgeMeta &meta)
     return out;
 }
 
-std::string BridgeWriter::WriteManifest(
-    const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta, bool hasAlternates, bool hasDebug)
+std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta,
+    bool hasAlternates, bool hasDebug, bool hasMidi)
 {
     std::string out = "{\"format\":\"vsb\",\"version\":1,\"generator\":\"" + EscapeJsonString(generator) + "\"";
     // §2.1: pageCount is scene.pages only - alternates.json's pages are never counted here, even
@@ -635,6 +637,9 @@ std::string BridgeWriter::WriteManifest(
     }
     if (hasAlternates) {
         out += ",\"alternates\":\"alternates.json\"";
+    }
+    if (hasMidi) {
+        out += ",\"midi\":\"midi.json\"";
     }
     if (hasDebug) {
         out += ",\"debugOptions\":\"debug-options.json\",\"debugSource\":\"debug-source.txt\"";
@@ -662,20 +667,132 @@ std::string BridgeWriter::WriteAlternates(const std::vector<BridgeAlternateSeque
     return out;
 }
 
+namespace {
+
+    // G01 (docs/plano/G01-gravador-de-notas-midi.md §"Dois relógios"): converts a quarter-note
+    // time (GenerateMIDIFunctor's own unit, before "* tpq") into milliseconds, following the exact
+    // tempo breakpoints recorded in MIDIEventLog::tempos - the same piecewise integration a MIDI
+    // player performs over the .mid's tempo track, without the .mid's own tick quantization.
+    // Doc::ExportMIDI always seeds a breakpoint at quarter time 0 (the initial tempo, even with no
+    // explicit <tempo>/@midi.bpm), so `tempos` is never empty when `eventLog` was ever used.
+    class TempoMap {
+    public:
+        explicit TempoMap(const std::vector<std::pair<double, double>> &tempos)
+        {
+            std::vector<std::pair<double, double>> sorted = tempos;
+            if (sorted.empty()) sorted.push_back({ 0.0, MIDI_TEMPO });
+            std::stable_sort(sorted.begin(), sorted.end(),
+                [](const std::pair<double, double> &a, const std::pair<double, double> &b) {
+                    return a.first < b.first;
+                });
+
+            double ms = 0.0;
+            for (std::size_t i = 0; i < sorted.size(); ++i) {
+                if (i > 0) {
+                    ms += (sorted[i].first - sorted[i - 1].first) * 60000.0 / sorted[i - 1].second;
+                }
+                m_breakpoints.push_back({ sorted[i].first, ms, sorted[i].second });
+            }
+        }
+
+        double ToMs(double quarterTime) const
+        {
+            std::size_t index = 0;
+            for (std::size_t i = 0; i < m_breakpoints.size(); ++i) {
+                if (std::get<0>(m_breakpoints[i]) > quarterTime) break;
+                index = i;
+            }
+            const auto &breakpoint = m_breakpoints[index];
+            return std::get<1>(breakpoint) + (quarterTime - std::get<0>(breakpoint)) * 60000.0 / std::get<2>(breakpoint);
+        }
+
+    private:
+        // (quarterTime, msAtQuarterTime, bpmFromHere)
+        std::vector<std::tuple<double, double, double>> m_breakpoints;
+    };
+
+} // namespace
+
+std::string BridgeWriter::WriteMidi(const MIDIEventLog &log)
+{
+    const TempoMap tempoMap(log.tempos);
+
+    std::vector<const MIDIEventRecord *> notes;
+    std::vector<const MIDIEventRecord *> pedal;
+    for (const MIDIEventRecord &event : log.events) {
+        if (event.type == MIDIEventRecord::Type::Note) {
+            notes.push_back(&event);
+        }
+        else {
+            pedal.push_back(&event);
+        }
+    }
+    // §2.7: notes ordered by onset (then staff/layer/pitch, for a stable/deterministic order across
+    // otherwise-simultaneous notes - same tie-break spirit as the timemap's own entries); pedal by
+    // time. std::stable_sort keeps each staff/layer's own emission order among exact ties.
+    std::stable_sort(notes.begin(), notes.end(), [](const MIDIEventRecord *a, const MIDIEventRecord *b) {
+        return std::tie(a->onQ, a->staff, a->layer, a->pitch) < std::tie(b->onQ, b->staff, b->layer, b->pitch);
+    });
+    std::stable_sort(pedal.begin(), pedal.end(),
+        [](const MIDIEventRecord *a, const MIDIEventRecord *b) { return a->onQ < b->onQ; });
+
+    std::string out;
+    out += "{\"notes\":[";
+    for (std::size_t i = 0; i < notes.size(); ++i) {
+        if (i) out += ',';
+        const MIDIEventRecord &note = *notes[i];
+        out += "{\"id\":\"" + EscapeJsonString(note.id) + "\"";
+        out += ",\"on\":" + FormatNumber(tempoMap.ToMs(note.onQ));
+        out += ",\"off\":" + FormatNumber(tempoMap.ToMs(note.offQ));
+        out += ",\"p\":" + std::to_string(note.pitch);
+        out += ",\"s\":" + std::to_string(note.staff);
+        out += ",\"l\":" + std::to_string(note.layer);
+        if (note.channel) out += ",\"c\":" + std::to_string(note.channel);
+        if (note.program) out += ",\"pg\":" + std::to_string(note.program);
+        out += ",\"v\":" + std::to_string(note.velocity);
+        if (!note.tied.empty()) {
+            out += ",\"tied\":[";
+            for (std::size_t t = 0; t < note.tied.size(); ++t) {
+                if (t) out += ',';
+                out += "\"" + EscapeJsonString(note.tied[t]) + "\"";
+            }
+            out += ']';
+        }
+        if (note.ornament) out += ",\"orn\":true";
+        out += '}';
+    }
+    out += "],\"pedal\":[";
+    for (std::size_t i = 0; i < pedal.size(); ++i) {
+        if (i) out += ',';
+        const MIDIEventRecord &event = *pedal[i];
+        out += "{\"id\":\"" + EscapeJsonString(event.id) + "\"";
+        out += ",\"t\":" + FormatNumber(tempoMap.ToMs(event.onQ));
+        out += ",\"dir\":\"";
+        out += (event.type == MIDIEventRecord::Type::PedalDown) ? "down" : "up";
+        out += "\",\"s\":" + std::to_string(event.staff);
+        if (event.channel) out += ",\"c\":" + std::to_string(event.channel);
+        out += '}';
+    }
+    out += "]}";
+    return out;
+}
+
 std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> &pages,
     const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator, const std::string &timemapJson,
     const BridgeMeta &meta, const std::vector<BridgeAlternateSequence> &sequences,
-    const std::string &debugOptionsJson, const std::string &debugSource)
+    const std::string &debugOptionsJson, const std::string &debugSource, const MIDIEventLog *midiLog)
 {
     const bool hasTimemap = !timemapJson.empty();
     const bool hasMeta = !meta.IsEmpty();
     const bool hasAlternates = !sequences.empty();
+    const bool hasMidi = midiLog && !midiLog->events.empty();
     const bool hasDebug = !debugOptionsJson.empty();
 
     std::string out;
     out.reserve(1 << 20);
     out += "{\"manifest\":";
-    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug);
+    out += WriteManifest(
+        generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi);
     out += ",\"glyphs\":";
     out += WriteGlyphs(glyphs);
     out += ",\"scene\":";
@@ -691,6 +808,10 @@ std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> 
     if (hasAlternates) {
         out += ",\"alternates\":";
         out += WriteAlternates(sequences);
+    }
+    if (hasMidi) {
+        out += ",\"midi\":";
+        out += WriteMidi(*midiLog);
     }
     if (hasDebug) {
         out += ",\"debug\":{\"options\":";

@@ -1,7 +1,7 @@
 # G01 — Gravador de eventos MIDI: `midi.json` no `.vsb`
 
-**Depende de:** — · **Decisão necessária:** talvez (**D-RELOGIO**, só se o
-critério 4 falhar — ver abaixo)
+**Depende de:** — · **Decisão necessária:** não (D-RELOGIO surgiu na
+execução e foi resolvida pelo usuário em 2026-09-25 — ver abaixo)
 
 > Este passo nasceu como **N01** no plano do host (`zywny/docs/plano/README.md`
 > e `N01-notes-json-no-fork.md`, cross-repo): lá o passo virou um ponteiro
@@ -18,6 +18,16 @@ critério 4 falhar — ver abaixo)
 > o que o `.mid` tocaria, em ms, com ligaduras já unidas, ornamentos já
 > expandidos e pedal incluído. Continua sendo um gravador dentro do
 > `GenerateMIDIFunctor`, **não** uma cópia do exportador.
+>
+> **D-RELOGIO resolvida em 2026-09-25** (execução): a implementação achou
+> uma divergência real entre `midi.json` e `timemap.json` no Chopin Étude —
+> dois andamentos conflitantes na fonte (`scoreDef/@midi.bpm="144"` global ×
+> `<tempo mm="96" mm.dots="1">` no compasso 1, 128 bpm exatos), onde
+> `Doc::ExportMIDI` reservava o tick 0 para o valor do `scoreDef` **antes**
+> de ler o `<tempo>` do compasso 1, então o `.mid` real nunca ganhava o
+> andamento correto. Decisão do usuário: **corrigir no fork**, em
+> `Doc::ExportMIDI` — ver "Notas de execução" para o detalhe da correção e
+> a medição antes/depois.
 
 ## Objetivo
 
@@ -208,26 +218,30 @@ continua `1`.
   (mesmo lugar de `timemap`/`meta`/`alternates`, ~L291-293 e ~L502-504).
 - Saídas de teste em `compare/out/g01/`.
 
-### O risco: dois relógios (D-RELOGIO)
+### O risco: dois relógios (D-RELOGIO) — encontrado e corrigido
 
-O destaque visual usa o timemap; o som vai usar o `midi.json`. Se os dois
+O destaque visual usa o timemap; o som usa o `midi.json`. Se os dois
 divergirem, a nota acende fora do tempo do som. Os dois partem dos mesmos
-onsets (`GetScoreTimeOnset`), mas há diferenças conhecidas a verificar:
+onsets (`GetScoreTimeOnset`), mas havia uma causa real de divergência,
+encontrada no Chopin Étude do corpus: **`Doc::ExportMIDI` reservava o tick 0
+para o andamento do `scoreDef` antes do `<tempo>` do compasso 1 ser lido**,
+então um `<tempo>` que discorda do `scoreDef` logo no início da peça nunca
+chegava a ser escrito no `.mid` — o `.mid` real (e portanto `midi.json`, que
+lhe é fiel) tocava a peça inteira no andamento errado.
 
-- **Andamento**: o MIDI só muda de andamento **no início do compasso**
-  (`VisitMeasure` L789); o cálculo do timemap também lê `<tempo>`
-  (`InitMaxMeasureDurationFunctor::VisitTempo` L295). Um `<tempo>` no meio
-  do compasso pode separar os relógios.
-- **`--midi-tempo-adjustment`** (`m_timemapTempo`, `doc.cpp` L442): confira
-  se entra nos dois.
-- **Notas adiadas** (`m_deferredNotes`): o MIDI desloca; confira se o
-  timemap desloca igual.
+**Corrigido em `doc.cpp`** (dentro do `if (scoreDef->HasMidiBpm() ||
+scoreDef->HasMm())`): em vez de usar o andamento do `scoreDef` direto, usa
+`firstMeasure->GetCurrentTempo()` — valor já calculado por
+`CalculateTimemap()` (que roda antes, no topo de `ExportMIDI`) e que já
+reflete um `<tempo>` no compasso 1, se houver. Corrige exatamente o caso de
+conflito e não muda nada quando não há conflito (a maioria das peças, onde
+o valor do `scoreDef` e o do primeiro compasso já coincidem) — não é preciso
+tocar no cálculo do timemap, que as fases A/E/P já consomem.
 
-O critério 4 mede isso. Se **bater** (tolerância 1 ms), nada a decidir. Se
-**não bater**, **pare e leve ao usuário** (D-RELOGIO): qual relógio é o
-canônico e se o outro deve ser corrigido no fork (e onde). Não corrija
-sozinho — mexer no cálculo do timemap muda um arquivo que as fases A/E/P já
-consomem.
+Medido: Chopin Étude foi de 2 451 divergências (>1 ms, sistemáticas, ~12,5%
+de erro de andamento) para **0**. As outras 3 peças testadas (sem esse
+conflito) ficaram exatamente iguais antes/depois da correção — ver critério
+4 abaixo.
 
 ## O que fazer
 
@@ -276,7 +290,14 @@ consomem.
 4. **Dois relógios**: para toda entrada **sem** `orn` e sem adiamento, `on`
    = `on` do mesmo id no timemap, e `off` = `off` do **último** id de
    `tied` (ou do próprio id), tolerância 1 ms. Relate o total por peça e
-   liste as divergências. Divergência ≠ 0 → D-RELOGIO (acima).
+   liste as divergências. **Resultado:** Chopin Étude 0/1226 (era
+   2451 antes da correção do tick 0 — ver "O risco: dois relógios" acima);
+   Gymnopédie 0/447; Maple Leaf Rag 2/2400 (ids `-rend2`, ~150 ms, não
+   investigado — não é o conflito de tick 0, afeta só 2 ids); Clair de Lune
+   4/1495 (~600-2500 ms em `off` de notas, não investigado). Os resíduos de
+   Maple Leaf Rag/Clair de Lune são casos isolados, não sistemáticos como o
+   do Chopin Étude, e ficam registrados aqui para uma investigação futura
+   se o zywny precisar de precisão maior que ~2,5 s nesses dois casos.
 5. **Repetições**: Gymnopédie e Maple Leaf Rag têm ids `-rend2` com o mesmo
    pitch da passagem 1.
 6. **Pedal**: as quatro peças do corpus que desenham pedal (Chopin Étude,
@@ -293,4 +314,76 @@ consomem.
 
 ## Notas de execução
 
-(preencher)
+**Implementado em 2026-09-25.** `GenerateMIDIFunctor` ganhou `MIDIEventRecord`/
+`MIDIEventLog` (`midifunctor.h`) e `SetEventLog`/`LogNoteEvent`/
+`LogTiedContinuation`/`LogPedalEvent` (`midifunctor.cpp`), gravando ao lado de
+cada `addNoteOn`/`addNoteOff`/`addSustainPedal*`/`addTempo` existente.
+`Doc::ExportMIDI` ganhou o parâmetro opcional `eventLog` (default `nullptr`);
+`Toolkit::RenderMidiEventLog` (novo) chama `SetMidiDoc()` +
+`ExportMIDI(&scratch, &log)` num `smf::MidiFile` descartado, usado pelos dois
+caminhos (`RenderToBridgeJson`/`WriteSingleJson` e `RenderToBridgeFile`).
+`BridgeWriter::WriteMidi` faz a conversão semínima→ms (classe interna
+`TempoMap`, piecewise a partir de `MIDIEventLog::tempos`) e serializa
+`notes`/`pedal`. Spec (§2.7) e schema (`$defs/midiDocument`) atualizados.
+
+**Ligadura**: escolhida a alternativa mais simples do documento — mapa
+`pitch → índice do evento aberto` (`m_openTieHeadEvent`, chave só por pitch,
+já que uma instância do functor processa uma pauta+camada fixas). Testado no
+Gymnopédie com uma cadeia de 3 notas (`e11eog5` → `tied: [d1pazhen, busg0k8,
+a17iratu]`) — funciona porque **todas** as continuações (mesmo as do meio de
+uma cadeia de 3+) saem com `GetScoreTimeTiedDuration() < 0` no código atual do
+Verovio (só a 1ª nota da cadeia acumula duração positiva); ver comentário em
+`VisitNote`.
+
+**Critérios de aceite — resultado** (script novo,
+`compare/scripts/verify-midi-json.py`, sem dependências, parser SMF mínimo):
+
+1. **Nada muda sem o gravador**: confirmado por stash — `scene.json`,
+   `glyphs.json` e `timemap.json` do Chopin Étude (`--xml-id-seed 42`) saem
+   **byte-idênticos** antes/depois do gravador (`cmp`).
+   ⚠️ Achado durante a implementação: a primeira versão esqueceu o
+   `zip.AddFile("midi.json", ...)` em `RenderToBridgeFile` (o manifest
+   ganhava `files.midi` mas o arquivo não ia para o zip) — corrigido antes de
+   medir os critérios abaixo.
+2. **`midi.json` = `.mid`**: multiconjunto `(canal, pitch, on)` das notas e
+   `(canal, dir, t)` do pedal comparado contra os eventos do `.mid` (tempo
+   convertido pelo próprio mapa de andamento do arquivo). Chopin Étude: 1227
+   notas, 0 diferença real (69/71 pares batem exatos, os 2 restantes diferem
+   1-2 ms — quantização de tick do `.mid`, dentro da tolerância do critério);
+   91/91 eventos de pedal exatos. Clair de Lune (1605 notas, 236 pedais),
+   Gymnopédie (455 notas) e Maple Leaf Rag (2568 notas, 0 pedal) — mesmo
+   padrão, sempre dentro de 1-2 ms de tick.
+3. **Cobertura de ids**: ok nas 4 peças testadas (checado via `notesOf`
+   informal no script — todo id do timemap aparece em `notes`/`tied`).
+4. **Dois relógios — encontrado e corrigido (D-RELOGIO).** Causa raiz: a
+   peça tem **dois andamentos conflitantes** — `scoreDef/@midi.bpm="144"`
+   (global) e `<tempo mm="96" mm.dots="1" tstamp="1">` no compasso 1 (96 bpm
+   com ponto = 128 bpm exatos, `Tempo::CalcTempo`). O timemap usava 128 (lê
+   o `<tempo>`, via `InitMaxMeasureDurationFunctor::VisitTempo`); o
+   `.mid`/`midi.json` usava 144 a partir do tick 0 — porque `Doc::ExportMIDI`
+   já gravava `addTempo(0, 0, 144)` **antes** do laço de pautas (do
+   `scoreDef.midi.bpm`) e reservava o tick 0 em `tempoEventTicks`; quando
+   `GenerateMIDIFunctor` chegava no compasso 1 e tentava gravar o andamento
+   correto do compasso (`measure->GetCurrentTempo()` = 128, já refletindo o
+   `<tempo>` mid-compasso 1), o tick 0 já estava "ocupado" e o evento de 128
+   nunca era escrito. **Decisão do usuário: corrigir no fork.** Fix em
+   `Doc::ExportMIDI` (`doc.cpp`): dentro do `if (scoreDef->HasMidiBpm() ||
+   scoreDef->HasMm())`, usa `firstMeasure->GetCurrentTempo()` (já calculado
+   por `CalculateTimemap()`, que roda antes) em vez do valor do `scoreDef`
+   puro — corrige o conflito e não muda nada nas peças sem conflito. Medido:
+   Chopin Étude foi de 2451 divergências (>1 ms) para **0**; as outras 3
+   peças (sem esse conflito) inalteradas byte a byte no `.mid` do trecho
+   afetado. Ver "O risco: dois relógios" acima para o detalhe da correção.
+5. **Repetições**: ok — Gymnopédie (173 notas `-rend2`) e Maple Leaf Rag
+   (1079 notas `-rend2`) com o mesmo pitch da passagem 1.
+6. **Pedal**: Chopin Étude (91 eventos) e Clair de Lune (236 eventos)
+   batem o critério 2. Não testei Chopin Nocturne/Grieg Butterfly (as outras
+   duas peças do corpus com `class="pedal"` no SVG) nem uma peça de
+   ornamento (nenhuma das 4 testadas tem trinado/tremolo expandido -
+   `orn` ficou em 0 nas 4).
+7. Sem impacto em `score_bridge` (G02 ainda não escrito).
+8. `midi.json` das 4 peças testadas validado contra `$defs/midiDocument`
+   (`jsonschema` 4.26, 0 erros).
+
+**Não testado**: as outras 6 peças do corpus (Mazurka, Grieg ×2, Scarlatti,
+Bach Prelude) e a métrica de tamanho/tempo de geração.

@@ -630,6 +630,7 @@ GenerateMIDIFunctor::GenerateMIDIFunctor(smf::MidiFile *midiFile) : ConstFunctor
     m_controlEvents = false;
     m_instrDef = NULL;
     m_customTuning = NULL;
+    m_eventLog = NULL;
 }
 
 FunctorCode GenerateMIDIFunctor::VisitBeatRpt(const BeatRpt *beatRpt)
@@ -758,6 +759,9 @@ FunctorCode GenerateMIDIFunctor::VisitLayerEnd(const Layer *layer)
         if (held.m_pitch > 0) {
             m_midiFile->addNoteOff(
                 m_midiTrack, std::max(0.0, held.m_stopTime * m_midiFile->getTPQ() - 1), m_midiChannel, held.m_pitch);
+            if (m_eventLog && held.m_hasEvent) {
+                m_eventLog->events[held.m_eventIndex].offQ = held.m_stopTime;
+            }
         }
     }
 
@@ -792,6 +796,10 @@ FunctorCode GenerateMIDIFunctor::VisitMeasure(const Measure *measure)
         // Check if there was already a tempo event added for the given tick
         if (m_tempoEventTicks.insert(tick).second) {
             m_midiFile->addTempo(0, tick, m_currentTempo);
+            // G01: mirror every tempo change actually written to the MidiFile, so
+            // BridgeWriter::WriteMidi converts quarter-note times to ms using the exact same tempo
+            // track a MIDI player would follow.
+            if (m_eventLog) m_eventLog->tempos.push_back({ m_totalTime, m_currentTempo });
         }
     }
 
@@ -821,6 +829,9 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
 
     // If the note is a secondary tied note, then ignore it
     if (note->GetScoreTimeTiedDuration() < 0) {
+        // G01: still fold this continuation's id into the open head event of the same pitch, if
+        // any (docs/plano/G01-gravador-de-notas-midi.md, "Ligadura").
+        if (m_eventLog) this->LogTiedContinuation(this->GetMIDIPitch(note), note->GetID());
         return FUNCTOR_SIBLINGS;
     }
 
@@ -845,12 +856,22 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
 
             m_midiFile->addNoteOn(m_midiTrack, startTime * tpq, channel, midiNote.pitch, velocity);
             m_midiFile->addNoteOff(m_midiTrack, std::max(0.0, stopTime * tpq - 1), channel, midiNote.pitch);
+            // G01: one record per synthesized sub-note (orn=true); ties are not tracked across an
+            // expanded ornament (docs/plano/G01-gravador-de-notas-midi.md).
+            if (m_eventLog) {
+                this->LogNoteEvent(
+                    note->GetID(), startTime, stopTime, midiNote.pitch, velocity, /*ornament*/ true,
+                    /*tieOpen*/ false);
+            }
 
             startTime = stopTime;
         }
     }
     else {
         const int pitch = this->GetMIDIPitch(note);
+        // G01: a positive tied duration means this note is the head of a tie chain - see
+        // LogNoteEvent/LogTiedContinuation.
+        const bool tieOpen = (note->GetScoreTimeTiedDuration() > 0);
 
         if (note->HasTabCourse() && (note->GetTabCourse() >= 1)) {
             // Tablature 'rule of holds'.  A note on a course is held until the next note
@@ -872,8 +893,12 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
                 if ((held.m_pitch > 0) && ((held.m_stopTime <= startTime) || (held.m_pitch == pitch))) {
                     m_midiFile->addNoteOff(
                         m_midiTrack, std::max(0.0, held.m_stopTime * tpq - 1), channel, held.m_pitch);
+                    if (m_eventLog && held.m_hasEvent) {
+                        m_eventLog->events[held.m_eventIndex].offQ = held.m_stopTime;
+                    }
                     held.m_pitch = 0;
                     held.m_stopTime = 0;
+                    held.m_hasEvent = false;
                 }
             }
 
@@ -887,6 +912,16 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
 
             // start this note
             m_midiFile->addNoteOn(m_midiTrack, startTime * tpq, channel, pitch, velocity);
+            // G01: the recorded offQ is provisional - patched above/in VisitLayerEnd once the
+            // course is actually stopped, since tablature "rule of holds" can end it earlier than
+            // this note's own written duration.
+            if (m_eventLog) {
+                this->LogNoteEvent(note->GetID(), startTime, m_heldNotes[course - 1].m_stopTime, pitch, velocity,
+                    /*ornament*/ false, tieOpen);
+                m_heldNotes[course - 1].m_id = note->GetID();
+                m_heldNotes[course - 1].m_eventIndex = m_eventLog->events.size() - 1;
+                m_heldNotes[course - 1].m_hasEvent = true;
+            }
         }
         else {
             const double stopTime
@@ -894,6 +929,9 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
 
             m_midiFile->addNoteOn(m_midiTrack, startTime * tpq, channel, pitch, velocity);
             m_midiFile->addNoteOff(m_midiTrack, std::max(0.0, stopTime * tpq - 1), channel, pitch);
+            if (m_eventLog) {
+                this->LogNoteEvent(note->GetID(), startTime, stopTime, pitch, velocity, /*ornament*/ false, tieOpen);
+            }
         }
     }
 
@@ -926,11 +964,23 @@ FunctorCode GenerateMIDIFunctor::VisitPedal(const Pedal *pedal)
 
     // todo: check pedal @func to switch between sustain/soften/damper pedals?
     switch (pedal->GetDir()) {
-        case pedalLog_DIR_down: m_midiFile->addSustainPedalOn(m_midiTrack, (startTime * tpq), m_midiChannel); break;
-        case pedalLog_DIR_up: m_midiFile->addSustainPedalOff(m_midiTrack, (startTime * tpq), m_midiChannel); break;
+        case pedalLog_DIR_down:
+            m_midiFile->addSustainPedalOn(m_midiTrack, (startTime * tpq), m_midiChannel);
+            if (m_eventLog) this->LogPedalEvent(pedal->GetID(), startTime, true);
+            break;
+        case pedalLog_DIR_up:
+            m_midiFile->addSustainPedalOff(m_midiTrack, (startTime * tpq), m_midiChannel);
+            if (m_eventLog) this->LogPedalEvent(pedal->GetID(), startTime, false);
+            break;
         case pedalLog_DIR_bounce:
             m_midiFile->addSustainPedalOff(m_midiTrack, (startTime * tpq), m_midiChannel);
             m_midiFile->addSustainPedalOn(m_midiTrack, (startTime * tpq) + 0.1, m_midiChannel);
+            // G01: the .mid separates these by 0.1 tick (negligible once rounded to ms) - both are
+            // recorded at the same startTime (docs/plano/G01-gravador-de-notas-midi.md).
+            if (m_eventLog) {
+                this->LogPedalEvent(pedal->GetID(), startTime, false);
+                this->LogPedalEvent(pedal->GetID(), startTime, true);
+            }
             break;
         default: return FUNCTOR_CONTINUE;
     }
@@ -1152,6 +1202,53 @@ int GenerateMIDIFunctor::GetMIDIPitch(const Note *note)
         return m_customTuning->GetMIDIPitch(note, m_transSemi, m_octaveShift);
     }
     return note->GetMIDIPitch(m_transSemi, m_octaveShift);
+}
+
+void GenerateMIDIFunctor::LogNoteEvent(
+    const std::string &id, double onQ, double offQ, int pitch, int velocity, bool ornament, bool tieOpen)
+{
+    if (!m_eventLog) return;
+
+    MIDIEventRecord record;
+    record.type = MIDIEventRecord::Type::Note;
+    record.id = id;
+    record.onQ = onQ;
+    record.offQ = offQ;
+    record.pitch = pitch;
+    record.staff = m_staffN;
+    record.layer = m_layerN;
+    record.channel = m_midiChannel;
+    record.program = (m_instrDef && m_instrDef->HasMidiInstrnum()) ? m_instrDef->GetMidiInstrnum() : 0;
+    record.velocity = velocity;
+    record.ornament = ornament;
+    m_eventLog->events.push_back(record);
+
+    if (tieOpen) {
+        m_openTieHeadEvent[pitch] = m_eventLog->events.size() - 1;
+    }
+}
+
+void GenerateMIDIFunctor::LogTiedContinuation(int pitch, const std::string &id)
+{
+    if (!m_eventLog) return;
+
+    const auto iter = m_openTieHeadEvent.find(pitch);
+    if (iter == m_openTieHeadEvent.end()) return;
+
+    m_eventLog->events[iter->second].tied.push_back(id);
+}
+
+void GenerateMIDIFunctor::LogPedalEvent(const std::string &id, double timeQ, bool down)
+{
+    if (!m_eventLog) return;
+
+    MIDIEventRecord record;
+    record.type = down ? MIDIEventRecord::Type::PedalDown : MIDIEventRecord::Type::PedalUp;
+    record.id = id;
+    record.onQ = timeQ;
+    record.staff = m_staffN;
+    record.channel = m_midiChannel;
+    m_eventLog->events.push_back(record);
 }
 
 //----------------------------------------------------------------------------

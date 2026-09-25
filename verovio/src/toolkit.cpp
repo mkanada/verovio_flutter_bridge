@@ -43,6 +43,7 @@
 #include "bridgedevicecontext.h"
 #include "bridgewriter.h"
 #include "measure.h"
+#include "midifunctor.h"
 #include "nc.h"
 #include "neume.h"
 #include "note.h"
@@ -2100,6 +2101,11 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
     const BridgeMeta meta = this->ReadBridgeMeta();
 
+    // §2.7 (G01): the events GenerateMIDIFunctor would emit to a .mid, with their originating
+    // xml:id - SetMidiDoc()/ExportMIDI mirror what RenderToMIDI() itself does, into a MidiFile that
+    // is discarded once `midiLog` has been filled from it.
+    const MIDIEventLog midiLog = this->RenderMidiEventLog();
+
     // §2.5/P02c: alternates only when the whole document was requested - a page range that isn't
     // "every normal page" wouldn't have "the rest of the piece" to build a sequence into, and
     // firstOfNormalPage (from ComputeAlternateStarts) is derived from the whole Doc regardless of
@@ -2121,8 +2127,8 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     // needs no such timing since it just reads the current option values.
     const std::string debugOptionsJson = m_options->m_vsbDebug.GetValue() ? this->GetOptions() : "";
 
-    std::string output = BridgeWriter::WriteSingleJson(
-        pages, bridge.GetGlyphs(), generator, "", meta, sequences, debugOptionsJson, m_debugSourceData);
+    std::string output = BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator, "", meta, sequences,
+        debugOptionsJson, m_debugSourceData, &midiLog);
 
     // P02b, debug-only (--debug-alternate-starts): splice a "_alternateStarts" key into the
     // vsb-json output, outside BridgeWriter on purpose - it is not part of the documented format
@@ -2348,6 +2354,20 @@ BridgeMeta Toolkit::ReadBridgeMeta()
     return BridgeWriter::ExtractMeta(m_doc.m_header, NULL);
 }
 
+MIDIEventLog Toolkit::RenderMidiEventLog()
+{
+    this->SetMidiDoc();
+    assert(m_midiDoc);
+
+    // A throwaway MidiFile: RenderMidiEventLog only wants the event log GenerateMIDIFunctor fills
+    // alongside it (SetEventLog), the same way RenderToMIDI() builds a .mid it then base64-encodes
+    // instead of writing to the log.
+    smf::MidiFile scratchMidiFile;
+    MIDIEventLog midiLog;
+    m_midiDoc->ExportMIDI(&scratchMidiFile, &midiLog);
+    return midiLog;
+}
+
 bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, int toPage)
 {
     this->ResetLogBuffer();
@@ -2415,6 +2435,12 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     const std::vector<BridgeAlternateSequence> sequences = this->RenderAlternatesToBridge(bridge);
     const bool hasAlternates = !sequences.empty();
 
+    // §2.7 (G01): the events GenerateMIDIFunctor would emit to a .mid, with their originating
+    // xml:id. Independent of the timemap/meta/alternates above - reads from `m_midiDoc`, not the
+    // (possibly Select()ed-and-restored) `m_doc` - so its ordering relative to them does not matter.
+    const MIDIEventLog midiLog = this->RenderMidiEventLog();
+    const bool hasMidi = !midiLog.events.empty();
+
     std::vector<const BridgePage *> pages;
     pages.reserve(normalPageCount);
     for (std::size_t i = 0; i < normalPageCount; ++i) {
@@ -2429,7 +2455,7 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     ZipFileWriter zip;
     zip.AddFile("manifest.json",
         BridgeWriter::WriteManifest(
-            generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug));
+            generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi));
     zip.AddFile("scene.json", BridgeWriter::WriteScene(pages));
     zip.AddFile("glyphs.json", BridgeWriter::WriteGlyphs(bridge.GetGlyphs()));
     if (hasTimemap) {
@@ -2440,6 +2466,9 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     }
     if (hasAlternates) {
         zip.AddFile("alternates.json", BridgeWriter::WriteAlternates(sequences));
+    }
+    if (hasMidi) {
+        zip.AddFile("midi.json", BridgeWriter::WriteMidi(midiLog));
     }
     if (hasDebug) {
         zip.AddFile("debug-options.json", this->GetOptions());

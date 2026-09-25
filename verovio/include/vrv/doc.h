@@ -28,6 +28,7 @@ class Glyph;
 class Pages;
 class Page;
 class Score;
+struct MIDIEventLog;
 
 enum DocType { Raw = 0, Rendering, Transcription, Facs };
 
@@ -286,8 +287,13 @@ public:
     /**
      * Export the document to a MIDI file.
      * Run trough all the layers and fill the MIDI file content.
+     *
+     * `eventLog` (G01, docs/plano/G01-gravador-de-notas-midi.md) is optional and defaults to
+     * nullptr, meaning no recording and no change to the MIDI output. When given, every note/pedal
+     * event GenerateMIDIFunctor emits is also recorded there, with its originating xml:id, for the
+     * bridge exporter's `midi.json`.
      */
-    void ExportMIDI(smf::MidiFile *midiFile);
+    void ExportMIDI(smf::MidiFile *midiFile, MIDIEventLog *eventLog = NULL);
 
     /**
      * Extract a timemap from the document to a JSON string.

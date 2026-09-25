@@ -20,6 +20,7 @@
 namespace vrv {
 
 class RunningElement;
+struct MIDIEventLog;
 
 //----------------------------------------------------------------------------
 // BridgeAlternateSequence
@@ -100,7 +101,7 @@ public:
      * so the render can be reproduced from the package alone.
      */
     static std::string WriteManifest(const std::string &generator, int pageCount, bool hasTimemap,
-        bool hasMeta = false, bool hasAlternates = false, bool hasDebug = false);
+        bool hasMeta = false, bool hasAlternates = false, bool hasDebug = false, bool hasMidi = false);
 
     /**
      * Serializes alternates.json (§2.5): one entry per sequence, `start` plus its own pages
@@ -110,11 +111,22 @@ public:
     static std::string WriteAlternates(const std::vector<BridgeAlternateSequence> &sequences);
 
     /**
+     * Serializes midi.json (§2.7): the events GenerateMIDIFunctor emits when Doc::ExportMIDI is
+     * given an event log (G01, docs/plano/G01-gravador-de-notas-midi.md), split into `notes` and
+     * `pedal`, converted from quarter notes (`log`'s own unit) to milliseconds using the tempo
+     * breakpoints in `log.tempos` - the same piecewise integration a MIDI player follows over the
+     * .mid's own tempo track, without its tick quantization. The caller omits the whole document
+     * when `log.events` is empty.
+     */
+    static std::string WriteMidi(const MIDIEventLog &log);
+
+    /**
      * Serializes the single-file `-t vsb-json` document: {manifest, glyphs, scene[, timemap][,
-     * meta][, alternates][, debug]}. `timemapJson` is the raw JSON array already produced by
+     * meta][, alternates][, midi][, debug]}. `timemapJson` is the raw JSON array already produced by
      * Toolkit::RenderToTimemap; passing an empty string (the default, meaning no timemap) omits the
      * "timemap" key entirely - a timemap is never written as an empty array. An empty `meta` omits
-     * "meta" the same way, and an empty `sequences` omits "alternates".
+     * "meta" the same way, an empty `sequences` omits "alternates", and a null/empty `midiLog`
+     * omits "midi".
      *
      * `debugOptionsJson` (§2.6, debug mode, `--vsb-debug`) is the raw JSON object already produced
      * by Toolkit::GetOptions; `debugSource` is the source document exactly as Toolkit::LoadData
@@ -126,7 +138,7 @@ public:
         const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator,
         const std::string &timemapJson = "", const BridgeMeta &meta = BridgeMeta(),
         const std::vector<BridgeAlternateSequence> &sequences = {}, const std::string &debugOptionsJson = "",
-        const std::string &debugSource = "");
+        const std::string &debugSource = "", const MIDIEventLog *midiLog = nullptr);
 };
 
 } // namespace vrv

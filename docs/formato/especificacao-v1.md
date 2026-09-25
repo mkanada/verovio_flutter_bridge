@@ -33,8 +33,8 @@ flags de saída são:
 
 | Formato de saída | Arquivo | Conteúdo |
 | --- | --- | --- |
-| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json`, `meta.json` e `alternates.json` |
-| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap`, `meta` e `alternates` |
+| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json`, `meta.json`, `alternates.json` e `midi.json` |
+| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap`, `meta`, `alternates` e `midi` |
 
 O `timemap.json` é **embutido no pacote** quando o Verovio produz um timemap
 não vazio. Se a peça não produzir timemap, o arquivo e a entrada correspondente
@@ -50,6 +50,12 @@ em saltos de repetição (P00-P05). Segue a mesma regra de omissão: uma peça
 sem nenhum salto que precise de página alternativa não tem o arquivo nem a
 entrada do manifest.
 
+O `midi.json` (§2.7) leva os eventos que o exportador MIDI do Verovio emitiria
+para um `.mid` — notas (com ligadura e ornamentos já resolvidos) e pedal —
+com o `xml:id` de origem e o tempo em milissegundos. Segue a mesma regra de
+omissão: uma peça sem nenhuma nota tocável não tem o arquivo nem a entrada do
+manifest.
+
 ### 2.1 `manifest.json`
 
 ```json
@@ -62,7 +68,8 @@ entrada do manifest.
     "scene": "scene.json",
     "glyphs": "glyphs.json",
     "timemap": "timemap.json",
-    "meta": "meta.json"
+    "meta": "meta.json",
+    "midi": "midi.json"
   }
 }
 ```
@@ -74,9 +81,9 @@ entrada do manifest.
 - `pageCount` é o número de páginas em `scene.pages` (as páginas **normais**;
   não conta nenhuma página de `alternates.json`).
 - `files.scene` e `files.glyphs` são obrigatórios. `files.timemap`,
-  `files.meta` e `files.alternates` existem somente quando o pacote contém
-  `timemap.json`, `meta.json` e `alternates.json`, respectivamente (§2.4,
-  §2.3, §2.5).
+  `files.meta`, `files.alternates` e `files.midi` existem somente quando o
+  pacote contém `timemap.json`, `meta.json`, `alternates.json` e
+  `midi.json`, respectivamente (§2.4, §2.3, §2.5, §2.7).
 - No JSON único, `manifest.files` mantém os nomes lógicos acima mesmo sem
   arquivos físicos separados.
 
@@ -91,15 +98,16 @@ A raiz de `-t vsb-json` é:
   "scene": { "pages": [] },
   "timemap": [],
   "meta": { "title": "..." },
-  "alternates": { "sequences": [] }
+  "alternates": { "sequences": [] },
+  "midi": { "notes": [], "pedal": [] }
 }
 ```
 
-`timemap`, `meta` e `alternates` são opcionais e seguem exatamente o
-conteúdo de `timemap.json`, `meta.json` e `alternates.json`. O parser deve
-aceitar tanto a raiz única quanto os documentos individuais `scene.json`,
-`glyphs.json`, `manifest.json`, `timemap.json`, `meta.json` e
-`alternates.json`.
+`timemap`, `meta`, `alternates` e `midi` são opcionais e seguem exatamente o
+conteúdo de `timemap.json`, `meta.json`, `alternates.json` e `midi.json`. O
+parser deve aceitar tanto a raiz única quanto os documentos individuais
+`scene.json`, `glyphs.json`, `manifest.json`, `timemap.json`, `meta.json`,
+`alternates.json` e `midi.json`.
 
 ### 2.3 `meta.json`
 
@@ -315,6 +323,83 @@ semente internamente (`std::random_device`) e nunca a escreve de volta em
 render, original ou reproduzido. Nunca afeta o critério de correção (§
 "Critério de correção é visual" no `CLAUDE.md`), que compara pixels, não ids;
 só importa se algo além do diff de pixel depender desses ids.
+
+### 2.7 `midi.json`
+
+O timemap (§2.4) diz **quando** cada id liga/desliga (para o destaque
+visual), mas não **o que soa**: cada nota entra separada da sua ligadura, e
+ornamentos entram como a nota escrita, não como as notas que o MIDI toca.
+`midi.json` (G01, `docs/plano/G01-gravador-de-notas-midi.md`) é o fluxo de
+eventos que `GenerateMIDIFunctor` — o mesmo código que gera um `.mid` — emitiria
+para a peça, com o `xml:id` de origem de cada evento e o tempo já convertido
+de semínimas para milissegundos.
+
+```json
+{
+  "notes": [
+    { "id": "n1a2b", "on": 0, "off": 500, "p": 64, "s": 1, "l": 1, "v": 90 },
+    { "id": "n77-rend2", "on": 12000, "off": 14000, "p": 52, "s": 2, "l": 1, "v": 90,
+      "tied": ["n9f-rend2"] },
+    { "id": "n33", "on": 3000, "off": 3062.5, "p": 71, "s": 1, "l": 1, "v": 90, "orn": true },
+    { "id": "n33", "on": 3062.5, "off": 3125, "p": 72, "s": 1, "l": 1, "v": 90, "orn": true }
+  ],
+  "pedal": [
+    { "id": "pd12", "t": 1000, "dir": "down", "s": 1 },
+    { "id": "pd13", "t": 4000, "dir": "up", "s": 1 }
+  ]
+}
+```
+
+**`notes[]`**, uma entrada por nota efetivamente tocada, ordenada por `on`
+(critério de desempate: `s`, `l`, `p`):
+
+- `id` (obrigatório): `xml:id` da nota — o mesmo id do timemap (expandido,
+  `-rend<N>`, §2.4). Numa ligadura, é o id da **primeira** nota da cadeia; num
+  ornamento (trinado/tremolo) expandido pelo MIDI em várias notas curtas, o
+  mesmo id se repete numa entrada por sub-nota (`orn: true` em todas).
+- `on`/`off` (obrigatórios, ms): mesmo relógio e mesma precisão do `tstamp` do
+  timemap (§2.4) — não o tick do `.mid` (que arredonda para a resolução do
+  arquivo); calculado por integração ao longo do andamento vigente, sem a
+  quantização em ticks que o `.mid` tem. Numa nota ligada, `off` já é o fim da
+  cadeia inteira (a soma de todas as continuações, como
+  `note->GetScoreTimeTiedDuration()` já calcula) — o leitor não soma nada.
+- `p` (obrigatório): altura MIDI 0-127, já com transposição de instrumento e
+  8va/8vb (`Note::GetMIDIPitch(transSemi, octaveShift)` — nunca a variante sem
+  argumentos, que ignora os dois).
+- `s`/`l` (obrigatórios): número (`@n`) da pauta e da camada de origem (piano:
+  1 = mão direita, 2 = mão esquerda, por convenção do corpus).
+- `c` (opcional, padrão `0`): canal MIDI 0-15; omitido quando `0`.
+- `pg` (opcional, padrão `0`): programa MIDI (General MIDI) do instrumento;
+  omitido quando `0`.
+- `v` (obrigatório): velocity 1-127 (`@vel` explícito, senão o padrão do
+  Verovio). Uma nota silenciosa (`@vel="0"`) não gera evento — não é tocável
+  nem pelo MIDI.
+- `tied` (opcional, padrão `[]`): ids das notas de continuação da ligadura,
+  na ordem em que aparecem — cada uma já está coberta pelo intervalo
+  `on`-`off` desta entrada; o leitor as usa para destacar/silenciar sem exigir
+  que o aluno as toque de novo.
+- `orn` (opcional, padrão `false`): `true` quando esta entrada é uma das
+  notas curtas em que o MIDI expande um trinado/tremolo/mordente — várias
+  entradas então compartilham o mesmo `id`. Ligadura não é rastreada através
+  de um ornamento (`tied` não aparece nessas entradas).
+
+**`pedal[]`**, uma entrada por evento de pedal de sustain, ordenada por `t`:
+
+- `id` (obrigatório): `xml:id` do elemento `<pedal>` de origem. **Não**
+  aparece no timemap (§2.4) — é um id novo, só neste arquivo.
+- `t` (obrigatório, ms): mesmo relógio de `notes[].on`/`off`.
+- `dir` (obrigatório): `"down"` ou `"up"`. Um `<pedal>` com `@dir="bounce"`
+  (levanta e repressiona) gera duas entradas no mesmo `t` (o intervalo de
+  0,1 tick que o `.mid` usa para separá-las some no arredondamento para ms).
+  `@dir="half"` e um `<pedal>` sem `@dir` não geram evento — o exportador MIDI
+  também não os trata.
+- `s` (obrigatório): número da pauta a que o pedal se aplica.
+- `c` (opcional, padrão `0`): canal MIDI; omitido quando `0`.
+
+Limitações conhecidas, herdadas do exportador MIDI (`@func` do pedal — una
+corda, sostenuto — não é distinguido de sustain; `TODO` em
+`GenerateMIDIFunctor::VisitPedal`) e fora de escopo deste passo (dinâmica de
+velocity, pedal de tablatura — não testado no corpus, que é de piano).
 
 ## 3. Unidades e ajuste de página
 
@@ -705,6 +790,7 @@ explicitamente.
 | empacotamento | `manifest`, `timemap` | nomes, versão, páginas e timemap embutido |
 | `BridgeMeta.title` (`Toolkit::ReadBridgeMeta` via `BridgeWriter::ExtractMeta`) | `meta.title` | título como o cabeçalho mostraria com `--header auto`, independente do `--header` real (§2.3) |
 | `BridgeMeta.creators` (`Doc::m_header`) | `meta.creators[].name`, `.role` | autores do `<meiHead>`, independentes de `--header` (§2.3) |
+| `MIDIEventRecord`/`MIDIEventLog` (`GenerateMIDIFunctor::LogNoteEvent`/`LogPedalEvent`, via `Doc::ExportMIDI`'s optional `eventLog`) | `midi.notes[]`, `midi.pedal[]` | eventos do exportador MIDI com o `xml:id` de origem, convertidos de semínimas para ms por `BridgeWriter::WriteMidi` (§2.7) |
 
 ## 9. Compatibilidade
 
@@ -720,6 +806,11 @@ explicitamente.
   que conhece `alternates` mas não encontra o arquivo/propriedade trata a
   peça como "sem páginas alternativas" — mostra sempre a página normal de
   destino num salto, o comportamento de antes da fase P (E03).
+- Um leitor que não conhece `midi` (versões anteriores a G01) o ignora: é
+  uma propriedade/arquivo aditivo a mais, como `meta`/`alternates`. Um leitor
+  que conhece `midi` mas não encontra o arquivo/propriedade trata a peça como
+  "sem áudio disponível" — o destaque visual (timemap) continua funcionando
+  normalmente, já que os dois arquivos são independentes.
 
 ## Histórico de revisões
 
@@ -738,3 +829,4 @@ explicitamente.
 | 2026-09-22 | P01a (D-META-TITULO, opção (a)): `meta.title` deixa de depender de `--header`. Passa a ser o título que o cabeçalho mostraria com `--header auto` — do `<pgHead func="first">`/`<credit>` codificado se a peça já traz um, senão de um `PgHead` descartável gerado do mesmo jeito que `Doc::GenerateHeader()` faria — calculado mesmo com `--header none`. Motivo: P01b torna `--header none` o padrão do `.vsb` (D-VSB-PADRAO), e o host precisa do título mesmo sem cabeçalho desenhado. Medido nas 10 peças do corpus: `title` passa a ser igual com `none`, `auto` e `encoded` (30/30; antes, `encoded` saía sem título nas 5 peças MEI, que não têm `<pgHead>` codificado). `creators` não muda (já independia de `--header`). `scene.json`, `glyphs.json` e `-t svg` byte-idênticos nos 3 valores de `--header` (o desenho não muda). |
 | 2026-09-22 | P02a (D-ALT/D-ALT-EXTENSAO): `alternates.json` (§2.5, novo) — páginas alternativas do player para saltos de repetição que mudam de página, cada sequência do compasso de chegada até o fim da peça, mesma forma de `scene.pages[i]` e mesmo `glyphs.json`. `files.alternates`/propriedade `alternates` opcionais (§2.1/§2.2), mesma regra de omissão do timemap/`meta`. §5.5 explicita que o índice de elementos é por sequência (não existe índice único do documento, já que ids se repetem entre sequências e páginas normais por construção). §9: aditivo, leitor antigo ignora. Mudança só de documentação e schema (`$defs/alternateSequence`, `$defs/alternatesDocument`, reuso de `$defs/page`) — nenhum código ainda; `docs/formato/exemplo-alternates.json` (novo) é o primeiro documento a validar contra o schema novo. |
 | 2026-09-24 | Modo debug (§2.6, novo): `--vsb-debug` embute `debug-options.json` (`Toolkit::GetOptions()`) e `debug-source.txt` (o documento como `Toolkit::LoadData` o recebeu) no `.vsb`, e a propriedade `debug` no JSON único, para reproduzir um render só a partir do pacote (uso: `compare/scripts/compare-page.sh` com um `.vsb` em vez da partitura + flags originais). Nova flag `--options-file` no `verovio` (`tools/main.cpp`) aplica esse JSON via `Toolkit::SetOptions`. Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.debugOptions`/`.debugSource`, `$defs/debug` no schema. |
+| 2026-09-25 | G01: `midi.json` (§2.7, novo) — o fluxo de eventos (`notes[]`/`pedal[]`) que o exportador MIDI do Verovio emitiria, com o `xml:id` de origem e o tempo já em ms, ligaduras unidas e ornamentos expandidos como no `.mid`. Gravado por um "gravador" opcional em `GenerateMIDIFunctor` (`SetEventLog`, `nullptr` por padrão — zero mudança no `.mid`/`.vsb` existentes), repassado por `Doc::ExportMIDI(midiFile, eventLog = nullptr)`, serializado por `BridgeWriter::WriteMidi` (conversão semínima→ms pelos pontos de andamento em `MIDIEventLog::tempos`) e integrado nos dois caminhos de exportação do bridge (`Toolkit::RenderMidiEventLog`, chamado por `RenderToBridgeJson`/`RenderToBridgeFile`). Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.midi`, propriedade `midi` no JSON único, `$defs/midiDocument` no schema. |

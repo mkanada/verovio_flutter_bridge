@@ -8,7 +8,8 @@
     { "$ref": "#/$defs/manifestDocument" },
     { "$ref": "#/$defs/timemapDocument" },
     { "$ref": "#/$defs/metaDocument" },
-    { "$ref": "#/$defs/alternatesDocument" }
+    { "$ref": "#/$defs/alternatesDocument" },
+    { "$ref": "#/$defs/midiDocument" }
   ],
   "$defs": {
     "number": {
@@ -291,6 +292,7 @@
             "timemap": { "const": "timemap.json" },
             "meta": { "const": "meta.json" },
             "alternates": { "const": "alternates.json" },
+            "midi": { "const": "midi.json" },
             "debugOptions": { "const": "debug-options.json" },
             "debugSource": { "const": "debug-source.txt" }
           },
@@ -483,6 +485,54 @@
       },
       "additionalProperties": false
     },
+    "midiNote": {
+      "type": "object",
+      "required": ["id", "on", "off", "p", "s", "l", "v"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "on": { "$ref": "#/$defs/number" },
+        "off": { "$ref": "#/$defs/number" },
+        "p": { "type": "integer", "minimum": 0, "maximum": 127 },
+        "s": { "type": "integer", "minimum": 1 },
+        "l": { "type": "integer", "minimum": 1 },
+        "c": { "type": "integer", "minimum": 0, "maximum": 15 },
+        "pg": { "type": "integer", "minimum": 0, "maximum": 127 },
+        "v": { "type": "integer", "minimum": 1, "maximum": 127 },
+        "tied": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "orn": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "midiPedalEvent": {
+      "type": "object",
+      "required": ["id", "t", "dir", "s"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "t": { "$ref": "#/$defs/number" },
+        "dir": { "enum": ["down", "up"] },
+        "s": { "type": "integer", "minimum": 1 },
+        "c": { "type": "integer", "minimum": 0, "maximum": 15 }
+      },
+      "additionalProperties": false
+    },
+    "midiDocument": {
+      "type": "object",
+      "required": ["notes", "pedal"],
+      "properties": {
+        "notes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/midiNote" }
+        },
+        "pedal": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/midiPedalEvent" }
+        }
+      },
+      "additionalProperties": false
+    },
     "debug": {
       "type": "object",
       "required": ["options", "source"],
@@ -502,6 +552,7 @@
         "timemap": { "$ref": "#/$defs/timemapDocument" },
         "meta": { "$ref": "#/$defs/metaDocument" },
         "alternates": { "$ref": "#/$defs/alternatesDocument" },
+        "midi": { "$ref": "#/$defs/midiDocument" },
         "debug": { "$ref": "#/$defs/debug" }
       },
       "additionalProperties": false

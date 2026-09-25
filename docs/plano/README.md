@@ -299,6 +299,7 @@ Os saltos em negrito cujo destino **não** é o 1º compasso de página normal
 | D-ALT, D-ALT-INDICE, D-ALT-EXTENSAO, D-VSB-PADRAO, D-ALT-MECANISMO | Páginas alternativas do player nas repetições (fase P) | P01-P05 | Resolvidas pelo usuário (2026-09-22) — ver [`P00`](P00-visao-geral-paginas-alternativas.md): o `.vsb` carrega páginas normais + sequências alternativas (via `Toolkit::Select`), cada uma do compasso de chegada até o fim da peça; indexação do usuário inalterada, alternativas só no player; `.vsb` por padrão com `--header none --footer none --no-instrument-labels`. Fase P inteira fechada em P05 (2026-09-22): paridade das alternativas idêntica às normais (34/34 e 18/18 páginas ≥ 99,99%), custo de tamanho/tempo medido em [`relatorio-paginas-alternativas.md`](../relatorio-paginas-alternativas.md) (zero em 6/10 peças do corpus, até +330% no pior caso, 8 sequências) |
 | D-META-TITULO | Com `--header none` por padrão, de onde vem `meta.title`? | P01a | Resolvida (2026-09-22, usuário): **(a)** o título que o cabeçalho `auto` mostraria (ou o codificado), sem desenhar; implementada em `Toolkit::ReadBridgeMeta` |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
+| D-RELOGIO | `midi.json` (fiel ao `.mid`) e `timemap.json` divergiam no Chopin Étude (144 bpm × 128 bpm — dois andamentos conflitantes na fonte, `Doc::ExportMIDI` reservava o tick 0 pro `scoreDef.midi.bpm` antes do `<tempo>` do compasso 1 ser lido, então o `.mid` real nunca ganhava o evento de 128) | G01 | Resolvida pelo usuário (2026-09-25): **corrigir no fork**. `Doc::ExportMIDI` (`doc.cpp`) passa a usar o andamento já calculado do 1º compasso (`CalculateTimemap`) em vez do valor do `scoreDef` puro, quando os dois existem — corrige o conflito (Chopin Étude: 2451 divergências → 0) sem mudar nada nas peças sem conflito. Afeta o `.mid` puro também (`-t midi`), não só o `.vsb` — mudança de comportamento em `Toolkit`/`Doc::ExportMIDI`, fora do bridge |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
 no [`CLAUDE.md`](../../CLAUDE.md).
@@ -407,7 +408,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P04b](P04b-player-com-alternativas.md) | Dart: `ScorePlayer` segue a rota | P04a | — | concluído |
 | [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | concluído |
 | [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | concluído |
-| [G01](G01-gravador-de-notas-midi.md) | `midi.json` no `.vsb`: eventos do exportador MIDI (notas + pedal) com `xml:id` | — | D-RELOGIO (só se os relógios divergirem) | pendente |
+| [G01](G01-gravador-de-notas-midi.md) | `midi.json` no `.vsb`: eventos do exportador MIDI (notas + pedal) com `xml:id` | — | D-RELOGIO resolvida | concluído |
 | [G02](G02-notas-no-score-bridge.md) | `score_bridge`: modelo e parser de `midi.json` | G01 | — | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):

@@ -919,6 +919,17 @@ private:
     BridgeMeta ReadBridgeMeta();
 
     /**
+     * The events GenerateMIDIFunctor would emit to a .mid, with their originating xml:id (G01,
+     * docs/plano/G01-gravador-de-notas-midi.md §2.7) - `manifest.files.midi`/`midi.json`. Mirrors
+     * what RenderToMIDI() itself does (SetMidiDoc() + ExportMIDI into a throwaway smf::MidiFile),
+     * with the event log attached; the caller checks `.events.empty()` to decide whether to write
+     * "midi" at all - a piece with no notes at all is the only case that omits it (unlike
+     * timemap/meta/alternates, this is never skipped for a reason specific to notes/pedal, since a
+     * MIDIEventLog is cheap to build and its own emptiness already signals "nothing to write").
+     */
+    MIDIEventLog RenderMidiEventLog();
+
+    /**
      * Measure id -> 0-based position in document order (`m_doc.FindAllDescendantsByType(MEASURE,
      * false)`'s own order), one of the three inputs BridgeAlternates::FindAlternateStarts needs
      * (P02b).

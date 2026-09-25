@@ -442,7 +442,7 @@ void Doc::CalculateTimemap()
     m_timemapTempo = m_options->m_midiTempoAdjustment.GetValue();
 }
 
-void Doc::ExportMIDI(smf::MidiFile *midiFile)
+void Doc::ExportMIDI(smf::MidiFile *midiFile, MIDIEventLog *eventLog)
 {
     midiFile->absoluteTicks();
 
@@ -460,15 +460,32 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
     // set MIDI tempo
     ScoreDef *scoreDef = this->GetFirstVisibleScore()->GetScoreDef();
     assert(scoreDef);
-    if (scoreDef->HasMidiBpm()) {
-        tempo = scoreDef->GetMidiBpm();
+    if (scoreDef->HasMidiBpm() || scoreDef->HasMm()) {
+        tempo = scoreDef->HasMidiBpm() ? scoreDef->GetMidiBpm() : Tempo::CalcTempo(scoreDef);
+
+        // D-RELOGIO fix (docs/plano/G01-gravador-de-notas-midi.md): CalculateTimemap() has already
+        // run (above) and cached the first measure's own effective tempo on it, which - unlike the
+        // scoreDef-level default alone - already accounts for a <tempo> mark at/before the very
+        // start of the piece (InitMaxMeasureDurationFunctor::VisitTempo/VisitMeasureEnd, run as
+        // part of that same timemap calculation). Without this, a piece with both
+        // @midi.bpm/@mm *and* such an immediate <tempo> override permanently lost the override:
+        // this tick-0 event claims the tick, and GenerateMIDIFunctor::VisitMeasure's own attempt to
+        // (re)write tick 0 for measure 1, later in the per-staff loop below, always finds it
+        // already taken - so the .mid played at the scoreDef's tempo from the very start, silently
+        // ignoring a different tempo the score itself writes on beat 1 (found on the Chopin Étude
+        // of the corpus: @midi.bpm="144" vs a first-measure <tempo mm="96" mm.dots="1"> = 128bpm).
+        const Measure *firstMeasure = vrv_cast<const Measure *>(this->FindDescendantByType(MEASURE));
+        if (firstMeasure) tempo = firstMeasure->GetCurrentTempo();
+
         tempoEventTicks.insert(0);
         midiFile->addTempo(0, 0, tempo);
     }
-    else if (scoreDef->HasMm()) {
-        tempo = Tempo::CalcTempo(scoreDef);
-        tempoEventTicks.insert(0);
-        midiFile->addTempo(0, 0, tempo);
+
+    // G01: seed the initial tempo breakpoint (quarter time 0) regardless of whether the .mid gets
+    // an explicit event for it - the default MIDI_TEMPO governs playback from the start either way,
+    // and BridgeWriter::WriteMidi's quarter-note-to-ms conversion needs a q=0 anchor.
+    if (eventLog) {
+        eventLog->tempos.push_back({ 0.0, tempo });
     }
 
     // set MIDI tuning
@@ -620,6 +637,7 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
             generateMIDI.SetControlEvents(controlEvents);
             generateMIDI.SetInstrDef(instrDef);
             generateMIDI.SetCustomTuning(&scoreDef->GetCustomTuning());
+            generateMIDI.SetEventLog(eventLog);
 
             // LogDebug("Exporting track %d ----------------", midiTrack);
             this->Process(generateMIDI);

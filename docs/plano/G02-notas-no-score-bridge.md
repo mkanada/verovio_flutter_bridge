@@ -1,4 +1,4 @@
-# G02 — `score_bridge`: modelo e parser de `notes.json`
+# G02 — `score_bridge`: modelo e parser de `midi.json`
 
 **Depende de:** G01 · **Decisão necessária:** não
 
@@ -9,10 +9,14 @@
 > `score_bridge/` é um pacote **deste** repo, não do zywny (o zywny só o usa
 > por `path:` no `pubspec.yaml`).
 
+> **Revisão de 2026-09-25**: G01 passou de `notes.json` (atributos por nota)
+> para `midi.json` (fluxo de eventos do exportador MIDI, em ms, com ligaduras
+> unidas, ornamentos expandidos e pedal). Este passo acompanha.
+
 ## Objetivo
 
-`VsbDocument.notes`: mapa `id (expandido) → NoteInfo`, lido de `notes.json`
-quando o pacote o traz. Fixtures regeneradas.
+`VsbDocument.midi`: as notas e pedais de `midi.json`, com índice por id
+(expandido), lidos quando o pacote traz o arquivo. Fixtures regeneradas.
 
 ## Ler antes (só isto)
 
@@ -32,28 +36,35 @@ quando o pacote o traz. Fixtures regeneradas.
   erros de formato apontando o caminho JSON. Copie o de `meta` ou de
   `alternates` (P03a), que são os dois mais recentes.
 - `alternates` é **preguiçoso** (`late final` + loader) porque custava 4,6×
-  o parse. `notes` é pequeno (uma linha por nota: ~10 mil no corpus
-  inteiro) — leia direto, mas **meça** o tempo de parse com
-  `score_bridge/tool/measure_parse_time.dart` (roda com `flutter test`, não
-  `dart run`) antes e depois e registre.
+  o parse. `midi` é pequeno (uma entrada por nota tocada: ~10 mil no
+  corpus inteiro, mais as notas de ornamento) — leia direto, mas **meça** o
+  tempo de parse com `score_bridge/tool/measure_parse_time.dart` (roda com
+  `flutter test`, não `dart run`) antes e depois e registre.
 - Modelo sugerido (imutável, como o resto do `model.dart`):
 
   ```dart
-  enum TieRole { none, start, continuation }   // start opcional: ver G01
-  class NoteInfo {
-    final String id;          // id expandido, igual ao timemap
+  class MidiNote {
+    final String id;          // id expandido, igual ao timemap (cabeça da ligadura)
+    final double onMs, offMs; // mesmo relógio do timemap; off = fim da cadeia ligada
     final int pitch;          // MIDI 0-127, já com 8va/transposição
     final int staff;          // n da pauta (1 = de cima; piano: 1 = MD, 2 = ME)
     final int layer;
     final int channel;        // 0-15
     final int program;        // 0-127 (GM)
     final int velocity;       // 1-127
-    final TieRole tie;
-    final String? tieHead;    // id da 1ª nota da cadeia, se continuation
-    final bool ornament;      // trinado/tremolo expandido no MIDI
+    final List<String> tied;  // ids de continuação da ligadura, na ordem
+    final bool ornament;      // nota de sequência expandida (trinado/tremolo)
+  }
+  enum PedalDir { down, up }
+  class MidiPedal { final String id; final double timeMs; final PedalDir dir;
+                    final int staff, channel; }
+  class VsbMidi {
+    final List<MidiNote> notes;          // ordenado por onMs
+    final List<MidiPedal> pedal;         // ordenado por timeMs
+    List<MidiNote> notesOf(String id);   // cabeça, continuação (via tied) ou ornamento
   }
   // VsbDocument:
-  final Map<String, NoteInfo> notes;   // vazio quando não há notes.json
+  final VsbMidi? midi;   // null quando não há midi.json
   ```
 - Fixtures em `score_bridge/test/fixtures/` (`erik-satie.vsb`,
   `maple-leaf-rag.vsb`, `mazurka.vsb` e as de `repeticoes/`): regenere com o
@@ -63,17 +74,19 @@ quando o pacote o traz. Fixtures regeneradas.
 
 ## O que fazer
 
-1. `NoteInfo`, `TieRole`, `VsbDocument.notes`, parser (zip e JSON único),
-   exports.
+1. `MidiNote`, `MidiPedal`, `VsbMidi`, `VsbDocument.midi`, parser (zip e
+   JSON único), exports.
 2. Regenerar fixtures.
-3. Testes: parse de fixture; nota ligada; id `-rend2`; pacote sem
-   `notes.json` → mapa vazio sem erro; `notes.json` malformado → erro com
-   caminho.
+3. Testes: parse de fixture; nota ligada (`notesOf` de um id de
+   continuação devolve a cabeça); ornamento (várias entradas no mesmo id);
+   pedal; id `-rend2`; pacote sem `midi.json` → `midi == null` sem erro;
+   `midi.json` malformado → erro com caminho.
 
 ## Fora de escopo
 
-- Juntar com o timemap em eventos tocáveis: fica no zywny (`N03`,
-  `PerformanceTrack`), fora deste repo.
+- Tocar, agendar eventos ou avaliar o aluno: fica no zywny (`N03`,
+  `PerformanceTrack`), fora deste repo. Com `midi.json` o zywny não precisa
+  mais juntar ligaduras nem expandir ornamentos — só agendar os eventos.
 - Refazer a `libverovio.so`/rodar o app do zywny: item próprio do plano do
   host (`N02` de lá, depois deste passo concluído).
 
@@ -81,7 +94,7 @@ quando o pacote o traz. Fixtures regeneradas.
 
 1. `cd score_bridge && flutter test` verde, com os testes novos.
 2. Para cada fixture com timemap: todo id de nota em `timemap[].on` tem
-   `NoteInfo` (mesma regra de exceções de G01).
+   `notesOf(id)` não-vazio (mesma regra de exceções de G01).
 3. Tempo de parse antes/depois registrado (mesma peça, mesma máquina).
 
 ## Notas de execução

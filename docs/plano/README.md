@@ -409,7 +409,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P04c](P04c-evidencias.md) | Evidências visuais das páginas alternativas | P04b | — | concluído |
 | [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | concluído |
 | [G01](G01-gravador-de-notas-midi.md) | `midi.json` no `.vsb`: eventos do exportador MIDI (notas + pedal) com `xml:id` | — | D-RELOGIO resolvida | concluído |
-| [G02](G02-notas-no-score-bridge.md) | `score_bridge`: modelo e parser de `midi.json` | G01 | — | pendente |
+| [G02](G02-notas-no-score-bridge.md) | `score_bridge`: modelo e parser de `midi.json` | G01 | — | concluído |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 

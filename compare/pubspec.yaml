@@ -11,8 +11,9 @@ dependencies:
     sdk: flutter
   image: ^4.5.4
   args: ^2.7.0
+  # score_bridge mudou pro zywny (git subtree, histórico preservado).
   score_bridge:
-    path: ../score_bridge
+    path: /home/mauricio/IdeaProjects/zywny/score_bridge
 
 dev_dependencies:
   flutter_test:

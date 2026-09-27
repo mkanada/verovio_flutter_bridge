@@ -174,8 +174,8 @@ packages:
   score_bridge:
     dependency: "direct main"
     description:
-      path: "../score_bridge"
-      relative: true
+      path: "/home/mauricio/IdeaProjects/zywny/score_bridge"
+      relative: false
     source: path
     version: "0.0.1"
   sky_engine:

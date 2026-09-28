@@ -31,6 +31,8 @@ _vrvToolkit_loadZipDataBuffer
 _vrvToolkit_redoLayout
 _vrvToolkit_redoPagePitchPosLayout
 _vrvToolkit_renderData
+_vrvToolkit_renderToBridgeFile
+_vrvToolkit_renderToBridgeJson
 _vrvToolkit_renderToExpansionMap
 _vrvToolkit_renderToMIDI
 _vrvToolkit_renderToPAE

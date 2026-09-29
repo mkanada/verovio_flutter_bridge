@@ -300,6 +300,7 @@ Os saltos em negrito cujo destino **não** é o 1º compasso de página normal
 | D-META-TITULO | Com `--header none` por padrão, de onde vem `meta.title`? | P01a | Resolvida (2026-09-22, usuário): **(a)** o título que o cabeçalho `auto` mostraria (ou o codificado), sem desenhar; implementada em `Toolkit::ReadBridgeMeta` |
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
 | D-RELOGIO | `midi.json` (fiel ao `.mid`) e `timemap.json` divergiam no Chopin Étude (144 bpm × 128 bpm — dois andamentos conflitantes na fonte, `Doc::ExportMIDI` reservava o tick 0 pro `scoreDef.midi.bpm` antes do `<tempo>` do compasso 1 ser lido, então o `.mid` real nunca ganhava o evento de 128) | G01 | Resolvida pelo usuário (2026-09-25): **corrigir no fork**. `Doc::ExportMIDI` (`doc.cpp`) passa a usar o andamento já calculado do 1º compasso (`CalculateTimemap`) em vez do valor do `scoreDef` puro, quando os dois existem — corrige o conflito (Chopin Étude: 2451 divergências → 0) sem mudar nada nas peças sem conflito. Afeta o `.mid` puro também (`-t midi`), não só o `.vsb` — mudança de comportamento em `Toolkit`/`Doc::ExportMIDI`, fora do bridge |
+| D-FANT-* | Nota fantasma: onde calcular, pauta, grafia, acidente, colisão, alcance, cabeça, duração, acordes, pausas | G04a-G05 | Resolvidas pelo usuário (2026-09-29) — ver [`G03`](G03-visao-geral-nota-fantasma.md): regras no `.vsb` + fórmula no host; pauta da nota esperada; grafia pela armadura (sem armadura: ♯ subindo, ♭ descendo); acidente só quando necessário; colisão desloca para o lado; > 4 linhas suplementares → 8va/15ma; cabeça sempre preta; visível enquanto a tecla está pressionada; uma fantasma por tecla; pausa usa a coluna da pausa, com `includeRests` no timemap |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
 no [`CLAUDE.md`](../../CLAUDE.md).
@@ -410,6 +411,12 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [P05](P05-portao-das-paginas-alternativas.md) | Portão da fase P: páginas alternativas de ponta a ponta | P02d, P04c | — | concluído |
 | [G01](G01-gravador-de-notas-midi.md) | `midi.json` no `.vsb`: eventos do exportador MIDI (notas + pedal) com `xml:id` | — | D-RELOGIO resolvida | concluído |
 | [G02](G02-notas-no-score-bridge.md) | `score_bridge`: modelo e parser de `midi.json` | G01 | — | concluído |
+| [G03](G03-visao-geral-nota-fantasma.md) | **Visão geral da nota fantasma** (leitura obrigatória, não executável) | — | — | — |
+| [G04a](G04a-especificacao-pitchpos.md) | Especificação: `pitchpos.json`, pauta na cena, fórmula da fantasma (§10) | — | D-FANT-* resolvidas | pendente |
+| [G04b](G04b-pauta-na-cena.md) | C++: geometria da pauta na cena e glifos reservados | G04a | — | pendente |
+| [G04c](G04c-contexto-por-evento.md) | C++: `pitchpos.json` e pausas no timemap | G04a | D-FANT-PAUSA-TEMPO resolvida | pendente |
+| [G04d](G04d-oraculo-e-vetores.md) | Referência da fórmula, oráculo Verovio e vetores de teste | G04b, G04c | — | pendente |
+| [G05](G05-nota-para-zywny-fantasma.md) | Nota para o `zywny` (execução Dart fica lá) | G04d | — | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -431,7 +438,16 @@ R02a → R02b → R02c → R02d → R03a → R03b → R03c
 
         G01 → G02                                 (fase G: notas MIDI para tocar,
                                                     independente das demais)
+        G04a → G04b ─┐                            (nota fantasma; leia G03 antes
+             → G04c ─┴→ G04d → G05                 de qualquer G04*/G05)
 ```
+
+A nota fantasma (G03-G05) mostra uma tecla errada do aluno como uma cabeça
+de nota de outra cor **na pauta**: na altura da tecla tocada, na coluna da
+nota esperada. O exportador grava o contexto de notação de cada nota/pausa
+(`pitchpos.json`) e a geometria da pauta na cena; o host aplica uma fórmula
+normativa (§10 da spec). Visão geral e decisões em
+[`G03`](G03-visao-geral-nota-fantasma.md).
 
 A fase G grava, num `midi.json` opcional do `.vsb` (G01, C++), os eventos
 que o exportador MIDI do Verovio emite — notas (pitch já com

@@ -140,6 +140,17 @@ Trate como fixas — não reabra sem confirmar com o usuário:
     peças sem repetição "de verdade", e de +15% a +330% de tamanho/tempo
     nas que têm, proporcional ao número de sequências — números completos
     em `docs/relatorio-paginas-alternativas.md`. D-BIN continua em aberto.
+- **Nota fantasma (feedback de tecla errada), dez decisões em 2026-09-29** —
+  visão geral e regras em `docs/plano/G03-visao-geral-nota-fantasma.md`:
+  o `.vsb` carrega o **contexto de notação** de cada nota/pausa
+  (`pitchpos.json`: clave, 8va/transposição, armadura, acidentes em vigor)
+  e a **geometria da pauta** no nó `staff` da cena; o host aplica a fórmula
+  normativa da spec (nunca uma tabela de posições prontas, nunca deduzir
+  clave pelo desenho). Fantasma na pauta da nota esperada, grafia pela
+  armadura, acidente só quando necessário, colisão desloca para o lado,
+  mais de 4 linhas suplementares vira 8va/15ma, cabeça sempre preta, uma
+  por tecla, pausas pela coluna da pausa (`includeRests` no timemap
+  embutido).
 
 ## Convenções de trabalho
 

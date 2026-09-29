@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="4.0.1">
+  <meiHead>
+    <fileDesc>
+      <titleStmt>
+        <title>f06 mudanca de armadura no meio do sistema</title>
+      </titleStmt>
+      <pubStmt/>
+    </fileDesc>
+  </meiHead>
+  <music>
+    <body>
+      <mdiv>
+        <score>
+          <scoreDef meter.count="4" meter.unit="4" key.sig="0">
+            <staffGrp>
+              <staffDef n="1" lines="5" clef.shape="G" clef.line="2"/>
+            </staffGrp>
+          </scoreDef>
+          <section>
+            <measure n="1" xml:id="f-m1">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f06-a" pname="f" oct="4" dur="4"/>
+                  <note xml:id="f06-b" pname="g" oct="4" dur="4"/>
+                  <note xml:id="f06-c" pname="a" oct="4" dur="4"/>
+                  <note xml:id="f06-d" pname="b" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="2" xml:id="f-m2">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f06-e" pname="f" oct="4" dur="4"/>
+                  <note xml:id="f06-f" pname="g" oct="4" dur="4"/>
+                  <note xml:id="f06-g" pname="a" oct="4" dur="4"/>
+                  <note xml:id="f06-h" pname="b" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <scoreDef key.sig="3s"/>
+            <measure n="3" xml:id="f-m3">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f06-i" pname="f" oct="4" dur="4" accid.ges="s"/>
+                  <note xml:id="f06-j" pname="g" oct="4" dur="4" accid.ges="s"/>
+                  <note xml:id="f06-k" pname="a" oct="4" dur="4"/>
+                  <note xml:id="f06-l" pname="b" oct="4" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="4" xml:id="f-m4">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f06-m" pname="c" oct="5" dur="4" accid.ges="s"/>
+                  <note xml:id="f06-n" pname="d" oct="5" dur="4"/>
+                  <note xml:id="f06-o" pname="e" oct="5" dur="4"/>
+                  <note xml:id="f06-p" pname="f" oct="5" dur="4" accid.ges="s"/>
+                </layer>
+              </staff>
+            </measure>
+            <scoreDef key.sig="3f"/>
+            <measure n="5" xml:id="f-m5">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f06-q" pname="e" oct="4" dur="4" accid.ges="f"/>
+                  <note xml:id="f06-r" pname="a" oct="4" dur="4" accid.ges="f"/>
+                  <note xml:id="f06-s" pname="b" oct="4" dur="4" accid.ges="f"/>
+                  <note xml:id="f06-t" pname="c" oct="5" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+          </section>
+        </score>
+      </mdiv>
+    </body>
+  </music>
+</mei>

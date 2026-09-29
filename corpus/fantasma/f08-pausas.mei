@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="4.0.1">
+  <meiHead>
+    <fileDesc>
+      <titleStmt>
+        <title>f08 pausas e mRest</title>
+      </titleStmt>
+      <pubStmt/>
+    </fileDesc>
+  </meiHead>
+  <music>
+    <body>
+      <mdiv>
+        <score>
+          <scoreDef meter.count="4" meter.unit="4" key.sig="0">
+            <staffGrp symbol="brace" bar.thru="true">
+              <staffDef n="1" lines="5" clef.shape="G" clef.line="2"/>
+              <staffDef n="2" lines="5" clef.shape="F" clef.line="4"/>
+            </staffGrp>
+          </scoreDef>
+          <section>
+            <measure n="1" xml:id="f-m1">
+              <staff n="1">
+                <layer n="1">
+                  <rest xml:id="f08-r1" dur="2"/>
+                  <note xml:id="f08-a" pname="e" oct="5" dur="2"/>
+                </layer>
+              </staff>
+              <staff n="2">
+                <layer n="1">
+                  <note xml:id="f08-b" pname="c" oct="3" dur="2"/>
+                  <rest xml:id="f08-r2" dur="2"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="2" xml:id="f-m2">
+              <staff n="1">
+                <layer n="1">
+                  <mRest xml:id="f08-mr1"/>
+                </layer>
+              </staff>
+              <staff n="2">
+                <layer n="1">
+                  <mRest xml:id="f08-mr2"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="3" xml:id="f-m3">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f08-c" pname="g" oct="4" dur="1"/>
+                </layer>
+              </staff>
+              <staff n="2">
+                <layer n="1">
+                  <mRest xml:id="f08-mr3"/>
+                </layer>
+              </staff>
+            </measure>
+          </section>
+        </score>
+      </mdiv>
+    </body>
+  </music>
+</mei>

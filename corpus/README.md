@@ -49,3 +49,26 @@ verovio/tools/verovio -f mei -t svg corpus/mei/Chopin_Etude_Op10_No9.mei \
 
 Para MusicXML, use `-f musicxml` (ou deixe o Verovio detectar automaticamente
 pela extensão).
+
+## `fantasma/` — partituras mínimas da nota fantasma (G04c)
+
+Oito partituras MEI escritas à mão para este projeto (sem restrição de licença),
+cada uma exercitando um caso que o corpus real não cobre, para `pitchpos.json`
+(§2.8) e para a nota fantasma (§10). `esperado.json` traz, por id, os campos de
+`pitchpos.json` que o teste confere — valores escritos pela teoria musical, não
+copiados da saída do exportador (`compare/scripts/g04c-fantasma-check.py`).
+
+| Arquivo | Caso |
+| --- | --- |
+| `f01-clave-no-meio.mei` | clave de Sol → clave de Fá no meio do compasso |
+| `f02-oitavas.mei` | 8va e 8vb (`<octave>`) |
+| `f03-transpositor.mei` | clarinete em Si♭ (`trans.semi="-2"`), armadura de ré maior escrita |
+| `f04-cross-staff.mei` | notas da mão esquerda escritas na pauta de cima e vice-versa (`@staff`) |
+| `f05-armadura-nao-padrao.mei` | `<keySig>` com `<keyAccid>` (só fá♯ e si♭) |
+| `f06-mudanca-armadura.mei` | dó → 3♯ (compasso 3) → 3♭ (compasso 5) no meio do sistema |
+| `f07-acidentes.mei` | ♯, ♮ e ♯♯ escritos numa camada e lidos noutra da mesma pauta; acidente em vigor no compasso seguinte |
+| `f08-pausas.mei` | `rest` e `mRest` em duas pautas |
+
+Nas fixtures que dependem da armadura no som, as notas alteradas trazem
+`accid.ges` (o Verovio não aplica a armadura ao MIDI; os importadores fazem isso
+gravando `accid.ges`).

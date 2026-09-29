@@ -115,6 +115,17 @@ struct BridgeNode {
     Point rotationOrigin;
     bool hasBBox = false;
     double bbox[4] = { 0, 0, 0, 0 }; // x0, y0, x1, y1 in viewBox units
+    // §5.1 (G04b): only on `staff` nodes, geometry the ghost note (§10) computes with. All in viewBox
+    // units, same frame as `bbox`.
+    bool hasLines = false;
+    double lines[3] = { 0, 0, 0 }; // y of the top line, half-space (`unit`), number of lines
+    bool hasLedger = false;
+    double ledger[2] = { 0, 0 }; // ledger line thickness, extension beyond the head (normal size)
+    bool hasLedgerCue = false;
+    double ledgerCue[2] = { 0, 0 }; // same for cue/grace size; only when different from `ledger`
+    bool hasGlyphScale = false;
+    double glyphScale[2] = { 0, 0 }; // sx, sy of a normal-size glyph in this staff
+    std::string staffRef; // §5.1 (G04b): notes/chords/rests drawn on another staff (cross-staff)
     std::vector<BridgeChild> children; // document order: later entries paint on top
 };
 

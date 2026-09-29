@@ -776,6 +776,11 @@ FunctorCode GenerateMIDIFunctor::VisitLayerElement(const LayerElement *layerElem
 
     this->HandleOctave(layerElement);
 
+    // G04c: rests emit nothing, but the ghost note needs the shift in force at their column too.
+    if (m_eventLog && (layerElement->Is(REST) || layerElement->Is(MREST) || layerElement->Is(MULTIREST))) {
+        m_eventLog->shifts.emplace_back(layerElement->GetID(), m_transSemi + 12 * m_octaveShift);
+    }
+
     // Only resolve simple sameas links to avoid infinite recursion
     const LayerElement *sameas = dynamic_cast<const LayerElement *>(layerElement->GetSameasLink());
     if (sameas && !sameas->HasSameasLink()) {
@@ -816,6 +821,8 @@ FunctorCode GenerateMIDIFunctor::VisitMRpt(const MRpt *mRpt)
 FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
 {
     this->HandleOctave(note);
+
+    if (m_eventLog) m_eventLog->shifts.emplace_back(note->GetID(), m_transSemi + 12 * m_octaveShift);
 
     // Skip linked notes
     if (note->HasSameasLink()) {

@@ -412,11 +412,11 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G01](G01-gravador-de-notas-midi.md) | `midi.json` no `.vsb`: eventos do exportador MIDI (notas + pedal) com `xml:id` | — | D-RELOGIO resolvida | concluído |
 | [G02](G02-notas-no-score-bridge.md) | `score_bridge`: modelo e parser de `midi.json` | G01 | — | concluído |
 | [G03](G03-visao-geral-nota-fantasma.md) | **Visão geral da nota fantasma** (leitura obrigatória, não executável) | — | — | — |
-| [G04a](G04a-especificacao-pitchpos.md) | Especificação: `pitchpos.json`, pauta na cena, fórmula da fantasma (§10) | — | D-FANT-* resolvidas | pendente |
-| [G04b](G04b-pauta-na-cena.md) | C++: geometria da pauta na cena e glifos reservados | G04a | — | pendente |
-| [G04c](G04c-contexto-por-evento.md) | C++: `pitchpos.json` e pausas no timemap | G04a | D-FANT-PAUSA-TEMPO resolvida | pendente |
-| [G04d](G04d-oraculo-e-vetores.md) | Referência da fórmula, oráculo Verovio e vetores de teste | G04b, G04c | — | pendente |
-| [G05](G05-nota-para-zywny-fantasma.md) | Nota para o `zywny` (execução Dart fica lá) | G04d | — | pendente |
+| [G04a](G04a-especificacao-pitchpos.md) | Especificação: `pitchpos.json`, pauta na cena, fórmula da fantasma (§10) | — | D-FANT-* resolvidas | concluído |
+| [G04b](G04b-pauta-na-cena.md) | C++: geometria da pauta na cena e glifos reservados | G04a | — | concluído |
+| [G04c](G04c-contexto-por-evento.md) | C++: `pitchpos.json` e pausas no timemap | G04a | D-FANT-PAUSA-TEMPO resolvida | concluído |
+| [G04d](G04d-oraculo-e-vetores.md) | Referência da fórmula, oráculo Verovio e vetores de teste | G04b, G04c | — | concluído |
+| [G05](G05-nota-para-zywny-fantasma.md) | Nota para o `zywny` (execução Dart fica lá) | G04d | — | concluído |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -447,7 +447,10 @@ de nota de outra cor **na pauta**: na altura da tecla tocada, na coluna da
 nota esperada. O exportador grava o contexto de notação de cada nota/pausa
 (`pitchpos.json`) e a geometria da pauta na cena; o host aplica uma fórmula
 normativa (§10 da spec). Visão geral e decisões em
-[`G03`](G03-visao-geral-nota-fantasma.md).
+[`G03`](G03-visao-geral-nota-fantasma.md). **Concluída neste repositório em
+2026-09-29** (G04a-G05): oráculo Verovio 2 400/2 400, 26 vetores de teste e a
+nota para o host em [`docs/nota-para-zywny-fantasma.md`](../nota-para-zywny-fantasma.md);
+o lado Dart segue no `zywny`.
 
 A fase G grava, num `midi.json` opcional do `.vsb` (G01, C++), os eventos
 que o exportador MIDI do Verovio emite — notas (pitch já com

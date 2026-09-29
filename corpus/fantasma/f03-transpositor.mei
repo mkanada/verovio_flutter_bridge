@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="4.0.1">
+  <meiHead>
+    <fileDesc>
+      <titleStmt>
+        <title>f03 clarinete em Sib</title>
+      </titleStmt>
+      <pubStmt/>
+    </fileDesc>
+  </meiHead>
+  <music>
+    <body>
+      <mdiv>
+        <score>
+          <scoreDef meter.count="4" meter.unit="4" key.sig="2s">
+            <staffGrp>
+              <staffDef n="1" lines="5" clef.shape="G" clef.line="2" trans.semi="-2" trans.diat="-1"/>
+            </staffGrp>
+          </scoreDef>
+          <section>
+            <measure n="1" xml:id="f-m1">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f03-a" pname="d" oct="5" dur="4"/>
+                  <note xml:id="f03-b" pname="f" oct="5" dur="4" accid.ges="s"/>
+                  <note xml:id="f03-c" pname="a" oct="5" dur="4"/>
+                  <note xml:id="f03-d" pname="c" oct="5" dur="4" accid.ges="s"/>
+                </layer>
+              </staff>
+            </measure>
+          </section>
+        </score>
+      </mdiv>
+    </body>
+  </music>
+</mei>

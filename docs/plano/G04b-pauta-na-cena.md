@@ -72,4 +72,45 @@ cross-staff; e fazer o `BridgeWriter` incluir sempre os glifos reservados
 
 ## Notas de execução
 
-_(vazio)_
+Concluído em 2026-09-29. `BridgeNode` ganhou `hasLines/lines`, `hasLedger/ledger`,
+`hasLedgerCue/ledgerCue`, `hasGlyphScale/glyphScale` e `staffRef`;
+`BridgeDeviceContext::AnnotateNodeGeometry` (chamado do fim de `EndGraphic`,
+que já recebe o `View`; só **lê** o `Object`) grava a geometria e
+`BridgeDeviceContext::AddReservedGlyphs` (chamado de
+`Toolkit::RenderPagesToBridge`) põe os 8 glifos no dicionário pelo mesmo caminho
+de `MakeGlyphUse`. Os números são as mesmas expressões de `View::DrawLedgerLines`/
+`Doc::GetDrawingLedgerLineExtension`, com a mesma truncagem para inteiro
+(`ledger` [22, 48] e `ledgerCue` [16, 36] com `unit` 90; tamanho de
+fonte por `Doc::GetDrawingStaffSize`, sem mutar `m_drawingSmuflFont`). `View`,
+`SvgDeviceContext` e `BBoxDeviceContext` intactos.
+
+Critérios (script descartável `compare/scripts/g04b-check.py`, com
+`compare/scripts/g04-gen.sh` para gerar antes/depois com `--xml-id-seed 42` —
+sem semente os ids mudam a cada execução e nada compara):
+
+1. **Paridade inalterada — provada sem o `compare-corpus.sh`**: o ambiente
+   deste passo não tem Flutter, então a varredura de PNG não rodou. No lugar,
+   `scene.json` e `alternates.json` de 23 peças (10 do corpus + 13 de
+   repetições, normais e alternativas), com os campos novos removidos, são
+   **idênticos byte a byte (como JSON) ao baseline**; `manifest`/`timemap`/
+   `meta`/`midi` idênticos; nenhuma linha de `View`/`svg`/`bbox` mudou
+   (`git diff`). Como os campos novos não são pintados, o PNG é o mesmo por
+   construção — mas **rodar `compare-corpus.sh` (e `SWEEP_ALTERNATES=1`) numa
+   máquina com Flutter continua pendente** e é barato.
+2. **2 197 nós `staff`** (normais e alternativos) com `lines`; `topY + k·2·unit`
+   bate com os `n` primeiros filhos `p` em todos (tolerância 0,5): 0 falhas.
+3. **18 008 cabeças** (`u` dentro de `notehead`) satisfazem `y = topY + (2(n−1) −
+   loc)·unit` com `loc` inteiro (tolerância 0,51), na pauta ancestral ou em
+   `staff` (cross-staff): **0 exceções**.
+4. Os 8 glifos reservados estão em todos os `glyphs.json`; os **únicos** glifos
+   acrescentados em relação ao baseline são eles (e os já existentes não mudam).
+5. Tamanho (bytes, antes → depois, `scene.json` / `glyphs.json`): Satie
+   356 285 → 363 284 / 14 089 → 25 564; Nocturne 1 894 893 → 1 907 834 /
+   30 475 → 41 432; Maple Leaf Rag 1 411 622 → 1 424 295 / 14 794 → 26 444;
+   demais no mesmo padrão (cena +0,7% a +2,3%; dicionário +~11 KB, os
+   glifos reservados).
+
+A varredura pegou um erro de método, não de código: `-t vsb` a partir do MEI
+gerado com a mesma `--xml-id-seed` que o `-t mei` gera ids que **colidem**
+com os do MEI (o `Toolkit` recomeça a sequência); o oráculo de G04d usa
+sementes diferentes.

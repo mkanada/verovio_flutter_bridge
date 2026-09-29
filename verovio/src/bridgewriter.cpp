@@ -20,6 +20,7 @@
 
 //----------------------------------------------------------------------------
 
+#include "bridgepitchpos.h"
 #include "csscolor.h"
 #include "midifunctor.h"
 #include "rend.h"
@@ -467,6 +468,23 @@ namespace {
             out += ",\"bbox\":[" + FormatNumber(node.bbox[0]) + "," + FormatNumber(node.bbox[1]) + ","
                 + FormatNumber(node.bbox[2]) + "," + FormatNumber(node.bbox[3]) + "]";
         }
+        if (node.hasLines) {
+            out += ",\"lines\":[" + FormatNumber(node.lines[0]) + "," + FormatNumber(node.lines[1]) + ","
+                + FormatNumber(node.lines[2]) + "]";
+        }
+        if (node.hasLedger) {
+            out += ",\"ledger\":[" + FormatNumber(node.ledger[0]) + "," + FormatNumber(node.ledger[1]) + "]";
+        }
+        if (node.hasLedgerCue) {
+            out += ",\"ledgerCue\":[" + FormatNumber(node.ledgerCue[0]) + "," + FormatNumber(node.ledgerCue[1])
+                + "]";
+        }
+        if (node.hasGlyphScale) {
+            out += ",\"gs\":[" + FormatNumber(node.glyphScale[0]) + "," + FormatNumber(node.glyphScale[1]) + "]";
+        }
+        if (!node.staffRef.empty()) {
+            out += ",\"staff\":\"" + EscapeJsonString(node.staffRef) + "\"";
+        }
         out += ",\"children\":[";
         for (std::size_t i = 0; i < node.children.size(); ++i) {
             if (i) out += ',';
@@ -622,7 +640,7 @@ std::string BridgeWriter::WriteMeta(const BridgeMeta &meta)
 }
 
 std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta,
-    bool hasAlternates, bool hasDebug, bool hasMidi)
+    bool hasAlternates, bool hasDebug, bool hasMidi, bool hasPitchPos)
 {
     std::string out = "{\"format\":\"vsb\",\"version\":1,\"generator\":\"" + EscapeJsonString(generator) + "\"";
     // §2.1: pageCount is scene.pages only - alternates.json's pages are never counted here, even
@@ -640,6 +658,9 @@ std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCo
     }
     if (hasMidi) {
         out += ",\"midi\":\"midi.json\"";
+    }
+    if (hasPitchPos) {
+        out += ",\"pitchpos\":\"pitchpos.json\"";
     }
     if (hasDebug) {
         out += ",\"debugOptions\":\"debug-options.json\",\"debugSource\":\"debug-source.txt\"";
@@ -713,6 +734,62 @@ namespace {
 
 } // namespace
 
+namespace {
+
+    const char *const PITCHPOS_LETTERS = "cdefgab";
+
+    void AppendAlterations(std::string &out, const std::map<std::string, int> &alterations)
+    {
+        out += '{';
+        bool first = true;
+        for (const auto &[name, alteration] : alterations) {
+            if (!first) out += ',';
+            first = false;
+            out += "\"" + name + "\":" + std::to_string(alteration);
+        }
+        out += '}';
+    }
+
+} // namespace
+
+std::string BridgeWriter::WritePitchPos(const BridgePitchPos &pitchPos)
+{
+    std::string out = "{\"events\":{";
+    bool first = true;
+    for (const auto &[id, event] : pitchPos.events) {
+        if (!first) out += ',';
+        first = false;
+        out += "\"" + EscapeJsonString(id) + "\":{\"t\":\"";
+        out += event.isNote ? 'n' : 'r';
+        out += "\",\"co\":" + std::to_string(event.clefLocOffset);
+        if (event.shift != 0) out += ",\"sh\":" + std::to_string(event.shift);
+        if (!event.key.empty()) {
+            // Letters in c..b order (std::map<int, int> already iterates by pname)
+            out += ",\"key\":{";
+            bool firstKey = true;
+            for (const auto &[pname, alteration] : event.key) {
+                if (!firstKey) out += ',';
+                firstKey = false;
+                out += std::string("\"") + PITCHPOS_LETTERS[pname - 1] + "\":" + std::to_string(alteration);
+            }
+            out += '}';
+        }
+        if (!event.acc.empty()) {
+            out += ",\"acc\":";
+            AppendAlterations(out, event.acc);
+        }
+        if (event.isNote) {
+            out += std::string(",\"pn\":\"") + PITCHPOS_LETTERS[event.pname - 1] + "\"";
+            out += ",\"o\":" + std::to_string(event.oct);
+            out += ",\"alt\":" + std::to_string(event.alt);
+            out += ",\"loc\":" + std::to_string(event.loc);
+        }
+        out += '}';
+    }
+    out += "}}";
+    return out;
+}
+
 std::string BridgeWriter::WriteMidi(const MIDIEventLog &log)
 {
     const TempoMap tempoMap(log.tempos);
@@ -780,19 +857,21 @@ std::string BridgeWriter::WriteMidi(const MIDIEventLog &log)
 std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> &pages,
     const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator, const std::string &timemapJson,
     const BridgeMeta &meta, const std::vector<BridgeAlternateSequence> &sequences,
-    const std::string &debugOptionsJson, const std::string &debugSource, const MIDIEventLog *midiLog)
+    const std::string &debugOptionsJson, const std::string &debugSource, const MIDIEventLog *midiLog,
+    const BridgePitchPos *pitchPos)
 {
     const bool hasTimemap = !timemapJson.empty();
     const bool hasMeta = !meta.IsEmpty();
     const bool hasAlternates = !sequences.empty();
     const bool hasMidi = midiLog && !midiLog->events.empty();
+    const bool hasPitchPos = pitchPos && !pitchPos->IsEmpty();
     const bool hasDebug = !debugOptionsJson.empty();
 
     std::string out;
     out.reserve(1 << 20);
     out += "{\"manifest\":";
     out += WriteManifest(
-        generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi);
+        generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi, hasPitchPos);
     out += ",\"glyphs\":";
     out += WriteGlyphs(glyphs);
     out += ",\"scene\":";
@@ -812,6 +891,10 @@ std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> 
     if (hasMidi) {
         out += ",\"midi\":";
         out += WriteMidi(*midiLog);
+    }
+    if (hasPitchPos) {
+        out += ",\"pitchpos\":";
+        out += WritePitchPos(*pitchPos);
     }
     if (hasDebug) {
         out += ",\"debug\":{\"options\":";

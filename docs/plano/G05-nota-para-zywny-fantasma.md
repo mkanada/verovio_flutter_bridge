@@ -58,4 +58,12 @@ vetores de teste e o que conferir no que já existe.
 
 ## Notas de execução
 
-_(vazio)_
+Concluído em 2026-09-29: `docs/nota-para-zywny-fantasma.md` escrito (os 8 itens),
+com os vetores em `docs/formato/fantasma/` (a "cópia dos vetores" do passo já
+mora na pasta do formato, ao lado dos `.vsb` que eles usam). **A execução
+Dart é no `zywny`**, no plano do host; este repositório não tem mais nada a
+fazer nesta fase.
+
+Números úteis para o host (medidos em G04b/G04c): `.vsb` +2,4% a +11,2%
+(mediana ≈ +6,8%), geração no mesmo tempo, `pitchpos.json` 26-199 KB nas
+peças grandes.

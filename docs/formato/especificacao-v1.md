@@ -33,8 +33,8 @@ flags de saída são:
 
 | Formato de saída | Arquivo | Conteúdo |
 | --- | --- | --- |
-| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json`, `meta.json`, `alternates.json` e `midi.json` |
-| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap`, `meta`, `alternates` e `midi` |
+| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json`, `meta.json`, `alternates.json`, `midi.json` e `pitchpos.json` |
+| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap`, `meta`, `alternates`, `midi` e `pitchpos` |
 
 O `timemap.json` é **embutido no pacote** quando o Verovio produz um timemap
 não vazio. Se a peça não produzir timemap, o arquivo e a entrada correspondente
@@ -56,6 +56,12 @@ com o `xml:id` de origem e o tempo em milissegundos. Segue a mesma regra de
 omissão: uma peça sem nenhuma nota tocável não tem o arquivo nem a entrada do
 manifest.
 
+O `pitchpos.json` (§2.8) leva o contexto de notação de cada nota e pausa
+(clave, 8va/transposição, armadura, acidentes em vigor), que o host usa para
+calcular onde uma nota **tocada** ficaria escrita na pauta (a nota fantasma,
+§10). Segue a mesma regra de omissão: uma peça sem nenhuma nota nem pausa não
+tem o arquivo nem a entrada do manifest.
+
 ### 2.1 `manifest.json`
 
 ```json
@@ -69,7 +75,8 @@ manifest.
     "glyphs": "glyphs.json",
     "timemap": "timemap.json",
     "meta": "meta.json",
-    "midi": "midi.json"
+    "midi": "midi.json",
+    "pitchpos": "pitchpos.json"
   }
 }
 ```
@@ -81,9 +88,10 @@ manifest.
 - `pageCount` é o número de páginas em `scene.pages` (as páginas **normais**;
   não conta nenhuma página de `alternates.json`).
 - `files.scene` e `files.glyphs` são obrigatórios. `files.timemap`,
-  `files.meta`, `files.alternates` e `files.midi` existem somente quando o
-  pacote contém `timemap.json`, `meta.json`, `alternates.json` e
-  `midi.json`, respectivamente (§2.4, §2.3, §2.5, §2.7).
+  `files.meta`, `files.alternates`, `files.midi` e `files.pitchpos` existem
+  somente quando o pacote contém `timemap.json`, `meta.json`,
+  `alternates.json`, `midi.json` e `pitchpos.json`, respectivamente (§2.4,
+  §2.3, §2.5, §2.7, §2.8).
 - No JSON único, `manifest.files` mantém os nomes lógicos acima mesmo sem
   arquivos físicos separados.
 
@@ -99,15 +107,17 @@ A raiz de `-t vsb-json` é:
   "timemap": [],
   "meta": { "title": "..." },
   "alternates": { "sequences": [] },
-  "midi": { "notes": [], "pedal": [] }
+  "midi": { "notes": [], "pedal": [] },
+  "pitchpos": { "events": {} }
 }
 ```
 
-`timemap`, `meta`, `alternates` e `midi` são opcionais e seguem exatamente o
-conteúdo de `timemap.json`, `meta.json`, `alternates.json` e `midi.json`. O
-parser deve aceitar tanto a raiz única quanto os documentos individuais
-`scene.json`, `glyphs.json`, `manifest.json`, `timemap.json`, `meta.json`,
-`alternates.json` e `midi.json`.
+`timemap`, `meta`, `alternates`, `midi` e `pitchpos` são opcionais e seguem
+exatamente o conteúdo de `timemap.json`, `meta.json`, `alternates.json`,
+`midi.json` e `pitchpos.json`. O parser deve aceitar tanto a raiz única quanto
+os documentos individuais `scene.json`, `glyphs.json`, `manifest.json`,
+`timemap.json`, `meta.json`, `alternates.json`, `midi.json` e
+`pitchpos.json`.
 
 ### 2.3 `meta.json`
 
@@ -199,9 +209,17 @@ o exportador de timemap.
 Desde 2026-09-21, o timemap é sempre pedido com `includeMeasures: true`
 (`Toolkit::RenderToBridgeFile`), o que preenche `measureOn` com o `xml:id` do
 compasso que começa naquele instante — presente mesmo quando nenhuma nota
-começa exatamente ali (só ligaduras, ou só pausas). `includeRests` e
-`useFractions` continuam desligados (mudariam outras colunas que o
-`score_bridge` já lê).
+começa exatamente ali (só ligaduras, ou só pausas). `useFractions`
+continua desligado (mudaria outras colunas que o `score_bridge` já lê).
+
+Desde G04c (2026-09-29, D-FANT-PAUSA-TEMPO) o timemap também é pedido com
+`includeRests: true`: cada instante ganha, quando há pausas começando/
+terminando nele, as chaves `restsOn`/`restsOff` (arrays de `xml:id` de
+`rest`/`mRest`/`multiRest`, com a mesma regra de ids expandidos `-rend<N>` de `on`/`off`).
+O host precisa delas para saber **quando** uma pausa está ativa (a nota
+fantasma de uma tecla tocada durante uma pausa, §10). Só essas duas chaves
+são novas: os instantes só com pausa já existiam (vazios), e `on`/`off`/
+`tstamp`/`qstamp`/`measureOn`/`tempo` continuam iguais.
 
 **Ids expandidos (`-rend<N>`).** Uma peça com repetição tem, no timemap, ids
 que não existem em `scene.json`: a árvore desenhada é sempre a do documento
@@ -401,6 +419,78 @@ corda, sostenuto — não é distinguido de sustain; `TODO` em
 `GenerateMIDIFunctor::VisitPedal`) e fora de escopo deste passo (dinâmica de
 velocity, pedal de tablatura — não testado no corpus, que é de piano).
 
+### 2.8 `pitchpos.json`
+
+`midi.json` (§2.7) diz "o que soa" — ids expandidos, uma entrada por evento
+MIDI. `pitchpos.json` (G04c, `docs/plano/G04c-contexto-por-evento.md`) diz
+"como está escrito": para cada nota e pausa desenhada, o **contexto de
+notação** de que o host precisa para calcular onde uma tecla qualquer
+ficaria escrita naquele ponto da partitura (a nota fantasma, §10). A
+geometria da pauta (linhas, unidade) **não** está aqui: depende do layout e
+vai no nó `staff` da cena (§5.1), o que faz o mesmo arquivo servir às páginas
+normais e às alternativas (§2.5).
+
+```json
+{
+  "events": {
+    "j97m9qh": { "t": "r", "co": -2, "key": { "c": 1, "f": 1 } },
+    "orw55dt": { "t": "n", "co": -2, "key": { "c": 1, "f": 1 },
+                 "pn": "b", "o": 3, "alt": 0, "loc": -3 },
+    "f02-a": { "t": "n", "co": -2, "sh": 12, "pn": "c", "o": 5, "alt": 0, "loc": 5 },
+    "f07-c": { "t": "n", "co": -2, "key": { "b": -1 }, "acc": { "b4": 0, "f4": 1 },
+               "pn": "f", "o": 4, "alt": 1, "loc": 1 }
+  }
+}
+```
+
+(As duas primeiras entradas são do Satie — pausa e si3 na clave de Sol, armadura de
+ré maior —, `f02-a` de `corpus/fantasma/f02-oitavas.mei`, um dó5 sob 8va, e `f07-c`
+de `f07-acidentes.mei`, um fá#4 depois de um fá# e um si♮ escritos na outra camada.)
+
+- **Chave** = `xml:id` **notado** de nota ou pausa (`rest`, `mRest`). O
+  contexto de notação é o mesmo em todas as passagens de uma repetição; para
+  um id expandido do timemap (`-rend<N>`) o leitor usa `VsbDocument.sceneIdOf`
+  (§2.4).
+- `t` (obrigatório): `"n"` nota, `"r"` pausa.
+- `co` (obrigatório): `clefLocOffset` da clave vigente **naquele ponto, na
+  pauta onde o elemento é desenhado** (cross-staff incluído), o mesmo valor
+  que `PitchInterface::CalcLoc` soma. Ex.: Sol na linha 2 = −2, Fá
+  na linha 4 = 10. O leitor não deduz o valor.
+- `sh` (opcional, padrão `0`): semitons entre som e escrita naquele ponto —
+  transposição de instrumento + 8va/8vb vigentes. É a soma que
+  `Note::GetMIDIPitch(transSemi, octaveShift)` faz: `som = escrita + sh`.
+- `key` (opcional, padrão `{}`): alteração da **armadura vigente naquele
+  ponto**, por letra minúscula (`"c"`…`"b"`, nessa ordem), valores −2…+2; só
+  letras alteradas aparecem. Cobre armaduras não padronizadas e mudanças de
+  armadura (a de um `<keySig>` dentro da camada, senão a da pauta no compasso).
+- `acc` (opcional, padrão `{}`): alteração em vigor por letra+oitava
+  (`"g4"`) **na coluna deste elemento**: acidentes escritos antes dele no
+  mesmo compasso e na mesma pauta (todas as camadas) **mais** os escritos no
+  mesmo instante e pauta (inclusive o do próprio elemento), −2…+2; `0` é um
+  bequadro escrito. "Mesma pauta" é a pauta de desenho (cross-staff conta na
+  pauta em que a nota aparece). Só entram as letras+oitavas cuja alteração
+  **difere da armadura** (`key`); as demais valem a armadura. Todos os
+  elementos do mesmo instante e pauta têm o mesmo `acc`. A regra é a da
+  notação comum: um acidente vale só para a mesma oitava, até a barra.
+- Só nota: `pn` (letra escrita, minúscula), `o` (oitava escrita), `alt`
+  (alteração **sonora**, a que `Note::GetMIDIPitch` aplica: `accid.ges`, senão
+  `accid`, senão 0 — o Verovio não aplica a armadura por conta própria; os
+  importadores gravam `accid.ges` nas notas que a armadura altera), `loc` (o
+  `loc` que o Verovio usou para desenhar a cabeça — cobre notas com `@loc`
+  explícito). Invariante: `midi.p = altura(pn, o, alt) + sh` para toda nota
+  com entrada em `midi.json` (§2.7; ornamentos expandidos à parte).
+- Notas ocultas (`visible="false"`) têm entrada como as demais — o host pode
+  esperá-las —, mas o nó delas na cena é `hidden`. Uma nota sem `@pname`
+  (dado de origem incompleto) não tem entrada.
+- **Som e notação podem divergir na fonte.** `alt` é o que soa; `key`/`acc`
+  são o que a notação escrita diz. Numa fonte fiel os dois concordam
+  (`alt == acc[<letra><o>] ?? key[<letra>] ?? 0` para toda nota sem acidente
+  desenhado); medido em G04d, isso vale para 8 566 de 9 039 notas do corpus, e
+  as 473 restantes são dados de origem em que o som não segue a notação
+  (457 do Étude Op. 10 nº 9, cuja `<scoreDef>` não traz `key.sig`, só
+  `accid.ges`; 16 em quatro peças, acidentes que o importador estende a
+  outras oitavas ou notas sem acidente escrito).
+
 ## 3. Unidades e ajuste de página
 
 Todas as coordenadas de desenho estão em **unidades de viewBox** — exatamente
@@ -471,6 +561,10 @@ arredondamento.
   contornos. Para compará-lo com `paths`, converta para:
   `left = x / 10`, `top = -(y + altura) / 10`, `right = (x + largura) / 10`,
   `bottom = -y / 10`.
+- **Glifos reservados.** O dicionário traz **sempre**, da fonte da peça,
+  `E0A4` (cabeça preta), `E260`/`E261`/`E262` (♭/♮/♯), `E511`/`E512`
+  (8va/8vb) e `E515`/`E516` (15ma/15mb), mesmo sem nenhuma instância `u` —
+  a nota fantasma (§10) desenha só com eles, sem consultar a fonte.
 - `font`, `codepoint`, `unitsPerEm` e `horizAdvX` vêm dos metadados do `Glyph`
   do Verovio e permitem um segundo caminho de render por TTF no futuro. O
   caminho canônico — e o único que precisa bater a paridade — é o dos contornos.
@@ -550,6 +644,21 @@ no mesmo percurso em que monta a árvore (§5.5).
   É emitida para todo nó com `id` e para nós de classe
   `measure`, `staff`, `system` e `page`; é opcional nos demais.
 - `children` — ordem de documento: o último pinta por cima.
+- **Só nó `staff`** (G04b; geometria da pauta para a nota fantasma, §10; todos
+  aditivos, no mesmo referencial que `bbox`):
+  - `lines`: `[topY, unit, n]` — y da linha de cima, meio-espaço (`unit`, a
+    distância entre uma linha e o espaço seguinte; o `loc` sobe 1 por
+    `unit`) e número de linhas. A linha `k` (0 = de cima) está em
+    `topY + 2·k·unit`. Coincide com os `n` primeiros filhos `p` do nó.
+  - `ledger`: `[espessura, extensão]` das linhas suplementares de tamanho
+    normal nessa pauta; `extensão` é quanto a linha ultrapassa a cabeça de
+    cada lado. `ledgerCue`: o mesmo para notas cue/grace, presente só se
+    diferente.
+  - `gs`: `[sx, sy]` de um glifo de tamanho normal nessa pauta (é o que a
+    cabeça preta da fantasma usa quando o alvo é uma pausa; para uma nota,
+    cue/grace incluídos, ela herda a escala da cabeça esperada, §10).
+- **Só nó de nota, acorde e pausa cross-staff:** `staff` = `id` do nó `staff`
+  em que o elemento é desenhado. Ausente = a pauta ancestral na árvore.
 
 ### 5.2 Formas
 
@@ -811,6 +920,152 @@ explicitamente.
   que conhece `midi` mas não encontra o arquivo/propriedade trata a peça como
   "sem áudio disponível" — o destaque visual (timemap) continua funcionando
   normalmente, já que os dois arquivos são independentes.
+- Um leitor que não conhece `pitchpos` (versões anteriores a G04c) o ignora,
+  assim como os campos novos de nó `staff` (`lines`, `ledger`, `ledgerCue`,
+  `gs`) e `staff` (§5.1) e os glifos reservados (§4): tudo aditivo. Um
+  leitor que conhece `pitchpos` mas não encontra o arquivo/propriedade trata
+  a peça como "sem nota fantasma disponível" — nada mais muda.
+
+## 10. Nota fantasma (normativo)
+
+A **nota fantasma** mostra, na pauta, onde uma tecla MIDI qualquer ficaria
+escrita: na **coluna** (x) de um evento esperado, na **altura** (y) da nota
+tocada, na clave e no contexto vigentes ali (G03,
+`docs/plano/G03-visao-geral-nota-fantasma.md`). Tudo o que é musical vem do
+Verovio (`pitchpos.json`, §2.8; nó `staff`, §5.1); o host só faz a conta
+abaixo. A implementação de referência é `compare/scripts/ghost_ref.py` e os
+vetores de teste são `docs/formato/fantasma/vetores.json` (G04d).
+
+**Entradas.** `E`: os ids **notados** das notas/pausas esperadas no instante
+(o host converte os ids expandidos do timemap por `sceneIdOf`, §2.4, e decide
+quais são os esperados — inclusive numa pausa, `restsOn`); `K`: as teclas
+erradas (MIDI 0-127). **Saída:** uma fantasma por tecla de `K`.
+
+**Notação.** Letra `pname` = 1…7 (c, d, e, f, g, a, b); `sem = [0, 2, 4, 5,
+7, 9, 11]` (semitons da letra natural); `alt` ∈ {−1, 0, +1}; altura natural
+`midi(pname, o) = 12·(o + 1) + sem[pname − 1]`; com alteração,
+`midi(pname, o, alt) = midi(pname, o) + alt`. `n`, `topY`, `unit` = de
+`staff.lines`.
+
+**Unidade vertical.** O Verovio posiciona toda nota por um inteiro `loc`
+(0 = linha de baixo, +1 por meio-espaço):
+
+```text
+loc = (o − 4)·7 + (pname − 1) + co            // co = clefLocOffset (§2.8)
+y   = topY + (2·(n − 1) − loc)·unit           // eixo y da cena, para baixo
+```
+
+**Algoritmo**, para cada tecla `k`, nesta ordem:
+
+1. **Alvo (pauta e coluna).** Cada elemento de `E` é candidato, com pauta
+   `S` (o nó de `staff` em `staff`, §5.1, ou o ancestral) e **altura de
+   referência** `ref`: nota → `midi(pn, o, alt) + sh`; pausa → o som da linha
+   do meio da pauta, `midi(pname', o') + sh` da letra natural de
+   `loc = n − 1` (`pos = loc − co + 28`, `o' = ⌊pos / 7⌋`, `pname' = pos mod
+   7 + 1`). O alvo é o candidato com menor `|k − ref|`; empate → o de maior
+   `ref` (o de cima). A fantasma vai na pauta `S` do alvo. Se um instante tem
+   notas e pausas, valem todas como candidatos.
+2. **Altura escrita.** `w = k − sh` (do alvo). `wE` = a altura **escrita**
+   do alvo: `ref − sh` (nota: `midi(pn, o, alt)`; pausa: a natural da linha
+   do meio).
+3. **Grafia.** Se `w == wE` (a tecla é a própria nota esperada — não é uma
+   tecla errada, mas a regra fica total): a grafia do próprio alvo (`pn`,
+   `o`, `alt`; numa pausa não ocorre). Senão, `w mod 12` ∈ {0, 2, 4, 5, 7, 9,
+   11} (tecla branca): a letra natural (`alt = 0`; nunca Mi♯/Dó♭). Senão
+   (tecla preta): sustenido se a
+   armadura do alvo (`key`) tem alguma alteração positiva e nenhuma
+   negativa; bemol se tem alguma negativa e nenhuma positiva; sem armadura
+   (ou mista): sustenido se `w > wE`, bemol se `w < wE`. Sustenido: a letra
+   natural de `w − 1`, `alt = +1`; bemol: a de `w + 1`, `alt = −1`. Saem
+   `pname`, `o` (a oitava da letra natural escolhida) e `alt`.
+4. **`loc`** pela fórmula acima, com o `co` do alvo.
+5. **Alcance.** Linhas suplementares: acima, `⌊(loc − 2·(n − 1)) / 2⌋` se
+   positivo; abaixo, `⌊−loc / 2⌋` se positivo (senão 0). O oráculo (G04d)
+   confere esta contagem **antes** do deslocamento, contra o Verovio; o
+   deslocamento é convenção do plano. Enquanto passar de **4**, e com
+   `m < 2`: `loc −= 7` (acima) ou `loc += 7` (abaixo) e `m += 1`. `m` = 0: sem
+   marcador; 1: 8va (E511, acima) / 8vb (E512, abaixo); 2: 15ma (E515) /
+   15mb (E516). Se ainda passar de 4 com `m = 2` (teclas a mais de duas
+   oitavas além de 4 linhas, ex. lá 0 na clave de Sol), a fantasma fica
+   **presa em 4 linhas** (`loc = 2·(n − 1) + 8` acima, `−8` abaixo) —
+   limitação aceita, a posição deixa de representar a altura.
+6. **Acidente.** Em vigor para a letra+oitava **antes do deslocamento de
+   oitava**: `acc["<letra><o>"]` do alvo se existir, senão `key["<letra>"]`
+   do alvo, senão 0. Se `alt` (passo 3) for diferente, desenha-se o
+   acidente: `alt = +1` E262, `−1` E260, `0` E261 (bequadro).
+7. **Cabeça e x.** Cabeça: glifo E0A4 (preta, sempre), com `sx`/`sy` da
+   cabeça do alvo (a cabeça `u` dentro do nó `notehead` do alvo — cue/grace
+   herdam a escala) ou, se o alvo é uma pausa, `staff.gs`. `x` = `x` dessa
+   cabeça (ou do glifo da pausa). **Colisão:** enquanto o retângulo da
+   fantasma (`[x, x + larg]`, `larg` = largura do contorno de E0A4 × `sx`;
+   `loc`) tem `|loc − loc'| ≤ 1` **e** se sobrepõe horizontalmente a uma
+   cabeça real de nota de `E` **na mesma pauta** (`loc'` = `loc` dessa nota
+   em `pitchpos`, `x'` = `x` da cabeça dela), ou a uma fantasma já posta
+   (mesma pauta, teclas processadas em ordem crescente), faz `x += larg`.
+   Pausas não colidem.
+8. **Peças.** Todas em unidades de viewBox, no referencial de conteúdo
+   (§5.1 `bbox`):
+   - cabeça: `{g: "<fonte>:E0A4", x, y, sx, sy}`;
+   - acidente (se houver): glifo à esquerda da cabeça, na mesma linha de base
+     `y`, com `xAcc = x − 0,5·unit − largura do contorno do acidente × sx`. A
+     folga de `0,5·unit` é a que o Verovio deixa entre um acidente e a cabeça
+     (G04d, mediana de 1 085 acidentes do corpus: 0,4996·unit, a mesma razão
+     com `--unit` 60, 90 e 120);
+   - linhas suplementares (uma por posição, de 1 até a contagem do passo 5,
+     em `loc = 2·(n − 1) + 2j` acima ou `−2j` abaixo, no `loc` **já
+     deslocado**): segmento horizontal em `y` de `x − ext` a `x + larg +
+     ext`, com a espessura e a extensão `ext` de `staff.ledger` (ou
+     `staff.ledgerCue` se a cabeça do alvo tem `sx` menor que `staff.gs[0]`
+     e a pauta traz `ledgerCue`);
+   - marcador de oitava (se `m > 0`): glifo E511/E512/E515/E516 centrado na
+     cabeça (`x + larg/2 − largura do contorno × sx / 2`); linha de base
+     `y_extremo − 3·unit` acima ou `y_extremo + 5·unit` abaixo, com
+     `y_extremo` = y da linha suplementar mais distante (ou da cabeça, se não
+     há). Convenção visual da v1: o Verovio não desenha 8va de fantasma, então
+     não há oráculo; o host pode ajustar.
+
+O host escolhe cor, fade e duração (G03, D-FANT-DURACAO); nada disso está no
+formato.
+
+**Limitações da v1** (G03): o acidente da fantasma pode colidir com
+acidentes reais da coluna (a fantasma não entra no empilhamento do Verovio);
+acidente trazido por ligadura através da barra de compasso não conta;
+percussão, tablatura e notação mensural ficam fora (não têm `loc` de
+altura); mudança de armadura no meio do compasso não zera `acc`.
+
+### 10.1 Exemplos trabalhados (Erik Satie, Gymnopédie nº 1)
+
+Todos com `docs/formato/fantasma/satie.vsb` (1ª pauta da página 1: `topY` 808,
+`unit` 90, `n` 5, `co` −2, `ledger` [22, 48], `gs` [0,72, 0,72]; armadura de
+ré maior: `key` = {c: 1, f: 1}). O acorde esperado é si3 `orw55dt` (`loc` −3,
+`y` 1798), ré4 `q1t6l0ej` (`loc` −1, `y` 1618) e fá#4 `r1c5f34m` (`loc` 1,
+`y` 1438), as três cabeças em `x` = 2629; a largura de E0A4 é
+314 × 0,72 = 226,08. Os números batem com `vetores.json`.
+
+**Ex. 1 — lá♯4 (tecla 70).** Alvo: o fá#4 (`ref` 66, distância 4; as outras
+são 8 e 11). `w = 70 − 0`; tecla preta e a armadura só tem sustenidos →
+sustenido: lá4 com `alt = +1`. `loc = (4 − 4)·7 + 5 − 2 = 3`; `y = 808 +
+(2·4 − 3)·90 = 1258`. Em vigor para `a4`: `acc` não tem, `key` não tem →
+0 ≠ +1 → desenha ♯ (E262), à esquerda da cabeça: `xAcc = 2629 − 0,5·90 −
+197 × 0,72 = 2442,16`. Colisão: as cabeças reais estão em `loc` −3, −1, 1,
+todas a mais de 1 de `loc` 3 → `x` fica 2629. Sem linhas suplementares
+(`loc` 3 está dentro da pauta), sem marcador.
+
+**Ex. 2 — dó♯4 (tecla 61), com colisão.** Alvo: o ré4 (`ref` 62, distância
+1). Sustenido (armadura): dó4, `alt = +1`; `loc = 0 + 0 − 2 = −2`; `y = 808 +
+(8 + 2)·90 = 1708`. Em vigor para `c4`: `key.c = +1` → igual → **sem
+acidente**. `|−2 − (−3)| = 1` (si3) e `|−2 − (−1)| = 1` (ré4), com as
+cabeças reais sobrepostas em `x` → `x += 226,08` → 2855,08 (sem mais
+sobreposição: a borda direita das reais é 2855,08, e o teste é
+estritamente menor). Uma linha suplementar abaixo (`⌊2/2⌋ = 1`) em `y` 1708,
+de `x − 48` = 2807,08 a `x + 226,08 + 48` = 3129,16, espessura 22.
+
+**Ex. 3 — mi7 (tecla 100), com 8va.** Alvo: o fá#4. Tecla branca: mi7;
+`loc = (7 − 4)·7 + 2 − 2 = 21` → `⌊(21 − 8)/2⌋ = 6` linhas > 4 → `loc = 14`,
+`m = 1` (8va, E511) → `⌊(14 − 8)/2⌋ = 3` linhas, em `loc` 10, 12, 14 →
+`y` 628, 448, 268; a cabeça em `y = 808 + (8 − 14)·90 = 268`. Marcador:
+E511 centrado (`x + 113,04 − 657 × 0,72 / 2 = 2505,52`), com linha de base
+em `268 − 3·90 = −2`.
 
 ## Histórico de revisões
 
@@ -830,3 +1085,4 @@ explicitamente.
 | 2026-09-22 | P02a (D-ALT/D-ALT-EXTENSAO): `alternates.json` (§2.5, novo) — páginas alternativas do player para saltos de repetição que mudam de página, cada sequência do compasso de chegada até o fim da peça, mesma forma de `scene.pages[i]` e mesmo `glyphs.json`. `files.alternates`/propriedade `alternates` opcionais (§2.1/§2.2), mesma regra de omissão do timemap/`meta`. §5.5 explicita que o índice de elementos é por sequência (não existe índice único do documento, já que ids se repetem entre sequências e páginas normais por construção). §9: aditivo, leitor antigo ignora. Mudança só de documentação e schema (`$defs/alternateSequence`, `$defs/alternatesDocument`, reuso de `$defs/page`) — nenhum código ainda; `docs/formato/exemplo-alternates.json` (novo) é o primeiro documento a validar contra o schema novo. |
 | 2026-09-24 | Modo debug (§2.6, novo): `--vsb-debug` embute `debug-options.json` (`Toolkit::GetOptions()`) e `debug-source.txt` (o documento como `Toolkit::LoadData` o recebeu) no `.vsb`, e a propriedade `debug` no JSON único, para reproduzir um render só a partir do pacote (uso: `compare/scripts/compare-page.sh` com um `.vsb` em vez da partitura + flags originais). Nova flag `--options-file` no `verovio` (`tools/main.cpp`) aplica esse JSON via `Toolkit::SetOptions`. Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.debugOptions`/`.debugSource`, `$defs/debug` no schema. |
 | 2026-09-25 | G01: `midi.json` (§2.7, novo) — o fluxo de eventos (`notes[]`/`pedal[]`) que o exportador MIDI do Verovio emitiria, com o `xml:id` de origem e o tempo já em ms, ligaduras unidas e ornamentos expandidos como no `.mid`. Gravado por um "gravador" opcional em `GenerateMIDIFunctor` (`SetEventLog`, `nullptr` por padrão — zero mudança no `.mid`/`.vsb` existentes), repassado por `Doc::ExportMIDI(midiFile, eventLog = nullptr)`, serializado por `BridgeWriter::WriteMidi` (conversão semínima→ms pelos pontos de andamento em `MIDIEventLog::tempos`) e integrado nos dois caminhos de exportação do bridge (`Toolkit::RenderMidiEventLog`, chamado por `RenderToBridgeJson`/`RenderToBridgeFile`). Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.midi`, propriedade `midi` no JSON único, `$defs/midiDocument` no schema. |
+| 2026-09-29 | G04a-G04d (nota fantasma, D-FANT-*): **`pitchpos.json`** (§2.8, novo) — contexto de notação por nota e pausa (`co`, `sh`, `key`, `acc`, `pn`/`o`/`alt`/`loc`), indexado pelo id **notado**; **nó `staff`** (§5.1) ganha `lines`/`ledger`/`ledgerCue`/`gs`, e nós de nota/acorde/pausa cross-staff ganham `staff`; **glifos reservados** (§4) sempre no dicionário (E0A4, E260-E262, E511/E512/E515/E516); **timemap** (§2.4) passa a ser pedido com `includeRests` (`restsOn`/`restsOff`, só essas chaves são novas); **§10 Nota fantasma** (normativo, com 3 exemplos do Satie), validada por oráculo Verovio (2 400 alvos, 100%) e vetores `docs/formato/fantasma/vetores.json`. Aditivo: `version` continua `1`, leitor antigo ignora tudo; `manifest.files.pitchpos`, propriedade `pitchpos` no JSON único, `$defs/pitchposDocument`/`pitchposEvent` no schema, `exemplo-pitchpos.json`. Flag `--no-vsb-pitchpos` desliga o arquivo. |

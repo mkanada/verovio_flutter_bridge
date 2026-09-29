@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="4.0.1">
+  <meiHead>
+    <fileDesc>
+      <titleStmt>
+        <title>f01 mudanca de clave no meio do compasso</title>
+      </titleStmt>
+      <pubStmt/>
+    </fileDesc>
+  </meiHead>
+  <music>
+    <body>
+      <mdiv>
+        <score>
+          <scoreDef meter.count="4" meter.unit="4" key.sig="0">
+            <staffGrp>
+              <staffDef n="1" lines="5" clef.shape="G" clef.line="2"/>
+            </staffGrp>
+          </scoreDef>
+          <section>
+            <measure n="1" xml:id="f-m1">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f01-a" pname="c" oct="5" dur="4"/>
+                  <note xml:id="f01-b" pname="e" oct="5" dur="4"/>
+                  <clef xml:id="f01-clef" shape="F" line="4"/>
+                  <note xml:id="f01-c" pname="c" oct="3" dur="4"/>
+                  <note xml:id="f01-d" pname="e" oct="3" dur="4"/>
+                </layer>
+              </staff>
+            </measure>
+            <measure n="2" xml:id="f-m2">
+              <staff n="1">
+                <layer n="1">
+                  <note xml:id="f01-e" pname="g" oct="3" dur="2"/>
+                  <note xml:id="f01-f" pname="b" oct="3" dur="2"/>
+                </layer>
+              </staff>
+            </measure>
+          </section>
+        </score>
+      </mdiv>
+    </body>
+  </music>
+</mei>

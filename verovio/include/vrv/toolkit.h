@@ -13,6 +13,7 @@
 
 //----------------------------------------------------------------------------
 
+#include "bridgepitchpos.h"
 #include "bridgewriter.h"
 #include "doc.h"
 #include "docselection.h"
@@ -928,6 +929,15 @@ private:
      * MIDIEventLog is cheap to build and its own emptiness already signals "nothing to write").
      */
     MIDIEventLog RenderMidiEventLog();
+
+    /**
+     * The notation context of every note and rest of the normal pages [firstPage, lastPage]
+     * (1-based, as RenderToDeviceContext) - `manifest.files.pitchpos`/`pitchpos.json` (§2.8, G04c).
+     * The pages must already have been rendered/laid out, and the Doc must not be Select()ed: call
+     * it right after RenderPagesToBridge, before RenderAlternatesToBridge. `midiLog` supplies the
+     * shifts (RenderMidiEventLog). Empty when `--no-vsb-pitchpos`.
+     */
+    BridgePitchPos RenderPitchPos(int firstPage, int lastPage, const MIDIEventLog &midiLog);
 
     /**
      * Measure id -> 0-based position in document order (`m_doc.FindAllDescendantsByType(MEASURE,

@@ -2083,6 +2083,7 @@ bool Toolkit::RenderPagesToBridge(BridgeDeviceContext &bridge, int fromPage, int
     // The glyph dictionary is shared by every page rendered into this device context - see
     // BridgeDeviceContext::m_glyphs, never reset in StartPage (S06's "Achado importante").
     bridge.SetResources(&m_doc.GetResources());
+    bridge.AddReservedGlyphs();
 
     for (int p = fromPage; p <= toPage; ++p) {
         if (!this->RenderToDeviceContext(p, &bridge)) return false;
@@ -2106,6 +2107,10 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     // is discarded once `midiLog` has been filled from it.
     const MIDIEventLog midiLog = this->RenderMidiEventLog();
 
+    // §2.8 (G04c): must come before the alternates - they Select()/RedoLayout the Doc, and the
+    // notation context (drawing loc, cross-staff pointers) is read from the normal layout.
+    const BridgePitchPos pitchPos = this->RenderPitchPos(fromPage, toPage, midiLog);
+
     // §2.5/P02c: alternates only when the whole document was requested - a page range that isn't
     // "every normal page" wouldn't have "the rest of the piece" to build a sequence into, and
     // firstOfNormalPage (from ComputeAlternateStarts) is derived from the whole Doc regardless of
@@ -2128,7 +2133,7 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     const std::string debugOptionsJson = m_options->m_vsbDebug.GetValue() ? this->GetOptions() : "";
 
     std::string output = BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator, "", meta, sequences,
-        debugOptionsJson, m_debugSourceData, &midiLog);
+        debugOptionsJson, m_debugSourceData, &midiLog, &pitchPos);
 
     // P02b, debug-only (--debug-alternate-starts): splice a "_alternateStarts" key into the
     // vsb-json output, outside BridgeWriter on purpose - it is not part of the documented format
@@ -2368,6 +2373,22 @@ MIDIEventLog Toolkit::RenderMidiEventLog()
     return midiLog;
 }
 
+BridgePitchPos Toolkit::RenderPitchPos(int firstPage, int lastPage, const MIDIEventLog &midiLog)
+{
+    if (m_options->m_noVsbPitchpos.GetValue()) return BridgePitchPos();
+    if (lastPage < 0) lastPage = this->GetPageCount();
+
+    BridgePitchPos pitchPos = BridgePitchPosBuilder::Build(&m_doc, firstPage - 1, lastPage - 1, midiLog);
+    if (pitchPos.missingShift > 0) {
+        LogWarning("pitchpos: %d note/rest(s) without a MIDI shift (never visited by the MIDI export)",
+            pitchPos.missingShift);
+    }
+    if (pitchPos.conflictingShift > 0) {
+        LogWarning("pitchpos: %d id(s) with different MIDI shifts in different passes", pitchPos.conflictingShift);
+    }
+    return pitchPos;
+}
+
 bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, int toPage)
 {
     this->ResetLogBuffer();
@@ -2414,9 +2435,10 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     // docs/formato/especificacao-v1.md §2: includeMeasures fills each instant that starts a
     // measure with "measureOn" (the measure's xml:id, or its expanded "-rendN" clone on a
     // repeated pass) - the ground truth for playback order (E01b), independent of whether a note
-    // happens to start there. Not passing includeRests/useFractions: those would change other
-    // columns score_bridge already reads.
-    std::string timemapJson = this->RenderToTimemap("{\"includeMeasures\": true}");
+    // happens to start there. includeRests (G04c, D-FANT-PAUSA-TEMPO) adds the restsOn/restsOff
+    // keys the ghost note needs to know when a rest is active - only those two keys are new.
+    // Not passing useFractions: it would change other columns score_bridge already reads.
+    std::string timemapJson = this->RenderToTimemap("{\"includeMeasures\": true, \"includeRests\": true}");
     jsonxx::Array timemapArray;
     const bool hasTimemap = timemapArray.parse(timemapJson) && !timemapArray.empty();
     if (!hasTimemap) timemapJson.clear();
@@ -2428,18 +2450,23 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     const BridgeMeta meta = this->ReadBridgeMeta();
     const bool hasMeta = !meta.IsEmpty();
 
+    // §2.7 (G01): the events GenerateMIDIFunctor would emit to a .mid, with their originating
+    // xml:id. Reads from `m_midiDoc`, not `m_doc`; it runs here (before the alternates) only
+    // because the shifts it records feed pitchpos.json, which reads the normal layout.
+    const MIDIEventLog midiLog = this->RenderMidiEventLog();
+    const bool hasMidi = !midiLog.events.empty();
+
+    // §2.8 (G04c): the notation context of every note and rest, from the normal layout - so before
+    // the alternates, which Select()/RedoLayout the Doc.
+    const BridgePitchPos pitchPos = this->RenderPitchPos(1, -1, midiLog);
+    const bool hasPitchPos = !pitchPos.IsEmpty();
+
     // P02c (§2.5): must run after the normal pages/timemap/meta are all done reading from the
     // unselected Doc, and must be the last thing to push pages into `bridge` - see
     // RenderAlternatesToBridge's own doc comment for why. Only after this returns is it safe to
     // take pointers into bridge.GetPages() at all, including for the normal pages below.
     const std::vector<BridgeAlternateSequence> sequences = this->RenderAlternatesToBridge(bridge);
     const bool hasAlternates = !sequences.empty();
-
-    // §2.7 (G01): the events GenerateMIDIFunctor would emit to a .mid, with their originating
-    // xml:id. Independent of the timemap/meta/alternates above - reads from `m_midiDoc`, not the
-    // (possibly Select()ed-and-restored) `m_doc` - so its ordering relative to them does not matter.
-    const MIDIEventLog midiLog = this->RenderMidiEventLog();
-    const bool hasMidi = !midiLog.events.empty();
 
     std::vector<const BridgePage *> pages;
     pages.reserve(normalPageCount);
@@ -2455,7 +2482,8 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     ZipFileWriter zip;
     zip.AddFile("manifest.json",
         BridgeWriter::WriteManifest(
-            generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi));
+            generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi,
+            hasPitchPos));
     zip.AddFile("scene.json", BridgeWriter::WriteScene(pages));
     zip.AddFile("glyphs.json", BridgeWriter::WriteGlyphs(bridge.GetGlyphs()));
     if (hasTimemap) {
@@ -2469,6 +2497,9 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     }
     if (hasMidi) {
         zip.AddFile("midi.json", BridgeWriter::WriteMidi(midiLog));
+    }
+    if (hasPitchPos) {
+        zip.AddFile("pitchpos.json", BridgeWriter::WritePitchPos(pitchPos));
     }
     if (hasDebug) {
         zip.AddFile("debug-options.json", this->GetOptions());

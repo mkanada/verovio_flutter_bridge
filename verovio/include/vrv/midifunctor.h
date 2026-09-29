@@ -388,6 +388,11 @@ struct MIDIEventRecord {
 struct MIDIEventLog {
     std::vector<MIDIEventRecord> events;
     std::vector<std::pair<double, double>> tempos;
+    // G04c (pitchpos.json): semitones between sound and written pitch (`m_transSemi + 12 *
+    // m_octaveShift`, what GetMIDIPitch adds) at every note and rest the functor visits, as
+    // (xml:id in the expanded document, shift), in visit order. Includes notes that emit no event
+    // (tied continuations, cue notes) and rests, which emit none either.
+    std::vector<std::pair<std::string, int>> shifts;
 };
 
 /**

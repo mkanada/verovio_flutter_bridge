@@ -21,6 +21,7 @@ namespace vrv {
 
 class RunningElement;
 struct MIDIEventLog;
+struct BridgePitchPos;
 
 //----------------------------------------------------------------------------
 // BridgeAlternateSequence
@@ -101,7 +102,8 @@ public:
      * so the render can be reproduced from the package alone.
      */
     static std::string WriteManifest(const std::string &generator, int pageCount, bool hasTimemap,
-        bool hasMeta = false, bool hasAlternates = false, bool hasDebug = false, bool hasMidi = false);
+        bool hasMeta = false, bool hasAlternates = false, bool hasDebug = false, bool hasMidi = false,
+        bool hasPitchPos = false);
 
     /**
      * Serializes alternates.json (§2.5): one entry per sequence, `start` plus its own pages
@@ -121,6 +123,13 @@ public:
     static std::string WriteMidi(const MIDIEventLog &log);
 
     /**
+     * Serializes pitchpos.json (§2.8, G04c): `{"events": {<notated xml:id>: {t, co[, sh][, key][, acc]
+     * [, pn, o, alt, loc]}}}` in document order. The caller omits the whole document when
+     * `pitchPos.IsEmpty()`.
+     */
+    static std::string WritePitchPos(const BridgePitchPos &pitchPos);
+
+    /**
      * Serializes the single-file `-t vsb-json` document: {manifest, glyphs, scene[, timemap][,
      * meta][, alternates][, midi][, debug]}. `timemapJson` is the raw JSON array already produced by
      * Toolkit::RenderToTimemap; passing an empty string (the default, meaning no timemap) omits the
@@ -138,7 +147,8 @@ public:
         const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator,
         const std::string &timemapJson = "", const BridgeMeta &meta = BridgeMeta(),
         const std::vector<BridgeAlternateSequence> &sequences = {}, const std::string &debugOptionsJson = "",
-        const std::string &debugSource = "", const MIDIEventLog *midiLog = nullptr);
+        const std::string &debugSource = "", const MIDIEventLog *midiLog = nullptr,
+        const BridgePitchPos *pitchPos = nullptr);
 };
 
 } // namespace vrv

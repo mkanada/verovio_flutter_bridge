@@ -109,6 +109,13 @@ public:
     void StartGraphic(Object *object, const std::string &gClass, const std::string &gId, GraphicID graphicID = PRIMARY,
         bool prepend = false) override;
     void EndGraphic(Object *object, View *view) override;
+
+    /**
+     * §4 (G04b): put the reserved glyphs (head, accidentals, octave marks - what the ghost note of
+     * §10 draws with) in the dictionary of the current font, whether or not the piece uses them.
+     * Needs resources; idempotent.
+     */
+    void AddReservedGlyphs();
     ///@}
 
     /**
@@ -180,6 +187,13 @@ private:
      * while registering its outline once in the glyph dictionary.
      */
     BridgeGlyphUse MakeGlyphUse(const Glyph *glyph, const FontInfo *font, int x, int y);
+
+    /**
+     * §5.1 (G04b): staff geometry (`lines`/`ledger`/`ledgerCue`/`gs`) on `staff` nodes, and `staff`
+     * on cross-staff note/chord/rest nodes. Read-only over the Object; called from EndGraphic.
+     */
+    void AnnotateNodeGeometry(BridgeNode &node, Object *object, View *view);
+
 
     /**
      * Horizontal advance for one glyph, replicating the exact integer arithmetic of

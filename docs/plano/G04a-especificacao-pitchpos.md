@@ -118,4 +118,36 @@ marcador de oitava). Atualizar `schema-v1.json` e os exemplos.
 
 ## Notas de execução
 
-_(vazio)_
+Concluído em 2026-09-29. Escrito: §2.8 (`pitchpos.json`), campos novos de nó
+(§5.1), glifos reservados (§4), `restsOn`/`restsOff` (§2.4), **§10** normativa
+com 3 exemplos do Satie, §9, histórico; `schema-v1.json` (`pitchposDocument`,
+`pitchposEvent`, `lines`/`ledger`/`ledgerCue`/`gs`/`staff` no nó,
+`manifest.files.pitchpos`) e `exemplo-pitchpos.json`. Critério 2: todos os
+exemplos validam com `jsonschema` (Draft 2020-12; não havia `check-jsonschema`
+no ambiente) — `exemplo-pitchpos.json`, `exemplo-minimo.json`,
+`exemplo-alternates.json`, um `-t vsb-json` real do Satie e todo `*.json` de
+dois `.vsb` reais. Critério 3: os exemplos foram conferidos, conta a conta,
+contra `docs/formato/fantasma/vetores.json` (que sai da referência e tem as
+mesmas contas escritas à mão) e contra a cena do Satie (`topY` 808, `unit` 90,
+cabeças em y 1798/1618/1438) — registrado no §10.1.
+
+Ajustes à proposta do passo (todos já refletidos na especificação):
+
+- **`acc` inclui os acidentes escritos no mesmo instante e pauta, inclusive o
+  do próprio elemento** (o passo dizia "antes"): sem isso uma fantasma ♮ sobre
+  uma nota com ♯ na mesma coluna não desenharia o bequadro. Só entram as
+  chaves que **diferem da armadura** (as demais valem `key`), o que também
+  emagrece o arquivo. "Pauta" é a de desenho (cross-staff conta onde aparece).
+- **`alt` é a alteração sonora** (`accid.ges`, senão `accid`, senão 0 — o que
+  `Note::GetMIDIPitch` aplica), não "a em vigor": o Verovio não aplica a
+  armadura por conta própria e os importadores gravam `accid.ges`; assim
+  `midi.p = altura(pn, o, alt) + sh` vale sem exceção (G04c, critério 4).
+- `gs` é `[sx, sy]` (não um número): `sx` leva o `widthToHeightRatio`.
+- §10 passo 3 ganhou o caso `w == wE` (a tecla certa, que não é fantasma mas
+  deixa a regra total — usado pelo oráculo) e o passo 5 o **limite de 4
+  linhas** depois de duas oitavas (a versão do plano deixava o comportamento
+  indefinido). Colisão definida geometricamente (`|loc − loc'| ≤ 1` e
+  sobreposição horizontal), e não "mesma coluna", porque cabeças de segunda
+  já vêm deslocadas na cena.
+- Exemplo do §2.8 usa ids reais (Satie e `corpus/fantasma/`), com `co` = −2
+  (o exemplo do plano dizia 2; clave de Sol é −2, ver `Clef::GetClefLocOffset`).

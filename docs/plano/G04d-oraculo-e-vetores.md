@@ -81,4 +81,44 @@ número com a referência.
 
 ## Notas de execução
 
-_(vazio)_
+Concluído em 2026-09-29. `compare/scripts/ghost_ref.py` (referência da §10 +
+`--self-test`), `compare/scripts/ghost_oracle.py` (oráculo), `compare/scripts/
+g04d-make-vectors.py` (gera os vetores) e `docs/formato/fantasma/` (`vetores.json`,
+26 casos, e os 9 `.vsb` que eles usam, 168 KB no total).
+
+1. **Oráculo, `--targets 2400 --seed 42`: 2 400 alvos, 0 divergências**
+   (`loc`, glifo do acidente/ausência e nº de linhas suplementares), 181 cópias
+   MEI renderizadas, 10 peças do corpus + 8 de `corpus/fantasma/` (todas as
+   notas de `f0*` com 4 deltas cada; o resto sorteado), deltas ±1/±2/±3/±12
+   e "far" (tecla 21 ou 108: 203 alvos); 912 com acidente previsto, 1 488 sem;
+   contagens previstas de 0 a 16 linhas. **Sabotagem confirmada**: trocar
+   `(pname − 1)` por `pname` na fórmula → 236/236 divergências. Duas correções
+   de **medição** no caminho (a fórmula não mudou): as linhas suplementares
+   de *outras* notas da coluna eram contadas, e notas `visible="false"`
+   (o Verovio não desenha nem as suas linhas) entravam no sorteio.
+   CSVs: `compare/out/g04d/swap.csv` e `self-divergencias.csv`.
+   Limite honesto do oráculo: o Verovio desenha o acidente que se escreve,
+   então "acidente previsto = acidente medido" só prova que a cópia foi
+   escrita como previsto; a **necessidade** do acidente é provada pelo teste
+   `self`: para 9 039 notas sem acidente desenhado, `alt == acc ?? key ?? 0`
+   em 8 566; as 473 restantes são dados de origem (457 do Étude, sem
+   `key.sig` na `<scoreDef>`; 16 em quatro peças, acidentes estendidos a
+   outras oitavas pelo importador) — ver §2.8. Para as 1 087 notas com acidente
+   desenhado, o som bate com o glifo em todas (0 exceções), e a fórmula
+   com a tecla que a própria nota soa nunca desenha acidente diferente do
+   em vigor (0 exceções).
+2. **Folga do acidente fechada em `0,5·unit`** (§10): mediana 0,4996 em 1 085
+   acidentes (`unit` 90) e 0,4996 com `--unit` 60 e 120 no Satie (mín. 0,491;
+   máx. 3,10, colunas de acidentes empilhados). Não havia outro tamanho de
+   pauta no corpus.
+3. `python3 compare/scripts/ghost_ref.py --self-test`: 26 casos, 0
+   divergências. Os resumos dos vetores são contas **feitas à mão** (com a
+   conta no campo `conta`); o gerador para se um não bater com a referência —
+   e parou duas vezes, ambas erro de conta minha (esqueci o `co`; contei uma
+   linha suplementar dentro da pauta), não da referência.
+4. Tempo do oráculo completo (18 peças, 2 400 alvos, 181 cópias, 4 processos):
+   17 s.
+
+Valores da §10 que **não** têm oráculo (o Verovio não desenha 8va de fantasma):
+deslocamento por oitava, posição do marcador (`−3·unit`/`+5·unit`), colisão e
+escolha de pauta — cobertos só pelos vetores, e sinalizados como convenção.

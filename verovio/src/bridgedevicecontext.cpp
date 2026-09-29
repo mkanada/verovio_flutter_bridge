@@ -20,6 +20,11 @@
 
 #include "atts_shared.h"
 #include "csscolor.h"
+#include "doc.h"
+#include "layerelement.h"
+#include "options.h"
+#include "staff.h"
+#include "view.h"
 #include "glyph.h"
 #include "object.h"
 #include "smufl.h"
@@ -1191,6 +1196,75 @@ void BridgeDeviceContext::EndGraphic(Object *object, View *view)
     BridgeNode *node = m_nodeStack.back();
     m_nodeStack.pop_back();
     CalculateNodeBBox(*node, m_glyphs, {});
+    if (view) this->AnnotateNodeGeometry(*node, object, view);
+}
+
+void BridgeDeviceContext::AnnotateNodeGeometry(BridgeNode &node, Object *object, View *view)
+{
+    assert(view);
+    Doc *doc = view->m_doc;
+    if (!doc) return;
+
+    if (object->Is(STAFF)) {
+        const Staff *staff = vrv_cast<const Staff *>(object);
+        assert(staff);
+        const int staffSize = staff->m_drawingStaffSize;
+        const int unit = doc->GetDrawingUnit(staffSize);
+
+        node.hasLines = true;
+        node.lines[0] = view->ToDeviceContextY(staff->GetDrawingY());
+        node.lines[1] = unit;
+        node.lines[2] = staff->m_drawingLines;
+
+        // Same expressions as View::DrawLedgerLines and Doc::GetDrawingLedgerLineExtension
+        // (int truncation included), so the numbers are exactly what the Verovio draws.
+        const Options *options = doc->GetOptions();
+        node.hasLedger = true;
+        node.ledger[0] = int(options->m_ledgerLineThickness.GetValue() * unit);
+        node.ledger[1] = doc->GetDrawingLedgerLineExtension(staffSize, false);
+        int cueThickness = options->m_ledgerLineThickness.GetValue() * unit;
+        cueThickness *= options->m_graceFactor.GetValue();
+        node.hasLedgerCue = true;
+        node.ledgerCue[0] = cueThickness;
+        node.ledgerCue[1] = doc->GetDrawingLedgerLineExtension(staffSize, true);
+
+        // Scale of a normal-size glyph here: pointSize / unitsPerEm * DEFINITION_FACTOR, as in
+        // MakeGlyphUse (Doc::GetDrawingSmuflFont's own pointSize, without mutating that font).
+        const Resources *resources = this->GetResources();
+        const Glyph *glyph = resources ? resources->GetGlyph(SMUFL_E0A4_noteheadBlack) : NULL;
+        if (glyph) {
+            const double scaleY
+                = double(doc->GetDrawingStaffSize(staffSize)) / glyph->GetUnitsPerEm() * DEFINITION_FACTOR;
+            node.hasGlyphScale = true;
+            node.glyphScale[0] = scaleY;
+            node.glyphScale[1] = scaleY;
+        }
+    }
+    else if ((object->Is(NOTE) || object->Is(CHORD) || object->Is(REST) || object->Is(MREST))) {
+        const LayerElement *element = vrv_cast<const LayerElement *>(object);
+        assert(element);
+        const Staff *ancestor = element->GetAncestorStaff(ANCESTOR_ONLY, false);
+        const Staff *drawn = element->GetAncestorStaff(RESOLVE_CROSS_STAFF, false);
+        if (ancestor && drawn && (ancestor != drawn)) {
+            node.staffRef = drawn->GetID();
+        }
+    }
+}
+
+void BridgeDeviceContext::AddReservedGlyphs()
+{
+    const Resources *resources = this->GetResources();
+    if (!resources) return;
+
+    FontInfo font;
+    font.SetFaceName(resources->GetCurrentFont().c_str());
+    static const char32_t reserved[] = { SMUFL_E0A4_noteheadBlack, SMUFL_E260_accidentalFlat,
+        SMUFL_E261_accidentalNatural, SMUFL_E262_accidentalSharp, SMUFL_E511_ottavaAlta, SMUFL_E512_ottavaBassa,
+        SMUFL_E515_quindicesimaAlta, SMUFL_E516_quindicesimaBassa };
+    for (const char32_t code : reserved) {
+        const Glyph *glyph = resources->GetGlyph(code);
+        if (glyph) this->MakeGlyphUse(glyph, &font, 0, 0);
+    }
 }
 
 void BridgeDeviceContext::StartCustomGraphic(const std::string &name, std::string gClass, std::string gId)

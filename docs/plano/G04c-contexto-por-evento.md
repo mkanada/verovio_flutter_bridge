@@ -96,4 +96,57 @@ armadura, acidentes em vigor, altura escrita) vem do Verovio.
 
 ## Notas de execução
 
-_(vazio)_
+Concluído em 2026-09-29. Novo `verovio/src/bridgepitchpos.cpp`/`include/vrv/
+bridgepitchpos.h` (`BridgePitchPosBuilder::Build`), `BridgeWriter::WritePitchPos`,
+`Toolkit::RenderPitchPos`, opção `--no-vsb-pitchpos`, e, em
+`GenerateMIDIFunctor`, `MIDIEventLog::shifts` (um par (id, `m_transSemi + 12 ·
+m_octaveShift`) por nota — no topo de `VisitNote`, depois de `HandleOctave`, portanto
+também para continuações de ligadura e notas cue — e por `rest`/`mRest`/
+`multiRest` em `VisitLayerElement`; `nullptr` por padrão, então o `.mid` não
+muda). O `pitchpos.json` sai dos dois caminhos (`-t vsb` e `-t vsb-json`), e
+`RenderToBridgeFile` passou a gerar o log MIDI **antes** das alternativas
+(elas fazem `Select`/`RedoLayout`; o contexto lê o layout normal).
+
+De onde sai cada campo: `co` = `Layer::GetClefLocOffset` com a resolução cross-staff
+copiada de `CalcLoc`/`CalcAlignmentPitchPosFunctor`; `loc` = `Note::GetDrawingLoc()`
+(o do desenho); `key` = `KeySig::FillMap` do `KeySig` da camada anterior ao elemento
+(mudança de armadura dentro da camada) ou o da pauta no compasso
+(`Layer::GetCurrentKeySig`); `acc` = acidentes escritos (`Accid::HasAccid`) do
+compasso por pauta de desenho, ordenados por alinhamento (tempo; apojatura antes
+da nota principal), incluindo o mesmo instante; `alt` = a
+alteração sonora (ver G04a); `sh` = a do MIDI. Timemap embutido com
+`includeRests`. Notas ocultas (`visible="false"`) **entram** (o host pode
+esperá-las); nota sem `@pname` não.
+
+Critérios (`compare/scripts/g04c-check.py`, `g04c-fantasma-check.py`):
+
+1. `.mid` byte-idêntico e `-t timemap` standalone byte-idêntico, 23 peças.
+2. Timemap embutido: mesmo número de entradas e campos antigos idênticos em
+   todas; 1 120 ids em `restsOn` no total, nenhuma outra chave nova.
+3. 10 369 notas + 850 pausas; toda nota/pausa desenhada tem entrada e toda
+   entrada tem nó na cena (oculto incluído): **1 exceção** — `g1157trh` na
+   Mazurka Op. 6 nº 1 é uma apojatura (`grace="unknown"`) **sem
+   `@pname`** na fonte (`<!-- add grace notes! -->`), desenhada e com evento
+   MIDI de altura 0.
+4. `loc` gravado = `(o−4)·7 + (pname−1) + co` em **10 369/10 369** notas;
+   `midi.p = altura(pn, o, alt) + sh` em **12 692 eventos** de `midi.json`
+   (fora ornamentos), 1 exceção (a mesma nota sem `@pname`). Ids visitados
+   com `sh` diferente em passagens diferentes (`conflictingShift`): **0**; notas/
+   pausas sem `sh` (`missingShift`): **0** (o `Toolkit` avisa por `LogWarning`, e os
+   `.log` da geração estão limpos).
+5. Cena, glifos e demais arquivos idênticos à saída de G04b.
+6. `pitchpos.json`: Satie 26 655 B (334 eventos), Nocturne 199 184 B (1 775),
+   Maple Leaf Rag 167 138 B (1 647), Chopin Étude 85 280 B (1 276), peças de
+   repetição 126 B a 2 266 B; `.vsb` total +2,4% a +11,2% contra antes de G04
+   (mediana ≈ +6,8%); tempo de geração, soma das 10 peças grandes: 3,58 s →
+   3,58 s (ruído entre execuções maior que a diferença).
+
+`corpus/fantasma/` (8 partituras MEI, `f01`-`f08`): mudança de clave no meio do
+compasso, 8va e 8vb, clarinete em Si♭, nota cross-staff, armadura não
+padronizada, mudança de armadura (dó → 3♯ → 3♭), acidentes em outra camada
+(♯, ♮, dobrado ♯♯ e acidente já em vigor no compasso seguinte), pausas e `mRest` em duas
+pautas. `corpus/fantasma/esperado.json` tem 30 ids com valores **escritos à
+mão** (pela teoria, não copiados da saída) e
+`compare/scripts/g04c-fantasma-check.py` confere: **0 divergências**.
+Nas fixtures MEI, `accid.ges` precisa ser escrito nas notas alteradas pela
+armadura (como os importadores fazem): o Verovio não aplica a armadura no MIDI.

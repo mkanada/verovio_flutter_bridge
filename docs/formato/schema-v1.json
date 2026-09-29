@@ -9,7 +9,8 @@
     { "$ref": "#/$defs/timemapDocument" },
     { "$ref": "#/$defs/metaDocument" },
     { "$ref": "#/$defs/alternatesDocument" },
-    { "$ref": "#/$defs/midiDocument" }
+    { "$ref": "#/$defs/midiDocument" },
+    { "$ref": "#/$defs/pitchposDocument" }
   ],
   "$defs": {
     "number": {
@@ -117,6 +118,23 @@
         "hidden": { "type": "boolean" },
         "rotate": { "$ref": "#/$defs/rotate" },
         "bbox": { "$ref": "#/$defs/bbox" },
+        "lines": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/number" },
+            { "type": "number", "exclusiveMinimum": 0 },
+            { "type": "integer", "minimum": 1 }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "ledger": { "$ref": "#/$defs/vec2" },
+        "ledgerCue": { "$ref": "#/$defs/vec2" },
+        "gs": { "$ref": "#/$defs/vec2" },
+        "staff": {
+          "type": "string",
+          "minLength": 1
+        },
         "children": {
           "type": "array",
           "items": { "$ref": "#/$defs/child" }
@@ -293,6 +311,7 @@
             "meta": { "const": "meta.json" },
             "alternates": { "const": "alternates.json" },
             "midi": { "const": "midi.json" },
+            "pitchpos": { "const": "pitchpos.json" },
             "debugOptions": { "const": "debug-options.json" },
             "debugSource": { "const": "debug-source.txt" }
           },
@@ -518,6 +537,45 @@
       },
       "additionalProperties": false
     },
+    "pitchposEvent": {
+      "type": "object",
+      "required": ["t", "co"],
+      "properties": {
+        "t": { "enum": ["n", "r"] },
+        "co": { "type": "integer" },
+        "sh": { "type": "integer" },
+        "key": { "$ref": "#/$defs/pitchposAlterations" },
+        "acc": { "$ref": "#/$defs/pitchposAlterations" },
+        "pn": { "enum": ["c", "d", "e", "f", "g", "a", "b"] },
+        "o": { "type": "integer" },
+        "alt": { "type": "integer", "minimum": -2, "maximum": 2 },
+        "loc": { "type": "integer" }
+      },
+      "if": { "properties": { "t": { "const": "n" } } },
+      "then": { "required": ["pn", "o", "alt", "loc"] },
+      "else": {
+        "not": { "anyOf": [
+          { "required": ["pn"] }, { "required": ["o"] },
+          { "required": ["alt"] }, { "required": ["loc"] }
+        ] }
+      },
+      "additionalProperties": false
+    },
+    "pitchposAlterations": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": -2, "maximum": 2 }
+    },
+    "pitchposDocument": {
+      "type": "object",
+      "required": ["events"],
+      "properties": {
+        "events": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/pitchposEvent" }
+        }
+      },
+      "additionalProperties": false
+    },
     "midiDocument": {
       "type": "object",
       "required": ["notes", "pedal"],
@@ -553,6 +611,7 @@
         "meta": { "$ref": "#/$defs/metaDocument" },
         "alternates": { "$ref": "#/$defs/alternatesDocument" },
         "midi": { "$ref": "#/$defs/midiDocument" },
+        "pitchpos": { "$ref": "#/$defs/pitchposDocument" },
         "debug": { "$ref": "#/$defs/debug" }
       },
       "additionalProperties": false

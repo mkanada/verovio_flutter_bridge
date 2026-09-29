@@ -1099,6 +1099,13 @@ Options::Options()
     m_noVsbAlternates.Init(false);
     this->Register(&m_noVsbAlternates, "noVsbAlternates", &m_general);
 
+    m_noVsbPitchpos.SetInfo("No vsb pitchpos",
+        "-t vsb/-t vsb-json: skip writing pitchpos.json, the notation context of every note and rest "
+        "(docs/formato/especificacao-v1.md §2.8) the ghost note needs. On by default; pass this to "
+        "turn it off (G04c)");
+    m_noVsbPitchpos.Init(false);
+    this->Register(&m_noVsbPitchpos, "noVsbPitchpos", &m_general);
+
     m_openControlEvents.SetInfo("Open control event", "Render open control events");
     m_openControlEvents.Init(false);
     this->Register(&m_openControlEvents, "openControlEvents", &m_general);

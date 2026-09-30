@@ -75,3 +75,59 @@ instante), aí sim expor contexto por pauta no nativo (`bridgepitchpos.cpp`)
 
 - Mudar `pitchpos.json`/schema sem a confirmação do item "sem nativo novo".
 - Nota desenhada cross-staff (`f04`, atributo `staff`): inalterada.
+
+## Notas de execução
+
+Concluído em 2026-09-30 (neste repositório: itens 1-5; a porta Dart é
+trabalho do `zywny`, pendente lá).
+
+**Decisões fechadas com o usuário (2026-09-30)**, todas pela proposta do
+passo: (a) cabimento = menos linhas suplementares **brutas** (antes de 8va),
+desempates `|k − ref|` e depois `ref` maior; (b) contexto da pauta = evento
+dela mais próximo de `k` (`sh` divergente: o do mais próximo), grafia e
+acidente nesse contexto, coluna do mais próximo na pauta escolhida, colisão
+inalterada; (c) 8va/15ma só no extremo do sistema ou com pauta única em `E`
+(empate total = regra atual, pauta única = `E` com uma só pauta distinta);
+(d) "sem nativo novo primeiro": varrer o corpus antes de mexer no C++.
+
+**Varredura sem-nativo-novo** (script descartável, 18 peças, `.vsb`
+regenerados com o binário atual): em 7 113 instantes com onset, `E` =
+onsets + pausas ativas cobre as duas pautas em 3 391 (47,7%); com as notas
+seguradas junto, em 6 930 (97,4%). Os 183 restantes (2,6%) são quase todos
+de mão única soando sozinha (baixo do Satie/Rag/Prelude, melodia do
+Nocturne sem o baixo, apojaturas) — nunca as duas pautas sem evento.
+Medido por pauta de desenho cross-staff incluído. Conclusão: **sem nativo
+novo** — `pitchpos.json`/schema inalterados, `version` 1.
+
+**Referência** (`ghost_ref.py::ghosts`, passos 1 e 5): proposta por pauta
+com o contexto dela; pauta única cai na regra antiga pelo mesmo código.
+`--self-test`: **32 casos, 0 divergências** (26 antigos intactos —
+pauta única, mesmo resultado bit a bit).
+
+**Oráculo** (código inalterado, chamadas de um id só): `--targets 2400
+--seed 42`: **2 400 alvos, 0 divergências**, 181 cópias, 72 s; `self`
+idêntico a G04d (473 `plain_bad` de fonte, 0 `drawn_bad`, 0 `ghost_bad`).
+Folga do acidente: mediana 0,4996 em 1 086 acidentes (G04d: 1 085 — um a
+mais pelo binário atual, sem relação com G06, que não toca C++).
+
+**Vetores** (`g04d-make-vectors.py`, `satie.vsb` + `CH`/`BASS` existentes):
+6 casos novos, `resumo` à mão conferido conta a conta (o gerador parou uma
+vez: eu tinha apontado o `target` do empate no ré4 quando o mais próximo é
+o si3 — erro de conta meu, não da referência): grave no baixo sem 8vb
+(45 → `loc` 1); **proximidade × cabimento** (55 → `loc` 7 no baixo, contra
+`loc` −5 na sol pela regra antiga — o único vetor que distingue as duas
+regras, confirmado contra o código anterior); empate de cabimento pela
+proximidade (60 → sol com ♮); agudo extremo com 8va (100); grave extremo
+com 8vb no baixo (21, que pela regra antiga ficava preso em 15mb na sol);
+duas fantasmas uma em cada pauta (45 + 100). Fixtures `.vsb` regeneradas: cena/glifos/timemap/meta/
+midi/pitchpos **byte-idênticos** (só o `generator` do manifest acompanha o
+binário atual).
+
+**Spec**: §10 passos 1 (+ "Contexto da pauta") e 5, Ex. 4 (lá2, conta
+completa), histórico de revisões; aditivo, `version` 1.
+
+**Cópia para o `zywny`** (item 5): `vetores.json` + os 9 `.vsb` em
+`zywny/score_bridge/test/fixtures/fantasma/` (o `ghost_test.dart` itera os
+casos sozinho: 33 passam, só o vetor "proximidade × cabimento" falha lá —
+`loc` 7 esperado, −5 obtido — até a porta dos passos 1 e 5 em
+`ghost.dart` + `setExpected`).

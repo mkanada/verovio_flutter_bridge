@@ -934,7 +934,8 @@ tocada, na clave e no contexto vigentes ali (G03,
 `docs/plano/G03-visao-geral-nota-fantasma.md`). Tudo o que é musical vem do
 Verovio (`pitchpos.json`, §2.8; nó `staff`, §5.1); o host só faz a conta
 abaixo. A implementação de referência é `compare/scripts/ghost_ref.py` e os
-vetores de teste são `docs/formato/fantasma/vetores.json` (G04d).
+vetores de teste são `docs/formato/fantasma/vetores.json` (G04d, +6 casos
+cross-staff em G06).
 
 **Entradas.** `E`: os ids **notados** das notas/pausas esperadas no instante
 (o host converte os ids expandidos do timemap por `sceneIdOf`, §2.4, e decide
@@ -957,14 +958,27 @@ y   = topY + (2·(n − 1) − loc)·unit           // eixo y da cena, para baix
 
 **Algoritmo**, para cada tecla `k`, nesta ordem:
 
-1. **Alvo (pauta e coluna).** Cada elemento de `E` é candidato, com pauta
-   `S` (o nó de `staff` em `staff`, §5.1, ou o ancestral) e **altura de
+1. **Alvo (pauta e coluna, G06).** Cada elemento de `E` é candidato, com
+   pauta `S` (o nó de `staff` em `staff`, §5.1, ou o ancestral) e **altura de
    referência** `ref`: nota → `midi(pn, o, alt) + sh`; pausa → o som da linha
    do meio da pauta, `midi(pname', o') + sh` da letra natural de
    `loc = n − 1` (`pos = loc − co + 28`, `o' = ⌊pos / 7⌋`, `pname' = pos mod
-   7 + 1`). O alvo é o candidato com menor `|k − ref|`; empate → o de maior
-   `ref` (o de cima). A fantasma vai na pauta `S` do alvo. Se um instante tem
-   notas e pausas, valem todas como candidatos.
+   7 + 1`). Para cada pauta distinta em `E`, calcula-se o `loc` da tecla
+   nessa pauta (passos 2-4 com o contexto da pauta — item abaixo) e as
+   **linhas suplementares brutas** (antes de 8va, passo 5). A fantasma vai
+   para a pauta com **menos suplementares**. Desempates, nesta ordem: menor
+   `|k − ref|` (do candidato mais próximo daquela pauta); maior `ref` (o de
+   cima). Dentro da pauta escolhida, o alvo é o candidato mais próximo em
+   `|k − ref|` (empate: o de cima) — a coluna (x) é a dele. Se um instante
+   tem notas e pausas, valem todas como candidatos. Com pauta única em `E`
+   (ou em empate total), isto equivale à regra antiga: alvo global por
+   proximidade.
+
+   **Contexto da pauta (G06).** `co`/`sh`/`key`/`acc` (e `n`/`topY`/`unit` da
+   geometria) são os do evento daquela pauta em `E` mais próximo de `k` —
+   mesma coluna, mesma pauta: `key`/`acc`/`co` coincidem; `sh` pode divergir
+   entre vozes, e vale o do candidato mais próximo. Grafia (passo 3) e
+   acidente (passo 6) usam esse contexto.
 2. **Altura escrita.** `w = k − sh` (do alvo). `wE` = a altura **escrita**
    do alvo: `ref − sh` (nota: `midi(pn, o, alt)`; pausa: a natural da linha
    do meio).
@@ -983,7 +997,10 @@ y   = topY + (2·(n − 1) − loc)·unit           // eixo y da cena, para baix
    positivo; abaixo, `⌊−loc / 2⌋` se positivo (senão 0). O oráculo (G04d)
    confere esta contagem **antes** do deslocamento, contra o Verovio; o
    deslocamento é convenção do plano. Enquanto passar de **4**, e com
-   `m < 2`: `loc −= 7` (acima) ou `loc += 7` (abaixo) e `m += 1`. `m` = 0: sem
+   `m < 2`: `loc −= 7` (acima) ou `loc += 7` (abaixo) e `m += 1`. (G06: entre
+   pautas, o passo 1 já escolheu a de menos suplementares — o deslocamento só
+   acontece se nem a melhor cabe, isto é, no extremo do sistema; com pauta
+   única em `E`, vale a regra integral.) `m` = 0: sem
    marcador; 1: 8va (E511, acima) / 8vb (E512, abaixo); 2: 15ma (E515) /
    15mb (E516). Se ainda passar de 4 com `m = 2` (teclas a mais de duas
    oitavas além de 4 linhas, ex. lá 0 na clave de Sol), a fantasma fica
@@ -1067,6 +1084,16 @@ de `x − 48` = 2807,08 a `x + 226,08 + 48` = 3129,16, espessura 22.
 E511 centrado (`x + 113,04 − 657 × 0,72 / 2 = 2505,52`), com linha de base
 em `268 − 3·90 = −2`.
 
+**Ex. 4 — lá2 (tecla 45) com as duas pautas em `E`, sem 8vb (G06).**
+Pauta do baixo na mesma página: `topY` 3031, `unit` 90, `n` 5, `co` 10,
+`ledger` [22, 48]; o sol2 `yw90mxt` (`loc` 0) tem a cabeça em `x` = 1856.
+Na clave de sol, lá2 dá `loc = (2 − 4)·7 + 5 − 2 = −11` (5 suplementares);
+na clave de fá, `loc = −14 + 5 + 10 = 1` (0) → a fantasma vai para o baixo.
+`y = 3031 + (8 − 1)·90 = 3661`; tecla branca, sem acidente. Colisão:
+`|1 − 0| = 1` com o sol2 real, sobreposto em `x` → `x += 226,08` → 2082,08.
+Pela regra antiga (só a clave de sol em `E`), a mesma tecla dava `loc` −11
+→ −4 com 8vb.
+
 ## Histórico de revisões
 
 | Data | Mudança |
@@ -1086,3 +1113,4 @@ em `268 − 3·90 = −2`.
 | 2026-09-24 | Modo debug (§2.6, novo): `--vsb-debug` embute `debug-options.json` (`Toolkit::GetOptions()`) e `debug-source.txt` (o documento como `Toolkit::LoadData` o recebeu) no `.vsb`, e a propriedade `debug` no JSON único, para reproduzir um render só a partir do pacote (uso: `compare/scripts/compare-page.sh` com um `.vsb` em vez da partitura + flags originais). Nova flag `--options-file` no `verovio` (`tools/main.cpp`) aplica esse JSON via `Toolkit::SetOptions`. Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.debugOptions`/`.debugSource`, `$defs/debug` no schema. |
 | 2026-09-25 | G01: `midi.json` (§2.7, novo) — o fluxo de eventos (`notes[]`/`pedal[]`) que o exportador MIDI do Verovio emitiria, com o `xml:id` de origem e o tempo já em ms, ligaduras unidas e ornamentos expandidos como no `.mid`. Gravado por um "gravador" opcional em `GenerateMIDIFunctor` (`SetEventLog`, `nullptr` por padrão — zero mudança no `.mid`/`.vsb` existentes), repassado por `Doc::ExportMIDI(midiFile, eventLog = nullptr)`, serializado por `BridgeWriter::WriteMidi` (conversão semínima→ms pelos pontos de andamento em `MIDIEventLog::tempos`) e integrado nos dois caminhos de exportação do bridge (`Toolkit::RenderMidiEventLog`, chamado por `RenderToBridgeJson`/`RenderToBridgeFile`). Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.midi`, propriedade `midi` no JSON único, `$defs/midiDocument` no schema. |
 | 2026-09-29 | G04a-G04d (nota fantasma, D-FANT-*): **`pitchpos.json`** (§2.8, novo) — contexto de notação por nota e pausa (`co`, `sh`, `key`, `acc`, `pn`/`o`/`alt`/`loc`), indexado pelo id **notado**; **nó `staff`** (§5.1) ganha `lines`/`ledger`/`ledgerCue`/`gs`, e nós de nota/acorde/pausa cross-staff ganham `staff`; **glifos reservados** (§4) sempre no dicionário (E0A4, E260-E262, E511/E512/E515/E516); **timemap** (§2.4) passa a ser pedido com `includeRests` (`restsOn`/`restsOff`, só essas chaves são novas); **§10 Nota fantasma** (normativo, com 3 exemplos do Satie), validada por oráculo Verovio (2 400 alvos, 100%) e vetores `docs/formato/fantasma/vetores.json`. Aditivo: `version` continua `1`, leitor antigo ignora tudo; `manifest.files.pitchpos`, propriedade `pitchpos` no JSON único, `$defs/pitchposDocument`/`pitchposEvent` no schema, `exemplo-pitchpos.json`. Flag `--no-vsb-pitchpos` desliga o arquivo. |
+| 2026-09-30 | G06 (fantasma cross-staff): **§10 passos 1 e 5** — a fantasma vai para a pauta onde a altura cabe (menos linhas suplementares brutas; desempates: menor `\|k − ref\|`, depois maior `ref`); coluna (x) do candidato mais próximo dentro da pauta escolhida; grafia e acidente usam o contexto da pauta (`co`/`sh`/`key`/`acc` do evento dela mais próximo de `k`); `8va`/`8vb`/`15ma`/`15mb` só no extremo do sistema ou com pauta única. Sem campo novo no `.vsb` (`version` continua `1`): o host alimenta `E` com as notas do passo + as pausas (`restsOn`) e as notas seguradas do instante — varredura do corpus (7 113 instantes): 183 sem cobertura (2,6%, quase todos de mão única soando sozinha), nunca as duas pautas sem evento. Referência (`ghost_ref.py`) + 6 vetores novos (32 casos, `resumo` à mão) + Ex. 4 no §10.1. Porta Dart no `zywny`. |

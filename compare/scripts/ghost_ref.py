@@ -122,6 +122,12 @@ def spell(w, wE, key, target_note):
     return p, o, -1
 
 
+def staff_group(staff):
+    """Chave de agrupamento por pauta: id do nó quando há, senão identidade."""
+    sid = staff.get("id") if staff is not None else None
+    return ("id", sid) if sid else ("obj", id(staff))
+
+
 def ledger_count(loc, n):
     top = 2 * (n - 1)
     if loc > top:
@@ -132,31 +138,59 @@ def ledger_count(loc, n):
 
 
 def ghosts(doc, ids, keys, acc_gap=None):
-    """§10: uma fantasma por tecla de `keys` para os eventos esperados `ids`."""
+    """§10: uma fantasma por tecla de `keys` para os eventos esperados `ids` (G06).
+
+    Passo 1 (cross-staff): para cada pauta distinta em `ids`, o `loc` da tecla
+    é calculado com o contexto daquela pauta (o evento dela mais próximo de `k`);
+    a fantasma vai para a pauta com menos linhas suplementares brutas (antes de
+    8va). Desempates: menor |k − ref|, depois maior ref. Com pauta única, ou em
+    empate total, cai na regra antiga (alvo global por proximidade).
+    """
     gap_units = ACC_GAP_PER_UNIT if acc_gap is None else acc_gap
     cands = candidates(doc, ids)
+    groups = {}
+    for c in cands:
+        groups.setdefault(staff_group(c["staff"]), []).append(c)
+    single = len(groups) == 1
     placed = []       # fantasmas já postas (colisão), por pauta
     out = []
     for k in sorted(keys):
-        # 1. alvo: menor |k - ref|; empate -> o de cima (maior ref)
-        t = min(cands, key=lambda c: (abs(k - c["ref"]), -c["ref"]))
-        ev = t["ev"]
-        sh = ev.get("sh", 0)
-        w = k - sh
-        target_note = None
-        if ev["t"] == "n":
-            target_note = (LETTERS.index(ev["pn"]) + 1, ev["o"], ev["alt"])
-        pname, octv, alt = spell(w, t["written"], ev.get("key", {}), target_note)
+        # 1. proposta por pauta: alvo da pauta (menor |k - ref|; empate, o de cima),
+        #    com grafia/loc/suplementares do contexto dessa pauta
+        prop = {}
+        for gk, members in groups.items():
+            t = min(members, key=lambda c: (abs(k - c["ref"]), -c["ref"]))
+            ev = t["ev"]
+            sh = ev.get("sh", 0)
+            w = k - sh
+            target_note = None
+            if ev["t"] == "n":
+                target_note = (LETTERS.index(ev["pn"]) + 1, ev["o"], ev["alt"])
+            pname, octv, alt = spell(w, t["written"], ev.get("key", {}), target_note)
+            loc = (octv - 4) * 7 + (pname - 1) + ev["co"]
+            prop[gk] = dict(t=t, ev=ev, pname=pname, oct=octv, alt=alt,
+                            loc_raw=loc, led_raw=ledger_count(loc, t["n"]))
+        # a pauta com menos suplementares; desempates como na regra antiga
+        best = min(prop, key=lambda gk: (prop[gk]["led_raw"],
+                                         abs(k - prop[gk]["t"]["ref"]),
+                                         -prop[gk]["t"]["ref"]))
+        p = prop[best]
+        t = p["t"]
+        ev = p["ev"]
+        pname, octv, alt = p["pname"], p["oct"], p["alt"]
         co, n, top, unit = ev["co"], t["n"], t["top"], t["unit"]
-        loc = (octv - 4) * 7 + (pname - 1) + co
-        loc_raw = loc
-        ledgers_raw = ledger_count(loc, n)
+        loc_raw = p["loc_raw"]
+        ledgers_raw = p["led_raw"]
+        # 5. alcance: com pauta única vale a regra integral (desloca sempre que
+        #    passar de 4); entre pautas, só se o melhor cabimento passar de 4
+        loc = loc_raw
         m = 0
         led = ledgers_raw
-        while led > MAX_LEDGERS and m < 2:
-            loc = loc - 7 if loc_raw > 2 * (n - 1) else loc + 7
-            m += 1
-            led = ledger_count(loc, n)
+        if single or led > MAX_LEDGERS:
+            while led > MAX_LEDGERS and m < 2:
+                loc = loc - 7 if loc_raw > 2 * (n - 1) else loc + 7
+                m += 1
+                led = ledger_count(loc, n)
         direction = "up" if loc_raw > 2 * (n - 1) else "down"
         if led > MAX_LEDGERS:   # além de duas oitavas: presa em 4 linhas (limitação aceita, §10 passo 5)
             loc = 2 * (n - 1) + 2 * MAX_LEDGERS if direction == "up" else -2 * MAX_LEDGERS

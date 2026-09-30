@@ -417,6 +417,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G04c](G04c-contexto-por-evento.md) | C++: `pitchpos.json` e pausas no timemap | G04a | D-FANT-PAUSA-TEMPO resolvida | concluído |
 | [G04d](G04d-oraculo-e-vetores.md) | Referência da fórmula, oráculo Verovio e vetores de teste | G04b, G04c | — | concluído |
 | [G05](G05-nota-para-zywny-fantasma.md) | Nota para o `zywny` (execução Dart fica lá) | G04d | — | concluído |
+| [G06](G06-fantasma-cross-staff.md) | Fantasma cross-staff: pauta onde a nota cabe, 8va só no extremo | G04d, G05 | métrica/desempates/`sh` (fechadas 2026-09-30) | concluído |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -439,10 +440,10 @@ R02a → R02b → R02c → R02d → R03a → R03b → R03c
         G01 → G02                                 (fase G: notas MIDI para tocar,
                                                     independente das demais)
         G04a → G04b ─┐                            (nota fantasma; leia G03 antes
-             → G04c ─┴→ G04d → G05                 de qualquer G04*/G05)
+             → G04c ─┴→ G04d → G05 → G06             de qualquer G04*/G05/G06)
 ```
 
-A nota fantasma (G03-G05) mostra uma tecla errada do aluno como uma cabeça
+A nota fantasma (G03-G06) mostra uma tecla errada do aluno como uma cabeça
 de nota de outra cor **na pauta**: na altura da tecla tocada, na coluna da
 nota esperada. O exportador grava o contexto de notação de cada nota/pausa
 (`pitchpos.json`) e a geometria da pauta na cena; o host aplica uma fórmula
@@ -450,7 +451,10 @@ normativa (§10 da spec). Visão geral e decisões em
 [`G03`](G03-visao-geral-nota-fantasma.md). **Concluída neste repositório em
 2026-09-29** (G04a-G05): oráculo Verovio 2 400/2 400, 26 vetores de teste e a
 nota para o host em [`docs/nota-para-zywny-fantasma.md`](../nota-para-zywny-fantasma.md);
-o lado Dart segue no `zywny`.
+o lado Dart segue no `zywny`. **G06 (2026-09-30)**: a fantasma vai para a
+pauta onde a altura cabe (8va só no extremo), sem campo novo no `.vsb` —
+§10 passos 1 e 5, referência + 6 vetores novos (32 casos), Ex. 4 e cópia
+para o `zywny`; a porta Dart é trabalho do host.
 
 A fase G grava, num `midi.json` opcional do `.vsb` (G01, C++), os eventos
 que o exportador MIDI do Verovio emite — notas (pitch já com

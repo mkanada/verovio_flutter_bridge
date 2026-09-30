@@ -93,6 +93,18 @@ CASES = [
   "compasso 3 sem armadura; sol#4 escrito antes (acc g4=+1); 68 > 65 -> sol#4 loc 2; em vigor +1 -> sem acidente"),
  ("pausas e mRest em duas pautas: nota da outra pauta mais próxima", "f08-pausas.vsb", ["f08-mr1", "f08-mr2"], [50], [R(4, "f08-mr2", None, 0, 0, "d", 3, 0)],
   "mRest na clave de sol: linha do meio si4 (71, dist 21); na de fá: ré3 (50, dist 0) -> pauta de baixo; ré3 loc=(3-4)*7+1+10=4 = a linha do meio"),
+ ("cross-staff: grave cabe no baixo, sem 8vb", "satie.vsb", CH + [BASS], [45], [R(1, BASS, None, 0, 0, "a", 2, 0)],
+  "lá2 (45): na clave de sol loc=(2-4)*7+5-2=-11 (5 linhas); na clave de fá loc=-14+5+10=1 (0 linhas) -> baixo; |1-0|=1 com o sol2 real -> desloca"),
+ ("cross-staff: proximidade diz sol, cabimento diz fá (a regra nova)", "satie.vsb", CH + [BASS], [55], [R(7, BASS, None, 0, 0, "g", 3, 0)],
+  "sol3 (55): mais próximo do si3 (|55-59|=4 < |55-43|=12), mas na sol loc=(3-4)*7+4-2=-5 (2 linhas) e na fá loc=-7+4+10=7 (0) -> baixo; sol natural, sem acidente; |7-0|=7 sem colisão"),
+ ("cross-staff: empate de cabimento decide pela proximidade", "satie.vsb", CH + [BASS], [60], [R(-2, CH[0], "E261", 0, 1, "c", 4, 0)],
+  "dó4 na sol: loc=0+0-2=-2 (1 linha); na fá: loc=0+0+10=10 (1 linha); empate 1-1 -> proximidade (|60-59|=1 do si3 contra |60-43|=17) -> sol, coluna do si3; armadura tem dó# -> bequadro; |=1 com si3/ré4 -> desloca"),
+ ("cross-staff: agudo extremo continua na sol com 8va", "satie.vsb", CH + [BASS], [100], [R(14, CH[2], None, 1, 3, "e", 7, 0)],
+  "mi7 na sol: loc=21 (6 linhas); na fá: loc=(7-4)*7+2+10=33 (12 linhas) -> sol; 6 > 4 -> loc 14, 3 linhas, 8va"),
+ ("cross-staff: grave extremo vai ao baixo com 8vb", "satie.vsb", CH + [BASS], [21], [R(-6, BASS, None, 1, 3, "a", 0, 0)],
+  "lá0 na sol: loc=(0-4)*7+5-2=-25 (12 linhas); na fá: loc=-28+5+10=-13 (6 linhas) -> baixo; 6 > 4 -> loc -6, 3 linhas, 8vb (pela regra antiga ficaria presa em 15mb na sol)"),
+ ("cross-staff: duas fantasmas, uma em cada pauta", "satie.vsb", CH + [BASS], [45, 100], [R(1, BASS, None, 0, 0, "a", 2, 0), R(14, CH[2], None, 1, 3, "e", 7, 0)],
+  "45 -> baixo (0 linhas contra 5 na sol), 100 -> sol com 8va (6 contra 12 no baixo); pautas distintas, sem colisão entre si"),
 ]
 
 vectors = dict(

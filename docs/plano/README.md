@@ -301,6 +301,9 @@ Os saltos em negrito cujo destino **não** é o 1º compasso de página normal
 | D-BACKEND | Impeller ou Skia como backend oficial da comparação? | R05a | Resolvida em R05a (2026-09-19): Impeller (média 0,49% × 0,60% Skia); **revista em 2026-09-20 para Skia** (Impeller no Linux não aplica antialiasing — decisão do usuário; corpus re-medido: média 0,008800% Skia × 0,008456% Impeller); ver `compare/README.md` |
 | D-RELOGIO | `midi.json` (fiel ao `.mid`) e `timemap.json` divergiam no Chopin Étude (144 bpm × 128 bpm — dois andamentos conflitantes na fonte, `Doc::ExportMIDI` reservava o tick 0 pro `scoreDef.midi.bpm` antes do `<tempo>` do compasso 1 ser lido, então o `.mid` real nunca ganhava o evento de 128) | G01 | Resolvida pelo usuário (2026-09-25): **corrigir no fork**. `Doc::ExportMIDI` (`doc.cpp`) passa a usar o andamento já calculado do 1º compasso (`CalculateTimemap`) em vez do valor do `scoreDef` puro, quando os dois existem — corrige o conflito (Chopin Étude: 2451 divergências → 0) sem mudar nada nas peças sem conflito. Afeta o `.mid` puro também (`-t midi`), não só o `.vsb` — mudança de comportamento em `Toolkit`/`Doc::ExportMIDI`, fora do bridge |
 | D-FANT-* | Nota fantasma: onde calcular, pauta, grafia, acidente, colisão, alcance, cabeça, duração, acordes, pausas | G04a-G05 | Resolvidas pelo usuário (2026-09-29) — ver [`G03`](G03-visao-geral-nota-fantasma.md): regras no `.vsb` + fórmula no host; pauta da nota esperada; grafia pela armadura (sem armadura: ♯ subindo, ♭ descendo); acidente só quando necessário; colisão desloca para o lado; > 4 linhas suplementares → 8va/15ma; cabeça sempre preta; visível enquanto a tecla está pressionada; uma fantasma por tecla; pausa usa a coluna da pausa, com `includeRests` no timemap |
+| D-SUM-UNIDADE, D-SUM-PAUSA, D-SUM-FICA, D-SUM-BARRA, D-SUM-SUPLEMENTAR, D-SUM-ERRO | Nota escondida e pausa substituta (trilha do decorar do `zywny`): o que some, o que fica, o que entra no lugar | G08a-G09 | Resolvidas pelo usuário (2026-10-01, entrevista no `zywny`) — ver [`G07`](G07-visao-geral-nota-escondida.md): some a coluna (notas de uma pauta no mesmo instante); entra uma pausa de outra cor com a figura da nota mais curta; a barra de ligação some quando todas as notas dela somem; as linhas suplementares da coluna somem; letra, ligaduras e dedilhado ficam |
+| D-SUM-FIGURA | De onde o host tira a figura (duração notada) da nota escondida? | G08a, G08b | **Aberta.** Recomendação: `pitchpos.json` ganha `dur`/`dots` por nota e pausa (aditivo); rejeitar a dedução pelo `qstamp` do timemap (erra em quiáltera e nota ligada) |
+| D-SUM-NATIVO | A regra das linhas suplementares precisa de dado novo na cena? | G08c | **Aberta, condicional.** Recomendação: "sem nativo novo primeiro" (como em G06) — regra geométrica varrida no corpus; só se houver traço ambíguo, gravar no traço os ids de `LedgerLine::Dash::m_events` |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
 no [`CLAUDE.md`](../../CLAUDE.md).
@@ -418,6 +421,11 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G04d](G04d-oraculo-e-vetores.md) | Referência da fórmula, oráculo Verovio e vetores de teste | G04b, G04c | — | concluído |
 | [G05](G05-nota-para-zywny-fantasma.md) | Nota para o `zywny` (execução Dart fica lá) | G04d | — | concluído |
 | [G06](G06-fantasma-cross-staff.md) | Fantasma cross-staff: pauta onde a nota cabe, 8va só no extremo | G04d, G05 | métrica/desempates/`sh` (fechadas 2026-09-30) | concluído |
+| [G07](G07-visao-geral-nota-escondida.md) | **Visão geral da nota escondida e da pausa substituta** (leitura obrigatória, não executável) | — | — | — |
+| [G08a](G08a-especificacao-nota-escondida.md) | Especificação: glifos de pausa reservados, figura no `pitchpos.json`, §11 | — | **D-SUM-FIGURA** | pendente |
+| [G08b](G08b-glifos-de-pausa-e-figura.md) | C++: glifos de pausa reservados e `dur`/`dots` no `pitchpos.json` | G08a | — | pendente |
+| [G08c](G08c-referencia-e-vetores-nota-escondida.md) | Referência, varredura do corpus, oráculo e vetores da nota escondida | G08b | D-SUM-NATIVO (só se a varredura falhar) | pendente |
+| [G09](G09-nota-para-zywny-nota-escondida.md) | Nota para o `zywny` (execução Dart fica lá: L02, L03) | G08c | — | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 
@@ -441,7 +449,17 @@ R02a → R02b → R02c → R02d → R03a → R03b → R03c
                                                     independente das demais)
         G04a → G04b ─┐                            (nota fantasma; leia G03 antes
              → G04c ─┴→ G04d → G05 → G06             de qualquer G04*/G05/G06)
+        G08a → G08b → G08c → G09                  (nota escondida; leia G07 antes)
 ```
+
+A nota escondida (G07-G09) serve à **trilha do decorar** do `zywny` (fase L
+de lá): colunas de notas somem da partitura e dão lugar a uma pausa de outra
+cor, com a figura da nota. Daqui saem os glifos de pausa sempre no
+dicionário, a figura (`dur`/`dots`) no `pitchpos.json`, a regra normativa
+(§11 da spec: o que apagar — nota, barra de ligação, linhas suplementares —
+e onde desenhar a pausa), a prova contra o Verovio e os vetores de teste.
+Visão geral e decisões em [`G07`](G07-visao-geral-nota-escondida.md).
+**Pendente**; duas decisões abertas (D-SUM-FIGURA, D-SUM-NATIVO).
 
 A nota fantasma (G03-G06) mostra uma tecla errada do aluno como uma cabeça
 de nota de outra cor **na pauta**: na altura da tecla tocada, na coluna da

@@ -67,6 +67,7 @@
 #include "system.h"
 #include "tempo.h"
 #include "text.h"
+#include "tie.h"
 #include "timemap.h"
 #include "timestamp.h"
 #include "transposefunctor.h"
@@ -648,6 +649,21 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MIDIEventLog *eventLog)
         }
     }
     midiFile->sortTracksNoteOffsBeforeOns();
+
+    // G01: the tied continuations are attached to their head only now, because a chain can change
+    // layer or staff and each GenerateMIDIFunctor instance above only sees one layer.
+    if (eventLog) {
+        std::vector<std::pair<std::string, std::string>> ties;
+        const ListOfObjects tieObjects = this->FindAllDescendantsByType(TIE);
+        for (const Object *object : tieObjects) {
+            const Tie *tie = vrv_cast<const Tie *>(object);
+            assert(tie);
+            const Note *start = dynamic_cast<const Note *>(tie->GetStart());
+            const Note *end = dynamic_cast<const Note *>(tie->GetEnd());
+            if (start && end) ties.push_back({ start->GetID(), end->GetID() });
+        }
+        eventLog->ResolveTies(ties);
+    }
 }
 
 bool Doc::ExportTimemap(std::string &output, bool includeRests, bool includeMeasures, bool useFractions)

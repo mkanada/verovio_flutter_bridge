@@ -72,3 +72,14 @@ copiados da saída do exportador (`compare/scripts/g04c-fantasma-check.py`).
 Nas fixtures que dependem da armadura no som, as notas alteradas trazem
 `accid.ges` (o Verovio não aplica a armadura ao MIDI; os importadores fazem isso
 gravando `accid.ges`).
+
+## `ligaduras/` — cadeias de ligadura do `midi.json`
+
+Partituras mínimas escritas à mão para este projeto (sem restrição de
+licença), para o campo `tied` de `midi.json` (§2.7). O `.esperado.json` ao lado
+traz, por id da cabeça, a cadeia esperada; confere-se com
+`compare/scripts/verify-tied-chains.py <peça.vsb> <esperado.json>`.
+
+| Arquivo | Caso |
+| --- | --- |
+| `l01-entre-camadas-e-casas.musicxml` | ligadura que troca de camada na barra de compasso; ligadura para dentro da casa 1 e da casa 2 (na 2ª passagem a cadeia vai para a casa 2, uma delas trocando de camada) |

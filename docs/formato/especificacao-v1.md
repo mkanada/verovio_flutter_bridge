@@ -395,7 +395,12 @@ de semínimas para milissegundos.
 - `tied` (opcional, padrão `[]`): ids das notas de continuação da ligadura,
   na ordem em que aparecem — cada uma já está coberta pelo intervalo
   `on`-`off` desta entrada; o leitor as usa para destacar/silenciar sem exigir
-  que o aluno as toque de novo.
+  que o aluno as toque de novo. A cadeia segue os `<tie>` da partitura, então
+  uma continuação pode estar em **outra camada ou outra pauta** que a cabeça
+  (`s`/`l` são sempre os da cabeça). Numa repetição com casas, a cabeça da
+  última passagem lista a nota ligada da casa que é de fato tocada em
+  seguida (a da casa 2, sem sufixo `-rend<N>`, e não a da casa 1 para onde o
+  `<tie>` aponta). Um id aparece em no máximo uma cadeia.
 - `orn` (opcional, padrão `false`): `true` quando esta entrada é uma das
   notas curtas em que o MIDI expande um trinado/tremolo/mordente — várias
   entradas então compartilham o mesmo `id`. Ligadura não é rastreada através

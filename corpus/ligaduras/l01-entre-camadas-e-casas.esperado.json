@@ -1,0 +1,8 @@
+{
+  "m1d": ["m2b"],
+  "m3b": ["m4a"],
+  "m3c": ["m4c"],
+  "m1d-rend2": ["m2b-rend2"],
+  "m3b-rend2": ["m5b"],
+  "m3c-rend2": ["m5a"]
+}

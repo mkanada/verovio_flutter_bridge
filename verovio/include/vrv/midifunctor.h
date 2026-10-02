@@ -365,6 +365,9 @@ struct MIDIEventRecord {
     double onQ = 0.0;
     // Only meaningful for Type::Note.
     double offQ = 0.0;
+    // Start (quarter notes) of the measure the note belongs to - identifies the measure in playing
+    // order, for MIDIEventLog::ResolveTies. Only set for Type::Note.
+    double measureQ = 0.0;
     int pitch = 0;
     int staff = 0;
     int layer = 0;
@@ -375,8 +378,23 @@ struct MIDIEventRecord {
     // m_expandedNotes) - several records then share the same id.
     bool ornament = false;
     // Ids of the tied continuation notes folded into this event, in order (the head note's own
-    // onQ/offQ already spans the whole chain, since note->GetScoreTimeTiedDuration() does).
+    // onQ/offQ already spans the whole chain, since note->GetScoreTimeTiedDuration() does). Filled
+    // by MIDIEventLog::ResolveTies once every staff/layer has been exported.
     std::vector<std::string> tied;
+};
+
+/**
+ * G01: a tied continuation note, i.e. one GenerateMIDIFunctor::VisitNote skips because the head of
+ * its tie chain already sounds through it. It emits no event; MIDIEventLog::ResolveTies folds its id
+ * into the `tied` list of the head's event.
+ */
+struct MIDITiedNoteRecord {
+    std::string id;
+    double onQ = 0.0;
+    // See MIDIEventRecord::measureQ.
+    double measureQ = 0.0;
+    int pitch = 0;
+    int staff = 0;
 };
 
 /**
@@ -393,6 +411,27 @@ struct MIDIEventLog {
     // (xml:id in the expanded document, shift), in visit order. Includes notes that emit no event
     // (tied continuations, cue notes) and rests, which emit none either.
     std::vector<std::pair<std::string, int>> shifts;
+    // Tied continuation notes, in visit order (one staff/layer after the other) - the input of
+    // ResolveTies, not serialized.
+    std::vector<MIDITiedNoteRecord> continuations;
+    // Start (quarter notes) of every measure visited, unsorted and with one entry per staff/layer
+    // that visited it - see ResolveTies.
+    std::vector<double> measures;
+
+    /**
+     * Fill MIDIEventRecord::tied from the document's <tie> elements, given as (start note id, end
+     * note id) pairs. Called once by Doc::ExportMIDI after all staves/layers have been exported,
+     * because a chain can change layer (or staff) on the way and each GenerateMIDIFunctor instance
+     * only sees one layer (docs/nota-do-zywny-ligadura-entre-camadas.md).
+     *
+     * A tie is followed only when its end note is played right after its start note: later in
+     * time, in the same measure or in the next one in playing order. A tie that fails this (in an
+     * expanded repetition, the tie into the first ending as seen from the last pass) leaves its
+     * start note open, and a continuation left without a head is attached to the nearest open note
+     * of the same staff and pitch that is played right before it (the tied-in note of the second
+     * ending).
+     */
+    void ResolveTies(const std::vector<std::pair<std::string, std::string>> &ties);
 };
 
 /**
@@ -486,18 +525,15 @@ private:
 
     /**
      * G01: record one note event (a plain note, a tablature-held note, or one sub-note of an
-     * expanded ornament). When `tieOpen` is true, later continuations of this tie (found by pitch,
-     * via LogTiedContinuation) attach their id to this event's `tied` list. No-op when there is no
-     * event log.
+     * expanded ornament). No-op when there is no event log.
      */
-    void LogNoteEvent(const std::string &id, double onQ, double offQ, int pitch, int velocity, bool ornament,
-        bool tieOpen);
+    void LogNoteEvent(const std::string &id, double onQ, double offQ, int pitch, int velocity, bool ornament);
 
     /**
-     * G01: attach a tied continuation's id to the currently open head event of the same pitch (see
-     * LogNoteEvent's `tieOpen`), if any. No-op when there is no event log or no open head.
+     * G01: record a tied continuation (a note that emits no event), for MIDIEventLog::ResolveTies
+     * to attach to the head of its chain. No-op when there is no event log.
      */
-    void LogTiedContinuation(int pitch, const std::string &id);
+    void LogTiedContinuation(const std::string &id, double onQ, int pitch);
 
     /**
      * G01: record one sustain pedal event. No-op when there is no event log.
@@ -548,10 +584,6 @@ private:
     const CustomTuning *m_customTuning;
     // G01: optional event log; nullptr (the default, set in the constructor) means no recording.
     MIDIEventLog *m_eventLog;
-    // G01: index (in m_eventLog->events) of the currently open tie head event, by MIDI pitch - see
-    // LogNoteEvent/LogTiedContinuation. Staff/layer are not part of the key: a single
-    // GenerateMIDIFunctor instance only ever processes one fixed (staff, layer) pair.
-    std::map<int, std::size_t> m_openTieHeadEvent;
 };
 
 //----------------------------------------------------------------------------

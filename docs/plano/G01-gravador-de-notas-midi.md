@@ -387,3 +387,39 @@ Verovio (só a 1ª nota da cadeia acumula duração positiva); ver comentário e
 
 **Não testado**: as outras 6 peças do corpus (Mazurka, Grieg ×2, Scarlatti,
 Bach Prelude) e a métrica de tamanho/tempo de geração.
+
+**Revisão de 2026-10-01 — ligadura entre camadas**
+(`docs/nota-do-zywny-ligadura-entre-camadas.md`): o mapa por pitch acima
+(`m_openTieHeadEvent`) foi **removido**. Ele só enxergava a camada da própria
+instância do functor, então uma continuação em outra camada ficava fora do
+`tied` (19 das 47 ligaduras do hino 10 do `zywny`), e, como nunca era limpo,
+uma continuação sem cabeça grudava numa cabeça velha de mesmo pitch (Clair de
+Lune: `trajyh1`, do compasso 56, saía na cabeça do compasso 17). Agora
+`VisitNote` só grava a continuação (`MIDIEventLog::continuations`) e
+`Doc::ExportMIDI`, depois de todas as pautas/camadas, chama
+`MIDIEventLog::ResolveTies` com os pares início→fim dos `<tie>` do documento
+(alternativa 1 de "Ligadura", acima). Regras:
+
+1. um `<tie>` vale quando a nota final é tocada logo depois da inicial (mais
+   tarde, no mesmo compasso ou no seguinte, na ordem de execução);
+2. um `<tie>` que falha em (1) deixa a nota inicial "aberta", e uma
+   continuação que ficou sem cabeça se liga à nota aberta mais próxima de
+   mesma pauta e pitch tocada logo antes dela. É o caso das **casas de
+   repetição**: na última passagem o `<tie>` clonado (`-rend<N>`) ainda
+   aponta para a casa 1, e a nota ligada da casa 2 é quem de fato continua.
+
+Medido (`--xml-id-seed 1`): hino 10 de 44 para 66 cabeças com `tied`, todas
+as notas finais dos 47 `<tie>` cobertas nas duas passagens; Mazurka +9 e
+Clair de Lune +4 cabeças (todas ligaduras entre camadas) e a correção do
+`trajyh1`; as outras 8 peças do corpus e as 13 de `corpus/repeticoes` com
+`midi.json` byte-idêntico. `scene.json`, `glyphs.json`, `timemap.json`,
+`pitchpos.json` e o `.mid` não mudam em nenhuma. Fixture nova:
+`corpus/ligaduras/l01-entre-camadas-e-casas.musicxml`, conferida por
+`compare/scripts/verify-tied-chains.py`.
+
+**Em aberto (não é do gravador):** nas casas, o `off` da cabeça vem de
+`InitTimemapTiesFunctor::VisitTie` e continua seguindo o `<tie>` ao pé da
+letra — na última passagem a cabeça soma a duração da nota da casa 1 em vez
+da da casa 2, e a nota da casa 1 que abre a ligadura para a casa 2 soa além
+do fim da casa 1 (hino 10: `y12st8y`, `vggswj3`, `x1f8teoh`). Isso é o que o
+`.mid` toca hoje; corrigir muda o `.mid` e fica para decisão à parte.

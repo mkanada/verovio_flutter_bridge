@@ -808,6 +808,8 @@ FunctorCode GenerateMIDIFunctor::VisitMeasure(const Measure *measure)
         }
     }
 
+    if (m_eventLog) m_eventLog->measures.push_back(m_totalTime);
+
     return FUNCTOR_CONTINUE;
 }
 
@@ -836,9 +838,12 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
 
     // If the note is a secondary tied note, then ignore it
     if (note->GetScoreTimeTiedDuration() < 0) {
-        // G01: still fold this continuation's id into the open head event of the same pitch, if
-        // any (docs/plano/G01-gravador-de-notas-midi.md, "Ligadura").
-        if (m_eventLog) this->LogTiedContinuation(this->GetMIDIPitch(note), note->GetID());
+        // G01: still record it, so that MIDIEventLog::ResolveTies can fold its id into the event
+        // of the head of its chain (docs/plano/G01-gravador-de-notas-midi.md, "Ligadura").
+        if (m_eventLog) {
+            this->LogTiedContinuation(
+                note->GetID(), m_totalTime + note->GetScoreTimeOnset().ToDouble(), this->GetMIDIPitch(note));
+        }
         return FUNCTOR_SIBLINGS;
     }
 
@@ -867,8 +872,7 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
             // expanded ornament (docs/plano/G01-gravador-de-notas-midi.md).
             if (m_eventLog) {
                 this->LogNoteEvent(
-                    note->GetID(), startTime, stopTime, midiNote.pitch, velocity, /*ornament*/ true,
-                    /*tieOpen*/ false);
+                    note->GetID(), startTime, stopTime, midiNote.pitch, velocity, /*ornament*/ true);
             }
 
             startTime = stopTime;
@@ -876,9 +880,6 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
     }
     else {
         const int pitch = this->GetMIDIPitch(note);
-        // G01: a positive tied duration means this note is the head of a tie chain - see
-        // LogNoteEvent/LogTiedContinuation.
-        const bool tieOpen = (note->GetScoreTimeTiedDuration() > 0);
 
         if (note->HasTabCourse() && (note->GetTabCourse() >= 1)) {
             // Tablature 'rule of holds'.  A note on a course is held until the next note
@@ -924,7 +925,7 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
             // this note's own written duration.
             if (m_eventLog) {
                 this->LogNoteEvent(note->GetID(), startTime, m_heldNotes[course - 1].m_stopTime, pitch, velocity,
-                    /*ornament*/ false, tieOpen);
+                    /*ornament*/ false);
                 m_heldNotes[course - 1].m_id = note->GetID();
                 m_heldNotes[course - 1].m_eventIndex = m_eventLog->events.size() - 1;
                 m_heldNotes[course - 1].m_hasEvent = true;
@@ -937,7 +938,7 @@ FunctorCode GenerateMIDIFunctor::VisitNote(const Note *note)
             m_midiFile->addNoteOn(m_midiTrack, startTime * tpq, channel, pitch, velocity);
             m_midiFile->addNoteOff(m_midiTrack, std::max(0.0, stopTime * tpq - 1), channel, pitch);
             if (m_eventLog) {
-                this->LogNoteEvent(note->GetID(), startTime, stopTime, pitch, velocity, /*ornament*/ false, tieOpen);
+                this->LogNoteEvent(note->GetID(), startTime, stopTime, pitch, velocity, /*ornament*/ false);
             }
         }
     }
@@ -1212,7 +1213,7 @@ int GenerateMIDIFunctor::GetMIDIPitch(const Note *note)
 }
 
 void GenerateMIDIFunctor::LogNoteEvent(
-    const std::string &id, double onQ, double offQ, int pitch, int velocity, bool ornament, bool tieOpen)
+    const std::string &id, double onQ, double offQ, int pitch, int velocity, bool ornament)
 {
     if (!m_eventLog) return;
 
@@ -1221,6 +1222,7 @@ void GenerateMIDIFunctor::LogNoteEvent(
     record.id = id;
     record.onQ = onQ;
     record.offQ = offQ;
+    record.measureQ = m_totalTime;
     record.pitch = pitch;
     record.staff = m_staffN;
     record.layer = m_layerN;
@@ -1229,20 +1231,19 @@ void GenerateMIDIFunctor::LogNoteEvent(
     record.velocity = velocity;
     record.ornament = ornament;
     m_eventLog->events.push_back(record);
-
-    if (tieOpen) {
-        m_openTieHeadEvent[pitch] = m_eventLog->events.size() - 1;
-    }
 }
 
-void GenerateMIDIFunctor::LogTiedContinuation(int pitch, const std::string &id)
+void GenerateMIDIFunctor::LogTiedContinuation(const std::string &id, double onQ, int pitch)
 {
     if (!m_eventLog) return;
 
-    const auto iter = m_openTieHeadEvent.find(pitch);
-    if (iter == m_openTieHeadEvent.end()) return;
-
-    m_eventLog->events[iter->second].tied.push_back(id);
+    MIDITiedNoteRecord record;
+    record.id = id;
+    record.onQ = onQ;
+    record.measureQ = m_totalTime;
+    record.pitch = pitch;
+    record.staff = m_staffN;
+    m_eventLog->continuations.push_back(record);
 }
 
 void GenerateMIDIFunctor::LogPedalEvent(const std::string &id, double timeQ, bool down)
@@ -1256,6 +1257,105 @@ void GenerateMIDIFunctor::LogPedalEvent(const std::string &id, double timeQ, boo
     record.staff = m_staffN;
     record.channel = m_midiChannel;
     m_eventLog->events.push_back(record);
+}
+
+//----------------------------------------------------------------------------
+// MIDIEventLog
+//----------------------------------------------------------------------------
+
+void MIDIEventLog::ResolveTies(const std::vector<std::pair<std::string, std::string>> &ties)
+{
+    if (continuations.empty()) return;
+
+    // One entry per note that takes part in a chain: the notes with an event and the continuations
+    struct TiedNote {
+        double onQ = 0.0;
+        double measureQ = 0.0;
+        int pitch = 0;
+        int staff = 0;
+        bool isContinuation = false;
+    };
+    std::map<std::string, TiedNote> notes;
+    for (const MIDIEventRecord &event : events) {
+        // Ties are not tracked across an expanded ornament
+        if ((event.type != MIDIEventRecord::Type::Note) || event.ornament) continue;
+        notes[event.id] = { event.onQ, event.measureQ, event.pitch, event.staff, false };
+    }
+    for (const MIDITiedNoteRecord &continuation : continuations) {
+        notes[continuation.id]
+            = { continuation.onQ, continuation.measureQ, continuation.pitch, continuation.staff, true };
+    }
+
+    // The measures in playing order
+    std::vector<double> measureStarts = measures;
+    std::sort(measureStarts.begin(), measureStarts.end());
+    measureStarts.erase(std::unique(measureStarts.begin(), measureStarts.end()), measureStarts.end());
+    auto measureIndex = [&measureStarts](const TiedNote &note) {
+        return std::lower_bound(measureStarts.begin(), measureStarts.end(), note.measureQ) - measureStarts.begin();
+    };
+    // Is `second` played right after `first`?
+    auto isPlayedNext = [&measureIndex](const TiedNote &first, const TiedNote &second) {
+        const auto distance = measureIndex(second) - measureIndex(first);
+        return (second.onQ > first.onQ) && (distance >= 0) && (distance <= 1);
+    };
+
+    // The links of the chains, first from the ties themselves
+    std::map<std::string, std::string> next;
+    std::set<std::string> linked;
+    std::vector<std::string> openStarts;
+    for (const auto &[startID, endID] : ties) {
+        const auto start = notes.find(startID);
+        const auto end = notes.find(endID);
+        if ((start == notes.end()) || (end == notes.end()) || !end->second.isContinuation) continue;
+        if (!isPlayedNext(start->second, end->second)) {
+            openStarts.push_back(startID);
+        }
+        else if (!next.contains(startID) && !linked.contains(endID)) {
+            next[startID] = endID;
+            linked.insert(endID);
+        }
+    }
+
+    // Then the continuations left without a head (in time order, since they were recorded one
+    // staff/layer after the other)
+    std::vector<const MIDITiedNoteRecord *> orphans;
+    for (const MIDITiedNoteRecord &continuation : continuations) {
+        if (!linked.contains(continuation.id)) orphans.push_back(&continuation);
+    }
+    std::stable_sort(orphans.begin(), orphans.end(),
+        [](const MIDITiedNoteRecord *orphan1, const MIDITiedNoteRecord *orphan2) {
+            return orphan1->onQ < orphan2->onQ;
+        });
+    for (const MIDITiedNoteRecord *orphan : orphans) {
+        const TiedNote &orphanNote = notes.at(orphan->id);
+        const std::string *bestID = NULL;
+        const TiedNote *best = NULL;
+        for (const std::string &startID : openStarts) {
+            if (next.contains(startID)) continue;
+            const TiedNote &start = notes.at(startID);
+            if ((start.staff != orphanNote.staff) || (start.pitch != orphanNote.pitch)) continue;
+            if (!isPlayedNext(start, orphanNote)) continue;
+            if (!best || (start.onQ > best->onQ)) {
+                bestID = &startID;
+                best = &start;
+            }
+        }
+        if (bestID) {
+            next[*bestID] = orphan->id;
+            linked.insert(orphan->id);
+        }
+    }
+
+    // Finally follow each chain from its head
+    for (MIDIEventRecord &event : events) {
+        if ((event.type != MIDIEventRecord::Type::Note) || event.ornament) continue;
+        event.tied.clear();
+        auto link = next.find(event.id);
+        while ((link != next.end()) && (event.tied.size() < next.size())) {
+            event.tied.push_back(link->second);
+            link = next.find(link->second);
+        }
+    }
 }
 
 //----------------------------------------------------------------------------

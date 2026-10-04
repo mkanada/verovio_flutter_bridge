@@ -2100,6 +2100,15 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     const std::size_t normalPageCount = bridge.GetPages().size();
 
     const std::string generator = "verovio " + this->GetVersion() + " / bridge 1";
+
+    // §2 (W02): the single JSON carries the same timemap as timemap.json, with the same options and
+    // the same omit-when-empty rule as RenderToBridgeFile - without it score_bridge cannot build a
+    // ScorePlayer from a vsb-json document (the Web path has no zip). Before the alternates, like
+    // there: they Select()/RedoLayout the Doc.
+    std::string timemapJson = this->RenderToTimemap("{\"includeMeasures\": true, \"includeRests\": true}");
+    jsonxx::Array timemapArray;
+    if (!timemapArray.parse(timemapJson) || timemapArray.empty()) timemapJson.clear();
+
     const BridgeMeta meta = this->ReadBridgeMeta();
 
     // §2.7 (G01): the events GenerateMIDIFunctor would emit to a .mid, with their originating
@@ -2132,7 +2141,7 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     // needs no such timing since it just reads the current option values.
     const std::string debugOptionsJson = m_options->m_vsbDebug.GetValue() ? this->GetOptions() : "";
 
-    std::string output = BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator, "", meta, sequences,
+    std::string output = BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator, timemapJson, meta, sequences,
         debugOptionsJson, m_debugSourceData, &midiLog, &pitchPos);
 
     // P02b, debug-only (--debug-alternate-starts): splice a "_alternateStarts" key into the

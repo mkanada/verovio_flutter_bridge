@@ -93,6 +93,11 @@ ABCInput::~ABCInput() {}
 
 bool ABCInput::Import(const std::string &abc)
 {
+    // The key signature lives in file-level globals: without this reset a tune in C major / A minor
+    // inherits the accidentals of the last tune loaded in the same process (bridge fix, zywny I02)
+    keyPitchAlter.clear();
+    keyPitchAlterAmount = 0;
+
     std::istringstream in_stream(abc);
     this->ParseABC(in_stream);
     return true;
@@ -712,6 +717,11 @@ void ABCInput::ParseKey(std::string &keyString)
         // m_doc->m_scoreDef.SetSig(keySig);
         m_key->SetSig(m_key->AttKeySigLog::StrToKeysignature(keySig));
         keyPitchAlter = pitch.substr(posStart, posEnd);
+    }
+    else {
+        // K:C or K:Am (also in the middle of a tune): no accidentals, drop those of the previous key
+        keyPitchAlter.clear();
+        keyPitchAlterAmount = 0;
     }
 
     // set clef

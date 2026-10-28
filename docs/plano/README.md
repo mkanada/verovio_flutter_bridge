@@ -426,6 +426,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G08b](G08b-glifos-de-pausa-e-figura.md) | C++: glifos de pausa reservados e `dur`/`dots` no `pitchpos.json` | G08a | — | pendente |
 | [G08c](G08c-referencia-e-vetores-nota-escondida.md) | Referência, varredura do corpus, oráculo e vetores da nota escondida | G08b | D-SUM-NATIVO (só se a varredura falhar) | pendente |
 | [G09](G09-nota-para-zywny-nota-escondida.md) | Nota para o `zywny` (execução Dart fica lá: L02, L03) | G08c | — | pendente |
+| [G10](G10-marcas-de-expressao.md) | Marcas de expressão no `midi.json` (dinâmica, staccato, acento, ligadura de expressão), pedido do EX07 do `zywny-aprendizado` | G01 | D-MARCAS | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 

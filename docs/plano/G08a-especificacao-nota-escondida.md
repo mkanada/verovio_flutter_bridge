@@ -77,4 +77,27 @@ Só documento e schema — nenhuma linha de C++.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+Executado em 2026-11-04. D-SUM-FIGURA = (a), confirmada pelo usuário.
+
+- Spec: §2.8 (`dur`/`dots`), §4 (16 glifos reservados), §9, **§11** (regras
+  1-7, "o que o host não deve fazer", limitações) e §11.1 só como esqueleto
+  (a preencher em G08c com a fixture do hino); histórico de revisões.
+  Schema e `exemplo-pitchpos.json` com os campos (o exemplo ganhou três
+  entradas **ilustrativas**, ids inventados). Validado: o exemplo novo, o
+  `pitchpos.json` do `satie.vsb` (334 eventos) e o do `f08-pausas.vsb`, sem
+  `dur`, passam; `dur: 3`, `dots` sem `dur` e `dots: 5` são recusados.
+- **Duas correções a G07**, achadas lendo o fonte do Verovio, já na §11 (e
+  refletidas em G07):
+  1. **Acorde.** Na cena (Satie), a haste do acorde é filha do nó `chord`,
+     não de cada `note`: só trocar a cor da nota deixaria a haste. A regra 1
+     esconde o `chord` inteiro quando todas as suas notas estão escondidas.
+  2. **Posição da pausa.** `calcalignmentpitchposfunctor.cpp` L186-L188 tira 1
+     do `loc` da linha do meio quando a duração é maior que a semínima e o
+     `loc` é ímpar (só afeta pautas de número par de linhas, mas é a regra).
+- **Os pontos não são o glifo `E1E7`:** `View::DrawDot` desenha um círculo
+  (`DrawCircle`, raio `max(2·unit/5, 2)`), e a spec descreve esse círculo (a
+  conta de `CalcDotsFunctor::VisitRest` + `DrawDots`). `E1E7` continua
+  reservado, como G07 pede, mas só como alternativa. **G08c** confere a conta
+  dos pontos, o `x` da pausa e a regra 3 contra o Verovio.
+- A regra 4 desempata "mais curta" pelo **menor** `dots` (a semínima sem ponto
+  é mais curta que a pontuada).

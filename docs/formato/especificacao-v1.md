@@ -443,14 +443,21 @@ normais e às alternativas (§2.5).
                  "pn": "b", "o": 3, "alt": 0, "loc": -3 },
     "f02-a": { "t": "n", "co": -2, "sh": 12, "pn": "c", "o": 5, "alt": 0, "loc": 5 },
     "f07-c": { "t": "n", "co": -2, "key": { "b": -1 }, "acc": { "b4": 0, "f4": 1 },
-               "pn": "f", "o": 4, "alt": 1, "loc": 1 }
+               "pn": "f", "o": 4, "alt": 1, "loc": 1 },
+    "ex-pontuada": { "t": "n", "co": -2, "pn": "b", "o": 3, "alt": 0, "loc": -3,
+                     "dur": 4, "dots": 1 },
+    "ex-tercina": { "t": "n", "co": -2, "pn": "d", "o": 4, "alt": 0, "loc": -1, "dur": 8 },
+    "ex-pausa": { "t": "r", "co": -2, "dur": 2 }
   }
 }
 ```
 
 (As duas primeiras entradas são do Satie — pausa e si3 na clave de Sol, armadura de
 ré maior —, `f02-a` de `corpus/fantasma/f02-oitavas.mei`, um dó5 sob 8va, e `f07-c`
-de `f07-acidentes.mei`, um fá#4 depois de um fá# e um si♮ escritos na outra camada.)
+de `f07-acidentes.mei`, um fá#4 depois de um fá# e um si♮ escritos na outra camada.
+As três últimas são **ilustrativas** — ids inventados, sem fixture — e mostram a
+figura: uma semínima pontuada, uma colcheia de tercina e uma pausa de
+mínima.)
 
 - **Chave** = `xml:id` **notado** de nota ou pausa (`rest`, `mRest`). O
   contexto de notação é o mesmo em todas as passagens de uma repetição; para
@@ -484,6 +491,20 @@ de `f07-acidentes.mei`, um fá#4 depois de um fá# e um si♮ escritos na outra 
   `loc` que o Verovio usou para desenhar a cabeça — cobre notas com `@loc`
   explícito). Invariante: `midi.p = altura(pn, o, alt) + sh` para toda nota
   com entrada em `midi.json` (§2.7; ornamentos expandidos à parte).
+- `dur` e `dots` (opcionais; G08a, nota escondida, §11) — a **figura escrita**,
+  para **nota e pausa**. `dur` é o denominador da figura, inteiro: `1`
+  (semibreve), `2` (mínima), `4` (semínima), `8`, `16`, `32`, `64`, `128`, `256`,
+  `512`, `1024`; é o valor de `DurationInterface::GetActualDur()`. `dots` é o
+  número de pontos de aumento (`DurationInterface::GetDots()`, 0-4; ausente =
+  `0`; só aparece com `dur`). Regras:
+  - é o que está **escrito**: quiáltera, ligadura de prolongamento e fermata
+    não a mudam (uma colcheia de tercina é `dur: 8`, não a duração sonora);
+  - nota de acorde herda `dur`/`dots` do acorde;
+  - **breve, longa, pausa de compasso inteiro (`mRest`) e figuras sem
+    `@dur`** (notação mensural, nota sem duração na fonte) ficam **sem o
+    campo**: o host trata a ausência de `dur` como "figura desconhecida";
+  - o host não deve deduzir a figura do timemap (`qstamp` do `off` menos o do
+    `on`): erra em quiáltera, em nota ligada e em fermata.
 - Notas ocultas (`visible="false"`) têm entrada como as demais — o host pode
   esperá-las —, mas o nó delas na cena é `hidden`. Uma nota sem `@pname`
   (dado de origem incompleto) não tem entrada.
@@ -567,9 +588,16 @@ arredondamento.
   `left = x / 10`, `top = -(y + altura) / 10`, `right = (x + largura) / 10`,
   `bottom = -y / 10`.
 - **Glifos reservados.** O dicionário traz **sempre**, da fonte da peça,
-  `E0A4` (cabeça preta), `E260`/`E261`/`E262` (♭/♮/♯), `E511`/`E512`
-  (8va/8vb) e `E515`/`E516` (15ma/15mb), mesmo sem nenhuma instância `u` —
-  a nota fantasma (§10) desenha só com eles, sem consultar a fonte.
+  mesmo sem nenhuma instância `u` — 16 glifos:
+  - `E0A4` (cabeça preta), `E260`/`E261`/`E262` (♭/♮/♯), `E511`/`E512`
+    (8va/8vb) e `E515`/`E516` (15ma/15mb): a nota fantasma (§10) desenha só
+    com eles, sem consultar a fonte;
+  - `E4E3` (pausa de semibreve), `E4E4` (mínima), `E4E5` (semínima), `E4E6`
+    (colcheia), `E4E7` (semicolcheia), `E4E8` (fusa), `E4E9` (semifusa) e
+    `E1E7` (ponto de aumento): a pausa que substitui uma nota escondida
+    (§11) é de uma figura qualquer, e o dicionário só traria as pausas que a
+    peça usa. `E1E7` é reservado para um leitor que prefira desenhar o ponto
+    como glifo; o caminho canônico é o círculo da §11, regra 6.
 - `font`, `codepoint`, `unitsPerEm` e `horizAdvX` vêm dos metadados do `Glyph`
   do Verovio e permitem um segundo caminho de render por TTF no futuro. O
   caminho canônico — e o único que precisa bater a paridade — é o dos contornos.
@@ -930,6 +958,11 @@ explicitamente.
   `gs`) e `staff` (§5.1) e os glifos reservados (§4): tudo aditivo. Um
   leitor que conhece `pitchpos` mas não encontra o arquivo/propriedade trata
   a peça como "sem nota fantasma disponível" — nada mais muda.
+- Um leitor que não conhece `dur`/`dots` em `pitchpos` (versões anteriores a
+  G08a) os ignora, assim como os glifos reservados novos (§4): tudo aditivo.
+  Um leitor que conhece a §11 mas encontra um `pitchpos.json` sem `dur`, ou um
+  dicionário sem as pausas reservadas, esconde as notas normalmente e **não
+  desenha a pausa substituta** (regra 4 e 5).
 
 ## 10. Nota fantasma (normativo)
 
@@ -1099,6 +1132,169 @@ na clave de fá, `loc = −14 + 5 + 10 = 1` (0) → a fantasma vai para o baixo.
 Pela regra antiga (só a clave de sol em `E`), a mesma tecla dava `loc` −11
 → −4 com 8vb.
 
+## 11. Nota escondida e pausa substituta (normativo)
+
+A **nota escondida** é a da trilha do decorar: o host apaga da partitura as
+notas de uma **coluna** — todas as notas de **uma pauta de desenho** que
+começam no mesmo instante — e desenha no lugar **uma pausa**, de outra cor,
+com a figura da nota mais curta da coluna (G07,
+`docs/plano/G07-visao-geral-nota-escondida.md`). Tudo o que é musical vem do
+Verovio (`pitchpos.json`, §2.8; cena, §5; nó `staff`, §5.1; glifos
+reservados, §4); o host só faz a conta abaixo. Nada disso muda o desenho:
+esconder e mostrar é trocar a cor ou não pintar, sem recompilar a página, e
+vale igual nas páginas normais e nas alternativas (§2.5), porque só usa o que
+está na própria página.
+
+**Quais colunas somem e quando é decisão do host**, assim como a cor da
+pausa, o piscar e a revelação ao errar; nada disso está no formato. O que
+fica na tela é: pauta, clave, armadura, fórmula de compasso, barras de
+compasso, pausas de verdade, a letra (`verse`), ligaduras de expressão e de
+prolongamento, dedilhado e as notas que não foram escondidas.
+
+**Entradas.** `C`: os ids **notados** (§2.8) das notas da coluna, todas na
+mesma pauta de desenho `S` (o nó `staff` em `staff`, §5.1, ou o ancestral).
+`H`: o conjunto de **todas** as notas escondidas no momento (as de `C` e as
+de outras colunas já escondidas). Do `pitchpos.json`, cada nota de `C` traz
+`loc`, `dur` e `dots`; de `S`, `n`, `topY`, `unit` (`lines`) e `gs`. Um id
+expandido do timemap (`-rend<N>`) vira o id da cena por `sceneIdOf` (§2.4).
+
+**1. Esconder a nota.** Para cada nota de `C` (e para a sua continuação
+ligada, ver abaixo), o host troca a cor do nó `note` por transparente (§6,
+cor herdada): cabeça, haste própria, colchete, acidente, articulação e
+pontos de aumento são descendentes do nó e vão junto. Três casos:
+  - **Continuação de nota ligada** é outra `note` na cena: o host a esconde
+    pelo id (`midi.json`, `tied`, §2.7).
+  - **Acorde.** A haste, o colchete, os pontos e as articulações de um acorde
+    são filhos do nó `chord`, **não** de cada `note`. O host esconde o nó
+    `chord` inteiro quando **toda** `note` descendente dele está em `H`. Com
+    uma coluna (que cobre o acorde todo) isso é sempre o caso; só um acorde
+    cross-staff dividido entre duas pautas pode ficar pela metade, e então a
+    haste fica (limitação da v1).
+  - **Exceções.** Nós que a coluna não leva consigo, como `verse` (filho da
+    nota), continuam visíveis: o host os pinta com a cor normal, não com a
+    herdada (`kOverrideExemptClasses`, no `score_bridge`).
+
+**2. Barra de ligação.** As formas **filhas diretas** de um nó `beam` (as
+barras propriamente ditas) deixam de ser pintadas quando **toda** `note`
+descendente desse `beam` está em `H`. Barras aninhadas: a regra vale para cada
+`beam` com as suas próprias descendentes. O host **não** esconde o nó `beam`
+(trocar a cor dele esconderia também as notas visíveis, descendentes dele);
+só as formas filhas diretas.
+
+**3. Linhas suplementares.** Os nós `ledgerLines` (classes `ledgerLines above`,
+`ledgerLines below` e as variantes cue) são filhos de `staff`, sem `id`; cada
+**traço** é uma forma `p` própria. Para um traço em `y_t` (a ordenada do
+segmento, no referencial do §5.1) e de `x` em `[a, b]`:
+  - **ordem `k`**: acima da pauta (`y_t < topY`), `k = (topY − y_t) / (2·unit)`;
+    abaixo (`y_t > topY + 2·(n − 1)·unit`), `k = (y_t − (topY + 2·(n − 1)·unit))
+    / (2·unit)`; arredonda-se `k` ao inteiro mais próximo (`k ≥ 1`);
+  - **extensão da cabeça** de uma nota: `[xl, xr]` = o intervalo horizontal
+    dos vértices (`v`) do contorno de cada glifo `u` do nó `notehead` da nota
+    (§4, §5.3), com `x` e `sx` da instância — a mesma medida de largura da
+    §10, passo 7;
+  - o traço **pertence** a uma nota quando a nota está na **mesma pauta de
+    desenho** (§5.1, `staff`), `[xl, xr] ⊆ [a − 1, b + 1]` (1 unidade de
+    viewBox de folga) e o `loc` dela alcança a linha: acima, `loc ≥ 2·(n −
+    1) + 2·k`; abaixo, `loc ≤ −2·k`;
+  - o traço **deixa de ser pintado** quando toda nota a que pertence está em
+    `H`. Um traço sem nenhuma dona (não deve existir) continua visível. Os
+    traços de uma coluna visível não são afetados.
+
+*Nesta versão do texto a regra 3 é a recomendação "sem nativo novo" de G07
+(D-SUM-NATIVO).* A varredura do corpus (G08c) confere os traços contra as
+donas; se achar um traço ambíguo, o exportador passa a gravar no traço os ids
+das notas que o geraram e esta regra é substituída por essa leitura direta.
+O leitor deve seguir a versão vigente desta seção.
+
+**4. Figura.** `dur` e `dots` da nota **mais curta** da coluna: o maior `dur`
+entre as notas de `C` (figura mais curta) e, no empate, o **menor** `dots`
+(a sem ponto é mais curta que a pontuada de mesmo `dur`). É a figura **escrita**
+(§2.8): quiáltera, ligadura e fermata não a mudam. Se alguma nota de `C` não
+tem `dur`, ou o `dur` fica fora do que a regra 5 cobre, a coluna é escondida
+**sem pausa substituta**.
+
+**5. Glifo da pausa.** Chave do dicionário `"<fonte>:<codepoint>"` (a fonte
+é a dos glifos reservados, §4):
+
+| `dur` | 1 | 2 | 4 | 8 | 16 | 32 | 64 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| codepoint | `E4E3` | `E4E4` | `E4E5` | `E4E6` | `E4E7` | `E4E8` | `E4E9` |
+
+(semibreve, mínima, semínima, colcheia, semicolcheia, fusa, semifusa). Fora
+dessa faixa (`dur` ≥ 128) não há pausa substituta. Um `.vsb` anterior a G08b,
+sem esses glifos no dicionário, esconde a coluna do mesmo jeito, sem pausa.
+
+**6. Posição.** Em unidades de viewBox, no referencial de conteúdo (§5.1):
+
+```text
+x    = menor x de cabeça (u dentro de notehead) entre as notas de C
+loc  = n − 1                                  // linha do meio da pauta
+se dur ≥ 2 (mínima ou semibreve) e loc ímpar:  loc −= 1
+se dur == 1 e n > 1:                           loc += 2
+y    = topY + (2·(n − 1) − loc)·unit
+sx = gs[0], sy = gs[1]
+```
+
+São as mesmas condições de `calcalignmentpitchposfunctor.cpp` para a posição
+automática de uma pausa (a linha do meio; a de duração maior que a semínima
+cai numa linha; a semibreve pendura-se uma linha acima), **sem** o ajuste por
+camada (`GetOptimalLayerLocation`): a pausa substituta é uma só por pauta. A
+pausa é um `u` com o glifo da regra 5, `{g, x, y, sx, sy}`, pintado na cor do
+host. A convenção para o `x` é a da cabeça da coluna; o desvio em relação à
+posição horizontal que o Verovio daria a uma pausa de verdade é medido em
+G08c.
+
+*Pontos de aumento* (`dots > 0`), na regra de `View::DrawDots` e
+`CalcDotsFunctor::VisitRest`: o Verovio desenha cada ponto como um círculo (não
+como glifo; `View::DrawDot`), de raio `r = max(2·unit / 5, 2)`. Para a pausa
+substituta, com `ux = unit` e `loc` o da pausa acima:
+
+```text
+locDot = loc;  se locDot é par: locDot += 1
+se dur == 32 ou 64: locDot += 2             // a pausa de fusa/semifusa é mais alta
+xRel   = (dur > 2) ? largura do glifo da pausa : 2,5·unit
+         // largura = extensão horizontal do contorno do glifo × sx
+x0     = x + xRel + unit
+yDot   = topY + (2·(n − 1) − locDot)·unit
+ponto j (j = 0 … dots − 1): elipse { cx = x0 + j·1,5·unit, cy = yDot, rx = ry = r }
+```
+
+Cada ponto é um círculo `fill` na cor da pausa, sem contorno. *G08c confere
+esta conta contra o Verovio (oráculo) e corrige este texto se ela diferir.*
+
+**7. Uma pausa por (pauta de desenho, instante).** Se o host esconde colunas
+de duas pautas no mesmo instante, desenha duas pausas, uma em cada pauta de
+desenho (cross-staff: `staff`, §5.1). Mais de uma coluna na **mesma** pauta e
+no mesmo instante não existe por definição (a coluna é o conjunto do
+instante).
+
+**O que o host não deve fazer.**
+  - Deduzir a figura do timemap: erra em quiáltera, em nota ligada e em
+    fermata (use `dur`/`dots`, §2.8).
+  - Esconder `verse`: a letra fica.
+  - Apagar o nó `beam` inteiro: levaria as notas visíveis dele junto (regra 2:
+    só as formas filhas diretas).
+  - Deduzir a pauta de desenho pela posição vertical: ela está em `staff`
+    (§5.1).
+  - Interpretar CSS ou nomes de classe além dos já citados (§1: o estilo está
+    resolvido no arquivo).
+
+**Limitações da v1.** A pausa substituta pode ficar apertada contra uma nota
+visível vizinha (o espaçamento foi calculado para a nota); ligadura de
+prolongamento ou de expressão que começa ou termina numa nota escondida
+continua desenhada; dedilhado (`fing`) continua desenhado; apojaturas e
+ornamentos não somem; pauta que não tem 5 linhas, tablatura, percussão e
+notação mensural ficam sem pausa substituta.
+
+### 11.1 Exemplos trabalhados
+
+*A preencher com a fixture do hino que G08c põe no corpus* (duas vozes por
+pauta, letra, uma coluna com linha suplementar e uma dentro de barra de
+ligação), com os números reais de `x`, `y`, `loc`, traços e barras, e com o
+oráculo do Verovio ao lado. Até lá, o contrato é o texto acima; o Satie
+(§10.1) traz os números de pauta (`topY` 808, `unit` 90, `n` 5, `gs` 0,72)
+que as regras 6 e 3 usam.
+
 ## Histórico de revisões
 
 | Data | Mudança |
@@ -1119,3 +1315,4 @@ Pela regra antiga (só a clave de sol em `E`), a mesma tecla dava `loc` −11
 | 2026-09-25 | G01: `midi.json` (§2.7, novo) — o fluxo de eventos (`notes[]`/`pedal[]`) que o exportador MIDI do Verovio emitiria, com o `xml:id` de origem e o tempo já em ms, ligaduras unidas e ornamentos expandidos como no `.mid`. Gravado por um "gravador" opcional em `GenerateMIDIFunctor` (`SetEventLog`, `nullptr` por padrão — zero mudança no `.mid`/`.vsb` existentes), repassado por `Doc::ExportMIDI(midiFile, eventLog = nullptr)`, serializado por `BridgeWriter::WriteMidi` (conversão semínima→ms pelos pontos de andamento em `MIDIEventLog::tempos`) e integrado nos dois caminhos de exportação do bridge (`Toolkit::RenderMidiEventLog`, chamado por `RenderToBridgeJson`/`RenderToBridgeFile`). Aditivo: `version` continua `1`, mesma regra de omissão do timemap/`meta`/`alternates`; leitor antigo ignora. `manifest.files.midi`, propriedade `midi` no JSON único, `$defs/midiDocument` no schema. |
 | 2026-09-29 | G04a-G04d (nota fantasma, D-FANT-*): **`pitchpos.json`** (§2.8, novo) — contexto de notação por nota e pausa (`co`, `sh`, `key`, `acc`, `pn`/`o`/`alt`/`loc`), indexado pelo id **notado**; **nó `staff`** (§5.1) ganha `lines`/`ledger`/`ledgerCue`/`gs`, e nós de nota/acorde/pausa cross-staff ganham `staff`; **glifos reservados** (§4) sempre no dicionário (E0A4, E260-E262, E511/E512/E515/E516); **timemap** (§2.4) passa a ser pedido com `includeRests` (`restsOn`/`restsOff`, só essas chaves são novas); **§10 Nota fantasma** (normativo, com 3 exemplos do Satie), validada por oráculo Verovio (2 400 alvos, 100%) e vetores `docs/formato/fantasma/vetores.json`. Aditivo: `version` continua `1`, leitor antigo ignora tudo; `manifest.files.pitchpos`, propriedade `pitchpos` no JSON único, `$defs/pitchposDocument`/`pitchposEvent` no schema, `exemplo-pitchpos.json`. Flag `--no-vsb-pitchpos` desliga o arquivo. |
 | 2026-09-30 | G06 (fantasma cross-staff): **§10 passos 1 e 5** — a fantasma vai para a pauta onde a altura cabe (menos linhas suplementares brutas; desempates: menor `\|k − ref\|`, depois maior `ref`); coluna (x) do candidato mais próximo dentro da pauta escolhida; grafia e acidente usam o contexto da pauta (`co`/`sh`/`key`/`acc` do evento dela mais próximo de `k`); `8va`/`8vb`/`15ma`/`15mb` só no extremo do sistema ou com pauta única. Sem campo novo no `.vsb` (`version` continua `1`): o host alimenta `E` com as notas do passo + as pausas (`restsOn`) e as notas seguradas do instante — varredura do corpus (7 113 instantes): 183 sem cobertura (2,6%, quase todos de mão única soando sozinha), nunca as duas pautas sem evento. Referência (`ghost_ref.py`) + 6 vetores novos (32 casos, `resumo` à mão) + Ex. 4 no §10.1. Porta Dart no `zywny`. |
+| 2026-11-04 | G08a (nota escondida, D-SUM-FIGURA = (a), decisão do usuário): **`pitchpos.json`** (§2.8) ganha `dur` e `dots` por nota e pausa — a figura escrita, não deduzida do timemap; **glifos reservados** (§4) passam a 16, com as pausas `E4E3`-`E4E9` e o ponto `E1E7`; **§11 Nota escondida e pausa substituta** (normativo; regras 1-7, "o que o host não deve fazer" e esqueleto de §11.1). A regra 1 trata o **acorde** (haste, colchete e pontos são filhos do nó `chord`, não da nota) e a regra 6 corrige a posição vertical da pausa de mínima e semibreve para a do Verovio; os pontos são um círculo (`View::DrawDot`), não o glifo `E1E7`. Regras 3 e dos pontos sujeitas a conferência em G08c. Aditivo: `version` continua `1`, leitor antigo ignora tudo. Schema e `exemplo-pitchpos.json` atualizados. |

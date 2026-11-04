@@ -78,7 +78,9 @@ Tudo o que é musical vem do Verovio; o host só faz a conta. A especificação
 
 1. **Esconder a nota.** O host troca a cor do nó `note` por transparente.
    Cabeça, haste, colchete (`flag`), acidente, articulação e pontos vão
-   junto. `verse` fica. A continuação de uma nota ligada é outra `note`, e o
+   junto. `verse` fica. **Acorde:** a haste/colchete/pontos são filhos do
+   nó `chord`, não da nota; o nó `chord` some quando todas as suas notas somem
+   (spec §11, regra 1). A continuação de uma nota ligada é outra `note`, e o
    host a esconde pelo id (`midi.json` → `tied`).
 2. **Barra de ligação.** As formas filhas diretas de um `beam` somem quando
    toda `note` descendente dele está escondida. Barras aninhadas: a regra
@@ -96,7 +98,8 @@ Tudo o que é musical vem do Verovio; o host só faz a conta. A especificação
    (fusa), `E4E9` (semifusa); figuras fora dessa faixa não têm pausa
    substituta (a coluna some sem pausa). Ponto de aumento: `E1E7`.
 6. **Posição.** x = menor `x` de cabeça da coluna. `loc` = linha do meio
-   (`n − 1`), **+2** para a semibreve quando `n > 1`; sem o ajuste por
+   (`n − 1`; −1 se for ímpar e a figura for mínima ou semibreve), **+2** para a
+   semibreve quando `n > 1`; sem o ajuste por
    camada do Verovio (a pausa substituta é uma só por pauta).
    `y = topY + (2·(n − 1) − loc) · unit` (o `y` da §10). Escala: `gs` do nó
    `staff`. Pontos: à direita do glifo, na regra de `View::DrawDots` — G08c

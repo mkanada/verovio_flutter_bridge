@@ -549,8 +549,11 @@
         "pn": { "enum": ["c", "d", "e", "f", "g", "a", "b"] },
         "o": { "type": "integer" },
         "alt": { "type": "integer", "minimum": -2, "maximum": 2 },
-        "loc": { "type": "integer" }
+        "loc": { "type": "integer" },
+        "dur": { "enum": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024] },
+        "dots": { "type": "integer", "minimum": 0, "maximum": 4 }
       },
+      "dependentRequired": { "dots": ["dur"] },
       "if": { "properties": { "t": { "const": "n" } } },
       "then": { "required": ["pn", "o", "alt", "loc"] },
       "else": {

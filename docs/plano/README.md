@@ -423,7 +423,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G06](G06-fantasma-cross-staff.md) | Fantasma cross-staff: pauta onde a nota cabe, 8va só no extremo | G04d, G05 | métrica/desempates/`sh` (fechadas 2026-09-30) | concluído |
 | [G07](G07-visao-geral-nota-escondida.md) | **Visão geral da nota escondida e da pausa substituta** (leitura obrigatória, não executável) | — | — | — |
 | [G08a](G08a-especificacao-nota-escondida.md) | Especificação: glifos de pausa reservados, figura no `pitchpos.json`, §11 | — | D-SUM-FIGURA (resolvida em 2026-11-04) | concluído |
-| [G08b](G08b-glifos-de-pausa-e-figura.md) | C++: glifos de pausa reservados e `dur`/`dots` no `pitchpos.json` | G08a | — | pendente |
+| [G08b](G08b-glifos-de-pausa-e-figura.md) | C++: glifos de pausa reservados e `dur`/`dots` no `pitchpos.json` | G08a | — | concluído |
 | [G08c](G08c-referencia-e-vetores-nota-escondida.md) | Referência, varredura do corpus, oráculo e vetores da nota escondida | G08b | D-SUM-NATIVO (só se a varredura falhar) | pendente |
 | [G09](G09-nota-para-zywny-nota-escondida.md) | Nota para o `zywny` (execução Dart fica lá: L02, L03) | G08c | — | pendente |
 | [G10](G10-marcas-de-expressao.md) | Marcas de expressão no `midi.json` (dinâmica, staccato, acento, ligadura de expressão), pedido do EX07 do `zywny-aprendizado` | G01 | D-MARCAS | pendente |
@@ -460,7 +460,7 @@ dicionário, a figura (`dur`/`dots`) no `pitchpos.json`, a regra normativa
 (§11 da spec: o que apagar — nota, barra de ligação, linhas suplementares —
 e onde desenhar a pausa), a prova contra o Verovio e os vetores de teste.
 Visão geral e decisões em [`G07`](G07-visao-geral-nota-escondida.md).
-**Em andamento**: G08a concluído (2026-11-04); G08b-G09 pendentes; D-SUM-NATIVO continua aberta (condicional).
+**Em andamento**: G08a-G08b concluídos (2026-11-04); G08c-G09 pendentes; D-SUM-NATIVO continua aberta (condicional).
 
 A nota fantasma (G03-G06) mostra uma tecla errada do aluno como uma cabeça
 de nota de outra cor **na pauta**: na altura da tecla tocada, na coluna da

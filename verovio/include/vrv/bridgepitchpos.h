@@ -32,6 +32,10 @@ struct BridgePitchPosEvent {
     int shift = 0; // `sh`: sound - written, in semitones
     std::map<int, int> key; // `key`: pname (1 = c ... 7 = b) -> alteration of the key signature in force
     std::map<std::string, int> acc; // `acc`: "g4" -> alteration in force, when different from `key`
+    // Written figure (§2.8, G08b): the denominator (1 = whole ... 1024), 0 when unknown (breve, long,
+    // maxima, no @dur, mRest); `dots` only means something with `dur`.
+    int dur = 0;
+    int dots = 0;
     // Notes only
     int pname = 0; // 1 = c ... 7 = b
     int oct = 0;

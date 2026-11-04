@@ -784,6 +784,10 @@ std::string BridgeWriter::WritePitchPos(const BridgePitchPos &pitchPos)
             out += ",\"alt\":" + std::to_string(event.alt);
             out += ",\"loc\":" + std::to_string(event.loc);
         }
+        if (event.dur > 0) {
+            out += ",\"dur\":" + std::to_string(event.dur);
+            if (event.dots > 0) out += ",\"dots\":" + std::to_string(event.dots);
+        }
         out += '}';
     }
     out += "}}";

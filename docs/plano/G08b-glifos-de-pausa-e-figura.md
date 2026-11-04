@@ -88,4 +88,47 @@ no `pitchpos.json`. Sem tocar em nada que desenha.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+Concluído em 2026-11-04. Mudança em 4 arquivos de `verovio/`
+(`bridgedevicecontext.cpp`, `bridgepitchpos.h`/`.cpp`, `bridgewriter.cpp`); nenhuma
+linha de `View`, `SvgDeviceContext` ou `BBoxDeviceContext`. Script descartável:
+`compare/scripts/g08b-check.py`; saídas em `compare/out/g08b/`
+(`antes`, `depois`, `oraculo`, `corpus`).
+
+- **Glifos**: `AddReservedGlyphs` ganhou as 7 pausas `E4E3`-`E4E9` e o ponto
+  `E1E7` (16 reservados no total).
+- **Figura**: `SetWrittenFigure` em `bridgepitchpos.cpp`. Usa
+  `DurationInterface::GetActualDur()` e `GetDots()`; nota de acorde sem `@dur`
+  próprio usa a do `Chord` (mesma escolha de `GetNoteOrChordDur`). Fora de
+  semibreve..1024 (breve, longa, máxima, sem `@dur`) o campo some; `mRest` e
+  `multiRest` não têm `DurationInterface` útil e ficam sem. Gravado depois de
+  `loc`: `"dur"`, e `"dots"` só se > 0 (ordem das chaves de §2.8).
+  Mensural: `GetActualDur` já converte `semibrevis` -> `1` etc., então a figura
+  gravada é a equivalente moderna (sem peça mensural no corpus para provar).
+- **Critério 1** (paridade): nas 36 peças (corpus + repetições + fantasma),
+  `.mid` e `timemap` standalone byte-idênticos; `scene.json`, `alternates.json`,
+  `timemap.json`, `midi.json`, `meta.json` byte-idênticos ao baseline (binário
+  de antes da mudança, `--xml-id-seed 42`). Varredura visual com Flutter 3.47.4
+  (Skia): 34 páginas normais e 18 alternativas, 52/52 rodam. **Não** reproduz o
+  `compare/corpus/resultado.csv` versionado, que é de 2026-09-20 e já estava
+  defasado (média hoje 0,006402% contra 0,008800% lá; alternativas 0,006514%);
+  27/34 páginas ≤ 0,01% nos dois, máximo 0,0250%. Como a cena é idêntica byte a
+  byte ao baseline, a diferença não vem de G08b; **não** refiz a varredura com o
+  binário antigo para confirmar (ele foi sobrescrito pelo `make`).
+- **Critério 2**: os 16 reservados estão em todo `glyphs.json`; o único
+  acréscimo em relação ao baseline são os 8 novos, e nenhum glifo sumiu.
+- **Critério 3**: 10 430 notas e 855 pausas com entrada; **2 sem `dur`**, ambas
+  apojaturas do Scarlatti sem `@dur` na fonte (`grace="unknown"`) — o caso
+  "figura desconhecida" da spec. 947 eventos com `dots`; nenhum `dots` sem
+  `dur`, nenhum `dur` fora de 1..1024.
+- **Critério 4**: 846 pausas desenhadas conferidas (as 9 restantes são `mRest`, sem figura): glifo da cena = glifo de `Rest::GetRestGlyph` para o
+  `dur` gravado, **0 divergências**.
+- **Critério 5**: `ghost_ref.py --self-test`: 32 casos, 0 divergências;
+  `ghost_oracle.py`: 2 400 alvos, 0 divergências, 181 cópias renderizadas.
+  `g04d-make-vectors.py` regenerou os 9 `.vsb` de `docs/formato/fantasma/`;
+  `vetores.json` ficou idêntico.
+- **Critério 6** (tamanho, JSON não comprimido, 36 peças): `glyphs.json`
+  632 753 -> 760 602 bytes (+127 849; +2,5 a +4,8 KB por peça, **menos** que os
+  ~10 KB estimados; no Leipzig cada um dos 8 pesa de 252 B (ponto) a 1 364 B
+  (pausa de semifusa)); `pitchpos.json` 1 000 984 -> 1 103 704 (+102 720; +10%,
+  cerca de 9 bytes por evento). Tempo de geração do corpus: 6,41 s -> 6,31 s
+  (ruído).

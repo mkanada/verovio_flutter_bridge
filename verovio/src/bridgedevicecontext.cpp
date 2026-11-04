@@ -1260,7 +1260,9 @@ void BridgeDeviceContext::AddReservedGlyphs()
     font.SetFaceName(resources->GetCurrentFont().c_str());
     static const char32_t reserved[] = { SMUFL_E0A4_noteheadBlack, SMUFL_E260_accidentalFlat,
         SMUFL_E261_accidentalNatural, SMUFL_E262_accidentalSharp, SMUFL_E511_ottavaAlta, SMUFL_E512_ottavaBassa,
-        SMUFL_E515_quindicesimaAlta, SMUFL_E516_quindicesimaBassa };
+        SMUFL_E515_quindicesimaAlta, SMUFL_E516_quindicesimaBassa, SMUFL_E4E3_restWhole, SMUFL_E4E4_restHalf,
+        SMUFL_E4E5_restQuarter, SMUFL_E4E6_rest8th, SMUFL_E4E7_rest16th, SMUFL_E4E8_rest32nd, SMUFL_E4E9_rest64th,
+        SMUFL_E1E7_augmentationDot };
     for (const char32_t code : reserved) {
         const Glyph *glyph = resources->GetGlyph(code);
         if (glyph) this->MakeGlyphUse(glyph, &font, 0, 0);

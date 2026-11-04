@@ -19,7 +19,9 @@
 
 #include "accid.h"
 #include "comparison.h"
+#include "chord.h"
 #include "doc.h"
+#include "durationinterface.h"
 #include "horizontalaligner.h"
 #include "keysig.h"
 #include "layer.h"
@@ -144,6 +146,25 @@ namespace {
         return id;
     }
 
+    // The written figure of a note or rest (§2.8): DurationInterface::GetActualDur() (not the
+    // performed duration), the chord's for a chord tone without a @dur of its own - the same choice as
+    // DurationInterface::GetNoteOrChordDur. Breve, long, maxima and unset give 0.
+    void SetWrittenFigure(const LayerElement *element, BridgePitchPosEvent &event)
+    {
+        const DurationInterface *interface = element->GetDurationInterface();
+        if (!interface) return;
+        if (element->Is(NOTE)) {
+            const Note *note = vrv_cast<const Note *>(element);
+            const Chord *chord = note->IsChordTone();
+            if (chord && !interface->HasDur()) interface = chord->GetDurationInterface();
+        }
+        const data_DURATION actual = interface->GetActualDur();
+        if ((actual < DURATION_1) || (actual > DURATION_1024)) return;
+        event.dur = 1 << (actual - DURATION_1);
+        const int dots = interface->GetDots();
+        event.dots = (dots == VRV_UNSET) ? 0 : std::max(dots, 0);
+    }
+
 } // namespace
 
 BridgePitchPos BridgePitchPosBuilder::Build(Doc *doc, int firstPage, int lastPage, const MIDIEventLog &midiLog)
@@ -231,6 +252,8 @@ BridgePitchPos BridgePitchPosBuilder::Build(Doc *doc, int firstPage, int lastPag
                     const int keyAlteration = (keyIt == event.key.end()) ? 0 : keyIt->second;
                     if (alteration != keyAlteration) event.acc[pitch] = alteration;
                 }
+
+                SetWrittenFigure(element, event);
 
                 if (note) {
                     event.pname = note->GetPname();

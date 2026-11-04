@@ -2,7 +2,8 @@
 
 **Depende de:** G08c · **Decisão necessária:** não
 
-> O `score_bridge` mora no `zywny` desde o commit `276bdf6`. Este passo,
+> O `score_bridge` morou no `zywny` (commit `276bdf6`) e hoje mora no
+> `zywny-comum` (leia o aviso de G07: os hospedeiros mudaram). Este passo,
 > **neste repositório**, só escreve `docs/nota-para-zywny-sumico.md` (no
 > molde de `nota-para-zywny-fantasma.md`) e copia vetores e fixtures; a
 > execução é no plano do host (L02 e L03 de lá).
@@ -26,9 +27,10 @@ trilha do decorar sem reabrir decisões nem refazer medições.
 
 1. **O que mudou no `.vsb`** (tudo aditivo, `version` 1): 8 glifos
    reservados novos; `dur`/`dots` em `pitchpos.json`. Regenerar fixtures.
-   Refazer a `libverovio` de **todas** as plataformas que o `zywny`
-   empacota (`just native` no Linux, `build_android_so.sh`, e o que houver
-   de wasm/Windows) — sem isso o `.vsb` gerado no aparelho não traz os
+   Refazer a `libverovio` de **todas** as plataformas que os apps
+   empacotam (`just native` e `just native-android` nos apps, que chamam
+   `zywny-comum/tool/build_verovio_*.sh`; `build_android_so.sh` aqui; e o
+   que houver de wasm/Windows) — sem isso o `.vsb` gerado no aparelho não traz os
    glifos e a coluna some sem pausa.
 2. **Conferir no que existe**: o parser de `pitchpos.json` ignora ou lê os
    campos novos sem quebrar; testes existentes verdes com as fixtures
@@ -56,10 +58,11 @@ trilha do decorar sem reabrir decisões nem refazer medições.
 
 1. Escrever `docs/nota-para-zywny-sumico.md`.
 2. Copiar `docs/formato/sumico/` (vetores e `.vsb`) para
-   `zywny/score_bridge/test/fixtures/sumico/`, como foi feito com
+   `zywny-comum/score_bridge/test/fixtures/sumico/`, como foi feito com
    `fantasma/`.
-3. No `zywny`: atualizar `docs/plano/L02-esconder-notas.md` e
-   `L03-pausa-substituta.md` onde as medições daqui mudarem um fato
+3. No `zywny-musicas` (onde os planos moram): atualizar
+   `docs/plano/L02-esconder-notas.md` e `L03-pausa-substituta.md` (cujo código
+   é no `zywny-comum`) onde as medições daqui mudarem um fato
    citado lá (o passo 6 de "Como executar um passo" vale entre os dois
    repositórios).
 4. Linha da fase no `README.md` deste plano.
@@ -68,10 +71,11 @@ trilha do decorar sem reabrir decisões nem refazer medições.
 
 1. `docs/nota-para-zywny-sumico.md` escrito, cobrindo os 8 itens.
 2. Vetores e fixtures copiados; `cd score_bridge && flutter test` no
-   `zywny` continua verde com as fixtures novas presentes (ainda sem
+   `zywny-comum` continua verde com as fixtures novas presentes (ainda sem
    código novo).
 3. L02 e L03 do `zywny` coerentes com a §11 final.
-4. O usuário avisado de que o trabalho segue no `zywny`.
+4. O usuário avisado de que o trabalho segue no `zywny-comum` (L02 e L03),
+   que serve ao zywny-musicas e ao zywny-aprendizado.
 
 ## Notas de execução
 

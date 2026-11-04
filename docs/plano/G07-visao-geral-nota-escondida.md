@@ -1,5 +1,16 @@
 # G07 — Visão geral: nota escondida e pausa substituta (trilha do decorar)
 
+> **Os hospedeiros mudaram (04/11/2026).** Onde estes planos dizem `zywny`: o
+> repo foi dividido. O host original é hoje o **zywny-musicas** (onde ficam os
+> planos L00–L08), e o `score_bridge` (um `git subtree` deste repo) mora no
+> **zywny-comum**, que o zywny-musicas e o **zywny-aprendizado** importam
+> (`../zywny-comum/score_bridge`). Logo: L02 e L03 (esconder e pausa substituta)
+> são executados **no zywny-comum** e servem aos dois apps (o decorar do
+> zywny-musicas e o treino "Notas escondidas", T16, do zywny-aprendizado); as
+> fixtures de G09 vão para `zywny-comum/score_bridge/test/fixtures/sumico/`. Os
+> passos deste repo (formato, exportador, referência, vetores) não mudam. O nome
+> do arquivo `nota-para-zywny-sumico.md` fica como está (nome histórico).
+
 **Não é um passo executável.** É o documento de referência de G08a-G09:
 leia este arquivo inteiro antes de executar qualquer um deles. Cada passo
 repete o que precisa, mas as regras abaixo são o contrato comum.
@@ -100,9 +111,10 @@ Tudo o que é musical vem do Verovio; o host só faz a conta. A especificação
 | Especificação | glifos reservados novos (§4); `dur`/`dots` em `pitchpos.json` (§2.8, se D-SUM-FIGURA = a); **§11 Nota escondida e pausa substituta** (normativo) | G08a |
 | C++ | pausas e ponto em `AddReservedGlyphs`; `dur`/`dots` em `bridgepitchpos.cpp` | G08b |
 | Prova | referência Python das regras 1-7, varredura do corpus (traços × donas, barras), oráculo Verovio para a pausa, vetores de teste para o `zywny`; hino no corpus | G08c |
-| `zywny` | esconder/revelar no `score_bridge`, camada da pausa, e a trilha em si | G09 (nota para o host; execução em L02/L03 de lá) |
+| host (`zywny-comum` + apps) | esconder/revelar no `score_bridge`, camada da pausa (zywny-comum); a trilha do decorar (zywny-musicas) e o treino "Notas escondidas" (zywny-aprendizado) | G09 (nota para o host; execução em L02/L03, planos no zywny-musicas, código no zywny-comum) |
 
-O `score_bridge` mora no `zywny` (commit `276bdf6`): o lado Dart inteiro é
+O `score_bridge` mora no `zywny-comum` (veio do `zywny` no commit `276bdf6` e
+foi para o `zywny-comum` com a divisão dos repos): o lado Dart inteiro é
 executado lá. Este repositório entrega formato, exportador, referência e
 vetores de teste.
 

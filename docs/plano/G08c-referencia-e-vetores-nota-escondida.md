@@ -28,7 +28,9 @@ Verovio para a posição da pausa, e os vetores de teste que o host vai usar.
 - **O corpus não cobre o caso principal.** Os 600 hinos do `zywny` têm duas
   vozes por pauta em camadas separadas, letra, e 586 têm ponto de aumento;
   nenhuma peça de `corpus/` é assim. Traga dois hinos de
-  `/home/mauricio/IdeaProjects/zywny/assets/hinos/` para `corpus/sumico/`
+  `/home/mauricio/IdeaProjects/Hymn_Grabber/musicxml/` (o `assets/hinos/` saiu do
+  app no B08; `zywny-musicas/tool/build_hymn_assets.py` lê dessa pasta) para
+  `corpus/sumico/`
   (descompactados; escolha um com linhas suplementares nas duas pautas e
   um com quiáltera) e registre no `corpus/README.md` de onde vieram.
 - **Regra das linhas suplementares (regra 3).** A varredura é a prova:

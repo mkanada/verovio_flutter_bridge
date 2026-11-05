@@ -130,4 +130,60 @@ void main() {
     // of computing it independently of --header.
     expect((doc['meta'] as Map<String, dynamic>?)?['title'], isNotNull);
   });
+  // G11 (D-SUM-COMPASSO): todo nó `measure` traz `inner: [x0, x1]`, a faixa em que o Verovio
+  // centra a pausa de compasso. A prova forte contra o Verovio está em
+  // compare/scripts/hide_oracle.py --measures; aqui só se confere que a libverovio recém
+  // construída grava o campo e que, numa `mRest` de verdade, `x0 + (x1 - x0) ~/ 2` é o centro
+  // da pausa desenhada (x do glifo + metade da largura truncada).
+  test('every measure node carries inner, and an mRest is centered on it (G11)',
+      () {
+    final toolkit = VerovioToolkit.withResourcePath(resourcePath);
+    addTearDown(toolkit.dispose);
+
+    expect(toolkit.setOutputTo('vsb'), isTrue);
+    expect(
+        toolkit.loadFile('$repoRoot/corpus/sumico/g11-compassos-especiais.mei'),
+        isTrue);
+
+    final doc =
+        jsonDecode(toolkit.renderToBridgeJson()) as Map<String, dynamic>;
+    final pages = (doc['scene'] as Map<String, dynamic>)['pages'] as List;
+    final glyphs = doc['glyphs'] as Map<String, dynamic>;
+
+    var measures = 0;
+    var mrests = 0;
+    void walk(Map<String, dynamic> node, Map<String, dynamic>? measure) {
+      final cls = (node['class'] as String? ?? '').split(' ').first;
+      if (cls == 'measure') {
+        measures++;
+        final inner = node['inner'] as List?;
+        expect(inner, isNotNull, reason: 'measure ${node['id']} sem inner');
+        expect((inner![1] as num) > (inner[0] as num), isTrue);
+        measure = node;
+      }
+      if (cls == 'mRest' && measure != null) {
+        for (final c in node['children'] as List) {
+          final u = c as Map<String, dynamic>;
+          if (u['t'] != 'u') continue;
+          final bbox = (glyphs[u['g']] as Map<String, dynamic>)['bbox'] as List;
+          final width = ((bbox[2] as num) / 10 * (u['sx'] as num)).truncate();
+          final inner = measure['inner'] as List;
+          final centre = (inner[0] as num) +
+              (((inner[1] as num) - (inner[0] as num)) ~/ 2);
+          expect((u['x'] as num) + width ~/ 2, centre,
+              reason: 'mRest ${node['id']}');
+          mrests++;
+        }
+      }
+      for (final c in (node['children'] as List? ?? const [])) {
+        walk(c as Map<String, dynamic>, measure);
+      }
+    }
+
+    for (final p in pages) {
+      walk((p as Map<String, dynamic>)['root'] as Map<String, dynamic>, null);
+    }
+    expect(measures, greaterThan(0));
+    expect(mrests, greaterThan(0));
+  });
 }

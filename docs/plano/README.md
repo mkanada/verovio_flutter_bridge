@@ -427,6 +427,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G08c](G08c-referencia-e-vetores-nota-escondida.md) | Referência, varredura do corpus, oráculo e vetores da nota escondida | G08b | D-SUM-NATIVO (só se a varredura falhar) | concluído |
 | [G09](G09-nota-para-zywny-nota-escondida.md) | Nota para o `zywny` (execução Dart fica lá: L02, L03) | G08c | — | concluído |
 | [G10](G10-marcas-de-expressao.md) | Marcas de expressão no `midi.json` (dinâmica, staccato, acento, ligadura de expressão), pedido do EX07 do `zywny-aprendizado` | G01 | D-MARCAS | pendente |
+| [G11](G11-pausa-de-compasso-escondido.md) | Esconder um compasso inteiro: a pausa de compasso substituta (regra 8 da §11), pedido do T17 do `zywny-aprendizado` | G08c, G09 | D-SUM-COMPASSO (resolvida: campo `measure.inner`, decisão do usuário) | concluído |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
 

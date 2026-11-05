@@ -128,6 +128,7 @@
           "minItems": 3,
           "maxItems": 3
         },
+        "inner": { "$ref": "#/$defs/vec2" },
         "ledger": { "$ref": "#/$defs/vec2" },
         "ledgerCue": { "$ref": "#/$defs/vec2" },
         "gs": { "$ref": "#/$defs/vec2" },

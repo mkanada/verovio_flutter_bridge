@@ -125,6 +125,12 @@ struct BridgeNode {
     double ledgerCue[2] = { 0, 0 }; // same for cue/grace size; only when different from `ledger`
     bool hasGlyphScale = false;
     double glyphScale[2] = { 0, 0 }; // sx, sy of a normal-size glyph in this staff
+    // §5.1 (G11, D-SUM-COMPASSO): only on `measure` nodes. The horizontal span the Verovio centers a
+    // measure rest in (Measure::GetInnerCenterX): from the right edge of the left bar line (or the
+    // start of the measure's content, after the clef/key/meter of a system-first measure) to the
+    // left edge of the right bar line. Same frame as `bbox`.
+    bool hasInner = false;
+    double inner[2] = { 0, 0 }; // x0, x1
     std::string staffRef; // §5.1 (G04b): notes/chords/rests drawn on another staff (cross-staff)
     std::vector<BridgeChild> children; // document order: later entries paint on top
 };

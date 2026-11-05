@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0">
+  <meiHead><fileDesc><titleStmt><title>G11 compassos especiais: anacruse, compasso duplo, pausas, tercina, ligadura</title></titleStmt><pubStmt/></fileDesc></meiHead>
+  <music><body><mdiv><score>
+    <scoreDef meter.count="4" meter.unit="4" key.sig="0">
+      <staffGrp symbol="brace">
+        <staffDef n="1" lines="5" clef.shape="G" clef.line="2"/>
+        <staffDef n="2" lines="5" clef.shape="F" clef.line="4"/>
+      </staffGrp>
+    </scoreDef>
+    <section>
+      <measure n="0" metcon="false" xml:id="g11-m0">
+        <staff n="1"><layer n="1"><note xml:id="g11-p1" pname="c" oct="5" dur="4"/></layer></staff>
+        <staff n="2"><layer n="1"><rest xml:id="g11-p2" dur="4"/></layer></staff>
+      </measure>
+      <measure n="1" xml:id="g11-m1">
+        <staff n="1"><layer n="1"><note xml:id="g11-a1" pname="c" oct="5" dur="4"/><note xml:id="g11-a2" pname="d" oct="5" dur="4"/><note xml:id="g11-a3" pname="e" oct="5" dur="4"/><note xml:id="g11-a4" pname="f" oct="5" dur="4"/></layer></staff>
+        <staff n="2"><layer n="1"><note xml:id="g11-a5" pname="c" oct="3" dur="2"/><note xml:id="g11-a6" pname="g" oct="3" dur="2"/></layer></staff>
+      </measure>
+      <scoreDef meter.count="4" meter.unit="2"/>
+      <measure n="2" xml:id="g11-m2">
+        <staff n="1"><layer n="1"><note xml:id="g11-b1" pname="c" oct="5" dur="2"/><note xml:id="g11-b2" pname="d" oct="5" dur="2"/><note xml:id="g11-b3" pname="e" oct="5" dur="2"/><note xml:id="g11-b4" pname="f" oct="5" dur="2"/></layer></staff>
+        <staff n="2"><layer n="1"><note xml:id="g11-b5" pname="c" oct="3" dur="1"/><note xml:id="g11-b6" pname="g" oct="3" dur="1"/></layer></staff>
+      </measure>
+      <scoreDef meter.count="4" meter.unit="4"/>
+      <measure n="3" xml:id="g11-m3">
+        <staff n="1"><layer n="1"><note xml:id="g11-c1" pname="e" oct="5" dur="4"/><rest xml:id="g11-c2" dur="4"/><note xml:id="g11-c3" pname="g" oct="5" dur="4"/><rest xml:id="g11-c4" dur="4"/></layer></staff>
+        <staff n="2"><layer n="1"><mRest xml:id="g11-c5"/></layer></staff>
+      </measure>
+      <measure n="4" xml:id="g11-m4">
+        <staff n="1"><layer n="1"><tuplet num="3" numbase="2" xml:id="g11-t1"><note xml:id="g11-d1" pname="e" oct="5" dur="8"/><note xml:id="g11-d2" pname="f" oct="5" dur="8"/><note xml:id="g11-d3" pname="g" oct="5" dur="8"/></tuplet><note xml:id="g11-d4" pname="c" oct="5" dur="4"/><note xml:id="g11-d5" pname="c" oct="5" dur="2"/></layer></staff>
+        <staff n="2"><layer n="1"><note xml:id="g11-d6" pname="c" oct="3" dur="1"/></layer></staff>
+        <slur xml:id="g11-sl1" startid="#g11-d1" endid="#g11-d3"/>
+        <tie xml:id="g11-ti1" startid="#g11-d5" endid="#g11-e1"/>
+      </measure>
+      <measure n="5" xml:id="g11-m5">
+        <staff n="1"><layer n="1"><note xml:id="g11-e1" pname="c" oct="5" dur="2"/><note xml:id="g11-e2" pname="d" oct="5" dur="4"/><note xml:id="g11-e3" pname="e" oct="5" dur="4"/></layer></staff>
+        <staff n="2"><layer n="1"><note xml:id="g11-e4" pname="c" oct="3" dur="1"/></layer></staff>
+        <slur xml:id="g11-sl2" startid="#g11-e2" endid="#g11-f1"/>
+      </measure>
+      <measure n="6" xml:id="g11-m6" right="end">
+        <staff n="1"><layer n="1"><note xml:id="g11-f1" pname="f" oct="5" dur="4"/><note xml:id="g11-f2" pname="e" oct="5" dur="4"/><note xml:id="g11-f3" pname="d" oct="5" dur="4"/><note xml:id="g11-f4" pname="c" oct="5" dur="4"/></layer></staff>
+        <staff n="2"><layer n="1"><note xml:id="g11-f5" pname="c" oct="3" dur="1"/></layer></staff>
+      </measure>
+    </section>
+  </score></mdiv></body></music>
+</mei>

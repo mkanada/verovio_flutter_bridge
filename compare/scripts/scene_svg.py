@@ -66,6 +66,11 @@ class Painter:
         self.chords = set(hidden["chords"]) if hidden else set()
         self.beams = {b["id"] for b in hidden["beams"]} if hidden else set()
         self.ledgers = {tuple(l[:3]) + (l[3], l[4]) for l in hidden["ledgers"]} if hidden else set()
+        # G11 (compasso inteiro): pausas de verdade, tercinas e controles que somem; pausas de compasso
+        self.rests = set(hidden.get("rests", [])) if hidden else set()
+        self.tuplets = set(hidden.get("tuplets", [])) if hidden else set()
+        self.controls = set(hidden.get("controls", [])) if hidden else set()
+        self.measure_stands = []
         self.out = []
 
     def node(self, n, cur, staff):
@@ -78,6 +83,12 @@ class Painter:
         nid = n.get("id")
         if cl[:1] == ["note"] and nid in self.notes or cl[:1] == ["chord"] and nid in self.chords:
             # a nota some; a letra (verse) fica
+            self.verses(n, cur)
+            return
+        if cl[:1] == ["rest"] and nid in self.rests or (cl[:1] and cl[0] in hr.CONTROL_CLASSES and "bbox" in n
+                                                         and hr.control_key(n) in self.controls):
+            return
+        if cl[:1] == ["tuplet"] and nid in self.tuplets:
             self.verses(n, cur)
             return
         hide_direct = cl[:1] == ["beam"] and nid in self.beams
@@ -129,6 +140,8 @@ class Painter:
     def page(self, root, crop):
         self.out = []
         self.node(root, "#000000", None)
+        for s in self.measure_stands:
+            self.glyph(dict(g=s["g"], x=s["x"], y=s["y"], sx=s["sx"], sy=s["sy"]), None, self.stand_color)
         if self.stand:
             s = self.stand
             self.glyph(dict(g=s["glyph"], x=s["x"], y=s["y"], sx=s["sx"], sy=s["sy"]), None, self.stand_color)
@@ -146,6 +159,18 @@ def render_png(doc, ref, res, crop, path, ghost_color="#d4380d"):
     referencial de conteúdo (viewBox, antes do translate(origin))."""
     root = doc.page_root(ref)
     p = Painter(doc, res["hidden"], res["standIn"], ghost_color)
+    svg = p.page(root, crop)
+    svgp = path[:-4] + ".svg"
+    open(svgp, "w").write(svg)
+    cmd = [SVG_RENDER, svgp, path] + [a for f in FONTS for a in ("--font", f)] + ["--pin-serif-family", "Liberation Serif"]
+    subprocess.run(cmd, check=True, capture_output=True)
+
+
+def render_png_measures(doc, ref, res, crop, path, color="#d4380d"):
+    """Como `render_png`, para o resultado de `hide_ref.run_measures` (compassos escondidos por inteiro)."""
+    root = doc.page_root(ref)
+    p = Painter(doc, res["hidden"], None, color)
+    p.measure_stands = res["measureStandIn"]
     svg = p.page(root, crop)
     svgp = path[:-4] + ".svg"
     open(svgp, "w").write(svg)

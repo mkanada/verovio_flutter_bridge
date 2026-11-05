@@ -189,7 +189,7 @@ private:
     BridgeGlyphUse MakeGlyphUse(const Glyph *glyph, const FontInfo *font, int x, int y);
 
     /**
-     * §5.1 (G04b): staff geometry (`lines`/`ledger`/`ledgerCue`/`gs`) on `staff` nodes, and `staff`
+     * §5.1 (G04b, G11): staff geometry (`lines`/`ledger`/`ledgerCue`/`gs`) on `staff` nodes, `inner` on `measure` nodes, and `staff`
      * on cross-staff note/chord/rest nodes. Read-only over the Object; called from EndGraphic.
      */
     void AnnotateNodeGeometry(BridgeNode &node, Object *object, View *view);

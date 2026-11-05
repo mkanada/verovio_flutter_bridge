@@ -103,3 +103,17 @@ sem resolver os direitos** (para publicar, troque-os por hinos de domínio públ
 `docs/formato/sumico/` traz os `.vsb` gerados deles (e de `f04-cross-staff`, `r04-casas`) e os
 vetores de teste.
 
+
+## `sumico/aprendizado/` e `g11-compassos-especiais.mei` — compassos inteiros escondidos (G11)
+
+Material da pausa de compasso substituta (§11, regra 8): o caso real é a leitura do
+`zywny-aprendizado` (T17), não os hinos.
+
+| Arquivo | Origem | Para quê |
+| --- | --- | --- |
+| `aprendizado/*.musicxml` (35 arquivos) | gerados pelo amostrador do `zywny-aprendizado` (commit `8fec648`): `dart run tool/sight_sample.dart <passo> --seeds N --out <pasta>` (o `just amostra <passo>` do plano); autoria do próprio projeto, sem restrição de licença | mão intercalada (`2c`, seeds 0-2), melodia na esquerda (`4b`, 0-2), compassos de 4/4 sem e com pausas (`21d`-`26d`), 2/4 com ligadura (`27d`, `29d`, `33d`), 6/8 (`28d`, `30d`-`32d`; os `28d` e `31d` com seeds 0-2), tercinas (`33d`-`39d`; `33d`, `35d` e `38d` com seeds 0-2), 3/4 (`34d`, `39d`, `40d`) |
+| `g11-compassos-especiais.mei` | escrito à mão para este projeto (sem restrição de licença) | anacruse de 1 semínima, compasso de 4/2 (2 semibreves: o Verovio desenha a pausa de breve), pauta de notas e pausas misturadas com a outra em `mRest`, tercina com ligadura de expressão dentro do compasso e ligadura de prolongamento para o seguinte, ligadura de expressão que cruza a quebra de sistema |
+
+`docs/formato/sumico/` traz os `.vsb` gerados deles (`g11-*.vsb`, `f06-mudanca-armadura.vsb`
+e os de G08c, regerados com o binário que grava `measure.inner`) e os casos de compasso de
+`vetores.json` (`casosCompasso`).

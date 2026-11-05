@@ -22,6 +22,7 @@
 #include "csscolor.h"
 #include "doc.h"
 #include "layerelement.h"
+#include "measure.h"
 #include "options.h"
 #include "staff.h"
 #include "view.h"
@@ -1239,6 +1240,15 @@ void BridgeDeviceContext::AnnotateNodeGeometry(BridgeNode &node, Object *object,
             node.glyphScale[0] = scaleY;
             node.glyphScale[1] = scaleY;
         }
+    }
+    else if (object->Is(MEASURE)) {
+        // Same operands as Measure::GetInnerCenterX (the x a measure rest is centered on):
+        // center = inner[0] + (inner[1] - inner[0]) / 2, with integer division.
+        const Measure *measure = vrv_cast<const Measure *>(object);
+        assert(measure);
+        node.hasInner = true;
+        node.inner[0] = view->ToDeviceContextX(measure->GetDrawingX() + measure->GetLeftBarLineRight());
+        node.inner[1] = view->ToDeviceContextX(measure->GetDrawingX() + measure->GetRightBarLineLeft());
     }
     else if ((object->Is(NOTE) || object->Is(CHORD) || object->Is(REST) || object->Is(MREST))) {
         const LayerElement *element = vrv_cast<const LayerElement *>(object);

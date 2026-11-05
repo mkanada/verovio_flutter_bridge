@@ -482,6 +482,9 @@ namespace {
         if (node.hasGlyphScale) {
             out += ",\"gs\":[" + FormatNumber(node.glyphScale[0]) + "," + FormatNumber(node.glyphScale[1]) + "]";
         }
+        if (node.hasInner) {
+            out += ",\"inner\":[" + FormatNumber(node.inner[0]) + "," + FormatNumber(node.inner[1]) + "]";
+        }
         if (!node.staffRef.empty()) {
             out += ",\"staff\":\"" + EscapeJsonString(node.staffRef) + "\"";
         }

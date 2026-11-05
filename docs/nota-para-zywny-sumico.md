@@ -1,7 +1,8 @@
 # Nota para o `zywny` — nota escondida e pausa substituta (fase G, G07-G09)
 
 Fechada em 2026-11-04 no lado deste repositório (formato, exportador,
-referência e vetores). **Toda a execução Dart é no `zywny-comum`**
+referência e vetores). **Acréscimo G11 (2026-11-05): esconder um compasso inteiro
+com a pausa de compasso; ver a seção 9, que pede refazer a `libverovio` de novo.** **Toda a execução Dart é no `zywny-comum`**
 (`score_bridge/`), nos passos **L02** (esconder) e **L03** (pausa
 substituta) do plano do `zywny-musicas`; o mesmo `score_bridge` serve ao
 decorar do `zywny-musicas` e ao treino "Notas escondidas" (T16) do
@@ -282,3 +283,143 @@ referência, sai de `compare/scripts/g08c-make-vectors.py` em
   arranjo © Casa Publicadora Brasileira) da própria biblioteca do `zywny`.
   Estão nas fixtures só como material de teste; para publicar o repositório,
   trocar por hinos de domínio público.
+
+## 9. Esconder um compasso inteiro: a pausa de compasso (G11, regra 8)
+
+Pedido do T17 do `zywny-aprendizado`: esconder **todo o compasso, nas duas
+pautas**, e ver no lugar **uma pausa de compasso por pauta** (a semibreve
+centrada), não uma fileira de pausas pequenas. Compassos escondidos vizinhos têm
+cada um a sua. O contrato é a **§11.2** da especificação (regra 8); o `.vsb` e a
+referência abaixo trazem tudo o que o host precisa. O código Dart é do
+`zywny-comum` (planos L02/L03 e T17, item 0).
+
+### 9.1 O que mudou no `.vsb` — e o que refazer
+
+Um campo novo, aditivo (`version` continua `1`): **`inner: [x0, x1]` em todo nó
+`measure`** (§5.1) — a faixa em que o Verovio centra a pausa de compasso. A conta
+do host é `cx = x0 + ⌊(x1 − x0) / 2⌋` (divisão inteira). Foi a decisão
+D-SUM-COMPASSO: o centro **não** sai do que o `.vsb` já tinha (depende de uma margem
+de 87 a 90 unidades, e 125 quando só há clave, que o Verovio reserva depois do
+cabeçalho e que a cena não grava): sem o campo, um compasso com cabeçalho (o
+primeiro de cada linha) errava o centro em até 1,4 unidade e, usando a borda de
+cada pauta, em até 18; com ele, **0 divergências em 5 170 pausas desenhadas pelo
+Verovio**.
+
+**É preciso refazer a `libverovio` de todas as plataformas, outra vez** (a
+anterior é de G08b e não grava `inner`): **Linux** (`just native`), **Android**
+arm64-v8a + x86_64 (`just native-android`) e **Web/wasm**
+(`zywny-comum/tool/build_verovio_web.sh`). Os scripts não mudam. Um `.vsb` gerado
+com a biblioteca antiga ainda funciona, mas as notas somem **sem** pausa de compasso
+(sem `inner` a regra devolve nada), que é o comportamento previsto, não um erro.
+**Regenerar as fixtures** do `zywny-comum` com a biblioteca nova: as de
+`test/fixtures/sumico/` já vêm regeneradas (item 9.4); as de `fantasma/` e as do
+corpus do host ganham `inner` e precisam ser refeitas para a suíte exercer o campo
+(o parser ignora o campo se faltar).
+
+### 9.2 O que o host faz (a regra, em resumo)
+
+Para o conjunto `M` de compassos escondidos (ids de nó `measure`, os mesmos do
+`measureOn` do timemap; `sceneIdOf` para `-rend<N>`). Referência:
+[`compare/scripts/hide_ref.py`](../compare/scripts/hide_ref.py), `hidden_measures`
+e `measure_stand_in`; a conta toda está na §11.2.
+
+1. **Notas do compasso** = os nós `note` descendentes do nó `measure` (da própria
+   cena, sem o `pitchpos.json`). Todas entram em `H`; as regras 1 a 3 (nota,
+   acorde, barra, traço) valem como estão (L02).
+2. **Pausas de verdade** (nós `rest`, não `mRest`) de uma pauta de desenho que
+   **tem nota** no compasso **também somem** (e contam como donas escondidas do
+   traço de linha suplementar). Pauta **sem nenhuma nota** (só pausa ou só
+   `mRest`): o host **não faz nada** nela. É o caso das mãos intercaladas
+   (1a a 3d): a mão que não toca fica com a pausa que já tem.
+3. **Tercina** (`tuplet`): some o nó inteiro quando toda `note` e `rest` dentro
+   dele some; leva o colchete e o número.
+4. **Controles ancorados** (`tie`, `slur`, `phrase`, `arpeg`, `beamSpan`): somem
+   quando **todos** os compassos que tocam estão em `M` (cálculo pela caixa do
+   controle e pelo primeiro traço de linha de cada compasso: §11.2); ficam se
+   cruzam para um compasso visível. **Alguns não têm `id`** (as metades de
+   ligadura que cruzam a quebra de sistema são filhas do `system`, ids ausentes):
+   identifique-os pelo nó, não pelo `id`; a referência os chama de
+   `classe@x0,y0,x1,y1`.
+5. **Pausa de compasso por pauta de desenho que tem nota:** `g = "<fonte>:E4E3"`;
+   `cx` como acima; `x = cx − ⌊largura de E4E3 × sx⌋ / 2` (a mesma largura
+   truncada da regra 6; o `/ 2` é inteiro); `y` e escala da semibreve da regra 6
+   (`loc` 6 com `n = 5`, `y = topY + 2·unit`), sem pontos. Cor de repouso e
+   piscar são do host, como na coluna. A **pausa de compasso substituta fica de
+   fora** em: `.vsb` sem `inner`, compasso de **2 semibreves ou mais** (4/2, 8/4:
+   o Verovio desenha a pausa de breve, `E4E2`, que não é glifo reservado; a
+   duração vem de `measureOn` consecutivos no timemap), pauta com `n ≠ 5`.
+6. O que **fica**: dinâmica, andamento, cifra, texto, pedal, ottava, trinado,
+   fermata, dedilhado, número do compasso, letra, clave, armadura, fórmula, barras.
+   A tabela com as ocorrências e a regra de cada uma está na §11.2.
+
+### 9.3 Os vetores novos
+
+Em `docs/formato/sumico/vetores.json`, chave **`casosCompasso`** (a chave `casos`,
+que os testes atuais do host leem, **não mudou**: cada caso novo é uma entrada à
+parte, para a suíte continuar verde sem código novo). Campos: `vsb`, `pagina`
+(índice ou `"altN.M"`), `compassos` (os ids escondidos), `resumo` (contagens;
+notas e pausas conferidas contra o MEI da fonte), `esperado.hidden` (`notes`,
+`chords`, `beams`, `ledgers`, e os novos `rests`, `tuplets`, `controls`),
+`esperado.measureStandIn` (`[{measure, staff, g, x, y, sx, sy}]`) e `conta`
+(a aritmética de alguns). Tolerância 0,5 sobre todos os números; `resumo` exato.
+`hide_ref.py --self-test` roda os 11 casos de coluna e os 15 de compasso (0
+divergências).
+
+| # | Caso | `.vsb` |
+| --- | --- | --- |
+| m01 | primeiro compasso do sistema (depois de clave, armadura e fórmula) | `h010.vsb` |
+| m02, m03 | compasso comum; último da linha | `h010.vsb` |
+| m04 | primeiro do sistema com cabeçalho **e** barra de repetição à esquerda | `h010.vsb`, `alt0.0` |
+| m05 | armadura trocada no meio da linha | `f06-mudanca-armadura.vsb` |
+| m06 | mão intercalada (2c): a pauta só com pausa fica como está | `g11-mao-intercalada.vsb` |
+| m07 | pautas com notas e pausas misturadas: as pausas de verdade somem | idem |
+| m08 | melodia na esquerda (4b) | `g11-melodia-esquerda.vsb` |
+| m09 | tercina | `g11-tercina.vsb` |
+| m10 | 6/8 (o glifo é a semibreve mesmo assim) | `g11-6-8.vsb` |
+| m11 | uma pauta com notas e pausas, a outra já com `mRest` (fica) | `g11-especiais.vsb` |
+| m12 | tercina e ligadura de expressão dentro do compasso somem; a ligadura de prolongamento para o seguinte fica | idem |
+| m13 | dois compassos vizinhos: cada um com a sua pausa; a ligadura de prolongamento entre eles some | idem |
+| m14 | 4/2: sem pausa de compasso substituta | idem |
+| m15 | anacruse (1 semínima): mesma semibreve | idem |
+
+Um PNG por caso (as notas somem e a pausa de compasso aparece em laranja) sai de
+`compare/scripts/g11-make-vectors.py` em `compare/out/g11/vec/m01…m15-*.png`
+(git-ignorado).
+
+### 9.4 O que foi provado
+
+- **A pausa** (`hide_oracle.py --measures`): (1) as 11 `mRest` de verdade do
+  corpus (pauta de uma camada) batem com a regra em glifo, `x`, `y` e escala; (2)
+  numa cópia MEI de cada peça de **todo o corpus (70 partituras, 35 do
+  aprendizado)**, o conteúdo de **todos** os compassos de cada pauta (e de um em
+  cada 3) vira `<mRest/>` e o próprio Verovio desenha **5 170 pausas**: **0
+  divergências** de `x`, `y`, glifo e escala (|dx| máximo 0,00 em todas as
+  categorias: 612 primeiro do sistema, 3 699 comum, 742 último, 42 primeiro com
+  barra de repetição à esquerda, 54 só barra de repetição, 21 cabeçalho no meio).
+  Os 2 compassos de 4/2 saem em `E4E2`, e a regra, coerente, não dá pausa. Uma
+  anacruse de 1 semínima sai na mesma semibreve.
+- **O que vaza** (`g11-sweep.py`): escondendo **todos** os compassos de cada
+  uma das 124 páginas (1 517 compassos), **0 vazamentos**: não sobra nota, haste,
+  barra, tercina nem ligadura; só ficam pauta, clave, armadura, fórmula, barras,
+  letra, dinâmica, andamento, cifra, pedal e as pausas de pautas sem nota.
+  Pautas por compasso: 2 140 só notas, 732 notas e pausas (as pausas somem), 35
+  só pausas (ficam), 11 só `mRest` (ficam).
+- **Achados que mudaram a regra** (a spec segue o Verovio): ligaduras que cruzam
+  a quebra de sistema são filhas do `system`, sem `id` (116 `tie`, 25 `slur`, 4
+  `phrase` no corpus): sem contá-las, escondendo uma página inteira sobravam essas
+  ligaduras no ar; o `beamSpan` e o arpejo passam a ter dono (o compasso) e deixam
+  de ser limitação.
+
+### 9.5 Limitações da regra 8
+
+- Ligadura que cruza para um compasso **visível** continua desenhada (dá a
+  entender que o som continua); a nota ligada que está no compasso visível
+  continua visível lá.
+- Pausa de compasso de **várias vozes em camadas** (a posição vertical muda no
+  Verovio) e multi-compasso (`multiRest`) ficam fora; ottava, trinado, fermata e
+  dedilhado ficam.
+- Compasso de 2 semibreves ou mais e pauta com `n ≠ 5`: as notas somem sem
+  pausa de compasso. Anacruse: mesma semibreve (o aprendizado não gera; esconder
+  uma anacruse é decisão do host).
+- A pausa de compasso substitui **a pauta toda do compasso**: vale o compasso
+  completo, não o ritmo, de propósito (é o que o T17 quer).

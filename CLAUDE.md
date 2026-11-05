@@ -151,6 +151,13 @@ Trate como fixas — não reabra sem confirmar com o usuário:
   mais de 4 linhas suplementares vira 8va/15ma, cabeça sempre preta, uma
   por tecla, pausas pela coluna da pausa (`includeRests` no timemap
   embutido).
+- **Esconder um compasso inteiro (G11), 2026-11-05** — **D-SUM-COMPASSO:** o nó
+  `measure` do `.vsb` carrega `inner: [x0, x1]` (a faixa em que o Verovio centra a
+  pausa de compasso); sem ele o `x` da pausa de compasso substituta, nos compassos
+  com cabeçalho, erra até ~1,4 unidade (decisão do usuário: campo no formato, para
+  ser exato). A regra 8 da §11 (§11.2) cobre pausa de compasso por pauta, o que some
+  (pausas de verdade em pauta com nota, tercina, ligaduras e arpejo pelo dono = compassos
+  que tocam) e o que fica; pauta sem nota fica como está.
 
 ## Convenções de trabalho
 

@@ -10,7 +10,16 @@ troca a coluna inteira, numa CÓPIA MEI, por uma pausa de mesma figura (uma cama
 desfeita), renderiza a cópia com `-t vsb` e confere que o Verovio desenha o mesmo glifo, no `y` e
 com os pontos que a regra diz. O `x` não se compara (trocar nota por pausa muda o espaçamento).
 
+G11 (regra 8, compasso inteiro; `--measures`):
+Prova 3 (sem rodar o Verovio de novo): toda `mRest` de verdade (pauta de uma camada) bate com a regra:
+glifo, `x` (do campo `inner` do nó `measure`), `y` e escala.
+Prova 4 (rodando o Verovio): numa cópia MEI, todo o conteúdo de todos os compassos de cada pauta
+vira `<mRest/>` (e uma segunda cópia, só de cada 3º compasso); confere o que o Verovio desenhou
+contra a regra, por categoria de compasso (primeiro do sistema, comum, último, cabeçalho no meio,
+barra de repetição à esquerda), e o glifo da pausa de 2 semibreves ou mais.
+
 Uso: hide_oracle.py [--columns N] [--seed S] [--out compare/out/g08c/oraculo] [--jobs J] [--skip-swap]
+     hide_oracle.py --measures [--out compare/out/g11/oraculo] [--jobs J]
 """
 import argparse, collections, csv, glob, json, os, random, re, subprocess, sys, time
 import xml.etree.ElementTree as ET
@@ -38,10 +47,13 @@ def run_v(args):
     return subprocess.run([VEROVIO, "--resource-path", RES] + args, check=True, capture_output=True)
 
 
-def sources():
+def sources(g11=False):
     out = []
-    for pat in ("corpus/mei/*.mei", "corpus/musicxml/*.mxl", "corpus/fantasma/*.mei", "corpus/repeticoes/*.mei",
-                "corpus/repeticoes/*.musicxml", "corpus/sumico/*.musicxml", "corpus/sumico/*.mei"):
+    pats = ["corpus/mei/*.mei", "corpus/musicxml/*.mxl", "corpus/fantasma/*.mei", "corpus/repeticoes/*.mei",
+            "corpus/repeticoes/*.musicxml", "corpus/sumico/*.musicxml", "corpus/sumico/*.mei"]
+    if g11:    # G11 acrescenta o corpus do aprendizado; o G08c (sorteio com --seed 42) não muda
+        pats.append("corpus/sumico/aprendizado/*.musicxml")
+    for pat in pats:
         out += sorted(glob.glob(os.path.join(ROOT, pat)))
     return out
 
@@ -430,6 +442,173 @@ def prova2(docs, meis, a, out, work):
     return bad
 
 
+# ------------------------------------------------------------------ G11: compasso inteiro
+import g11_swap as sw
+
+
+def drawn_mrests(doc):
+    """Todas as mRest desenhadas: (página, id, nó measure, nó staff, nº de camadas da pauta, índice do compasso
+    no sistema, nº de compassos do sistema, u da pausa, pauta tem cross-staff)."""
+    out = []
+    for pref, root in doc.all_page_roots():
+        ix = hr.PageIx(root)
+        recv = {n["staff"] for n, _ in list(ix.notes.values()) + list(ix.rests.values()) if "staff" in n}
+        recv |= {n["staff"] for n in ix.chords.values() if "staff" in n}
+        systems = {}
+        for mid, (m, sy) in ix.measures.items():
+            systems.setdefault(id(sy), []).append(mid)
+        for mid, (m, sy) in ix.measures.items():
+            order = systems[id(sy)]
+            for sid, st in hr.measure_staffs(ix, mid).items():
+                layers = [l for l in st["children"] if l.get("t") == "g" and hr.classes(l)[:1] == ["layer"]]
+                for l in layers:
+                    for r in l["children"]:
+                        if r.get("t") == "g" and hr.classes(r)[:1] == ["mRest"]:
+                            us = [c for c in r["children"] if c.get("t") == "u"]
+                            if us:
+                                out.append(dict(page=pref, id=r["id"], mid=mid, m=m, st=st, nl=len(layers), ix=ix,
+                                                pos=order.index(mid), n=len(order), u=us[0], recv=sid in recv))
+    return out
+
+
+def mcategory(r):
+    m, st, ix = r["m"], r["st"], r["ix"]
+    inner = m.get("inner")
+    hdr = [h for h in st["children"] if h.get("t") == "g" and hr.classes(h)[0] in ("clef", "keySig", "meterSig")
+           and "bbox" in h]
+    left_header = [h for h in hdr if inner and h["bbox"][0] < inner[0]]
+    bars = [b for b in m["children"] if b.get("t") == "g" and hr.classes(b)[:1] == ["barLine"] and "bbox" in b]
+    left_bar = inner and any(b["bbox"][2] <= inner[0] + 1 and b["bbox"][0] < inner[0] for b in bars)
+    if r["pos"] == 0:
+        return "primeiro do sistema" + (" com barra de repetição à esquerda" if left_bar else "")
+    if left_bar:
+        return "barra de repetição à esquerda"
+    if left_header:
+        return "cabeçalho no meio (armadura/fórmula/clave trocada)"
+    if r["pos"] == r["n"] - 1:
+        return "último do sistema"
+    return "comum"
+
+
+def check_mrest(doc, r, tol=TOL):
+    """Confere uma mRest desenhada contra a regra 8; devolve (lista de divergências, glifo esperado ou None)."""
+    q = hr.measure_len_q(doc, r["mid"])
+    geo = hr.mrest_geometry(doc, r["ix"], r["mid"], r["st"])
+    u = r["u"]
+    bad = []
+    double = q is not None and q >= hr.DOUBLE_Q
+    if double:
+        if geo is not None:
+            bad.append("regra devia dar None (compasso de %s semínimas)" % q)
+        if u["g"] != "%s:E4E2" % doc.font:
+            bad.append("glifo %s, esperado a breve E4E2" % u["g"])
+        return bad, "double"
+    if geo is None:
+        return ["regra não deu pausa (sem inner/n != 5)"], None
+    if u["g"] != geo["g"]:
+        bad.append("glifo %s != %s" % (u["g"], geo["g"]))
+    for k in ("x", "y"):
+        if abs(u[k] - geo[k]) > tol:
+            bad.append("%s %.1f != %.1f" % (k, u[k], geo[k]))
+    if abs(u["sx"] - geo["sx"]) > 1e-3 or abs(u["sy"] - geo["sy"]) > 1e-3:
+        bad.append("escala")
+    return bad, "ok"
+
+
+def prova3(docs, out):
+    c = collections.Counter()
+    rows = []
+    for name, doc in docs.items():
+        for r in drawn_mrests(doc):
+            if r["nl"] != 1:
+                c["pauta_de_%d_camadas(fora)" % r["nl"]] += 1
+                continue
+            if r["recv"]:
+                c["recebe_cross_staff(fora)"] += 1
+                continue
+            bad, _ = check_mrest(doc, r)
+            c["conferidas"] += 1
+            if bad:
+                c["excecoes"] += 1
+                rows.append([name, r["page"], r["id"], "; ".join(bad)])
+    with open(os.path.join(out, "prova3.csv"), "w", newline="") as f:
+        w = csv.writer(f, delimiter=";")
+        w.writerow(["peca", "pagina", "id", "divergencias"])
+        w.writerows(rows)
+    print("prova 3 (mRest de verdade):", dict(c))
+    for r in rows[:10]:
+        print("  ", r)
+    return c["excecoes"]
+
+
+def render_swap(job):
+    mei, dst_mei, vsb, step, off = job
+    sw.swap_file(mei, dst_mei, (lambda i, m: True) if step == 1 else (lambda i, m: i % step == off))
+    run_v(["-t", "vsb", "--xml-id-seed", "7", "-o", vsb, dst_mei])
+    return vsb
+
+
+def prova4(meis, out, work, jobs):
+    todo = []
+    for name, mei in meis.items():
+        for step, off in ((1, 0), (3, 0), (3, 1)):
+            tag = "all" if step == 1 else "k3o%d" % off
+            todo.append((mei, os.path.join(work, "%s.%s.mei" % (name, tag)), os.path.join(work, "%s.%s.vsb" % (name, tag)),
+                         step, off))
+    with ThreadPoolExecutor(jobs) as ex:
+        vsbs = list(ex.map(render_swap, todo))
+    c = collections.Counter()
+    err = collections.defaultdict(list)
+    rows = []
+    for job, vsbp in zip(todo, vsbs):
+        d = hr.Doc(vsbp)
+        for r in drawn_mrests(d):
+            if r["nl"] != 1:
+                c["camadas!=1(fora)"] += 1
+                continue
+            cat = mcategory(r)
+            bad, kind = check_mrest(d, r)
+            c["conferidas"] += 1
+            c[cat] += 1
+            if kind == "double":
+                c["breve(2 semibreves ou mais)"] += 1
+            if bad:
+                c["divergencias"] += 1
+                rows.append([os.path.basename(vsbp), r["page"], r["id"], cat, "; ".join(bad)])
+            geo = hr.mrest_geometry(d, r["ix"], r["mid"], r["st"])
+            if geo:
+                err[cat].append(abs(r["u"]["x"] - geo["x"]))
+    with open(os.path.join(out, "prova4.csv"), "w", newline="") as f:
+        w = csv.writer(f, delimiter=";")
+        w.writerow(["copia", "pagina", "id", "categoria", "divergencias"])
+        w.writerows(rows)
+    print("prova 4 (Verovio desenha, regra confere):", dict(c))
+    for k, v in sorted(err.items()):
+        print("   %-55s %5d  max |dx| %.2f" % (k, len(v), max(v)))
+    for r in rows[:10]:
+        print("  ", r)
+    return c["divergencias"]
+
+
+def main_measures(a):
+    t0 = time.time()
+    work = os.path.join(a.out, "work")
+    os.makedirs(work, exist_ok=True)
+    docs, meis = {}, {}
+    for s in sources(g11=True):
+        name = os.path.basename(s)
+        mei = os.path.join(work, name + ".mei")
+        run_v(["-t", "mei", "--xml-id-seed", "42", "-o", mei, s])
+        vsb = os.path.join(work, name + ".vsb")
+        run_v(["-t", "vsb", "--xml-id-seed", "7", "-o", vsb, mei])
+        docs[name] = hr.Doc(vsb)
+        meis[name] = mei
+    bad = prova3(docs, a.out)
+    bad += prova4(meis, a.out, work, a.jobs)
+    print("%.1f s" % (time.time() - t0))
+    return 1 if bad else 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--columns", type=int, default=100, help="colunas sorteadas por (figura, pontuada)")
@@ -437,7 +616,12 @@ def main():
     ap.add_argument("--out", default=os.path.join(ROOT, "compare/out/g08c/oraculo"))
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--skip-swap", action="store_true")
+    ap.add_argument("--measures", action="store_true", help="G11: a pausa de compasso (regra 8)")
     a = ap.parse_args()
+    if a.measures:
+        if a.out == os.path.join(ROOT, "compare/out/g08c/oraculo"):
+            a.out = os.path.join(ROOT, "compare/out/g11/oraculo")
+        return main_measures(a)
     t0 = time.time()
     work = os.path.join(a.out, "work")
     os.makedirs(work, exist_ok=True)

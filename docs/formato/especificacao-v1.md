@@ -690,6 +690,17 @@ no mesmo percurso em que monta a árvore (§5.5).
   - `gs`: `[sx, sy]` de um glifo de tamanho normal nessa pauta (é o que a
     cabeça preta da fantasma usa quando o alvo é uma pausa; para uma nota,
     cue/grace incluídos, ela herda a escala da cabeça esperada, §10).
+- **Só nó `measure`** (G11, D-SUM-COMPASSO; aditivo, no mesmo referencial que
+  `bbox`): `inner`: `[x0, x1]` — a faixa horizontal em que o Verovio centra a
+  pausa de compasso (`mRest`), isto é, de onde começa o miolo do compasso até a
+  borda esquerda da barra final. `x0` = `Measure::GetDrawingX() +
+  GetLeftBarLineRight()` e `x1` = `GetDrawingX() + GetRightBarLineLeft()`: sem
+  barra de repetição à esquerda, `x0` é o primeiro x do compasso **depois** de
+  clave, armadura e fórmula de compasso (se o compasso as traz) mais uma margem
+  que o Verovio reserva e que **não** está em nenhum outro lugar da cena (87 a
+  90 unidades, e 125 quando só há clave: medido em G11). O centro que o
+  Verovio usa é `x0 + ⌊(x1 − x0) / 2⌋` (divisão inteira). Ausente em `.vsb` de
+  antes de G11: leitor antigo e referência tratam como "sem pausa de compasso".
 - **Só nó de nota, acorde e pausa cross-staff:** `staff` = `id` do nó `staff`
   em que o elemento é desenhado. Ausente = a pauta ancestral na árvore.
 
@@ -1187,7 +1198,8 @@ nó `chord` dentro (as notas dele contam como descendentes); nenhum `bTrem`/`fTr
 na amostra. O nó `beamSpan` (barra de ligação que atravessa compassos ou
 quebra de sistema: 47 casos, em 2 peças, nenhum nos hinos) **não é** um `beam`:
 é um nó próprio, sem nota descendente, e a regra 2 não o alcança — a barra dele
-continua desenhada (limitação da v1).
+continua desenhada (limitação da v1; ao esconder um compasso inteiro, a regra 8 a
+resolve: o `beamSpan` some quando todos os compassos que ele toca estão escondidos).
 
 **3. Linhas suplementares.** Os nós `ledgerLines` (classes `ledgerLines above`,
 `ledgerLines below` e as variantes cue) são filhos de `staff`, sem `id`; cada
@@ -1372,6 +1384,120 @@ escondidas, semibreve (`loc` 6), empate de figura (a sem ponto vence), tercina,
 nota ligada (cabeça + continuação escondida pelo id), coluna cross-staff (pausa
 na pauta de desenho) e página alternativa.
 
+### 11.2 Esconder um compasso inteiro: a pausa de compasso substituta (regra 8)
+
+O decorar esconde uma **coluna** (regras 1 a 7). O aprendizado esconde um
+**compasso inteiro, nas duas pautas** e quer ver no lugar **uma única pausa de
+compasso por pauta**, a semibreve centrada que o Verovio desenha para `<mRest/>`,
+não uma fileira de pausas pequenas que entregaria o ritmo. Compassos escondidos
+vizinhos têm cada um a sua. As regras 1 a 3 valem como estão; o que muda é o
+conjunto `H` (todas as notas do compasso) e o que mais some com ele.
+
+**Entradas.** `M`: o conjunto de ids de nó `measure` escondidos por inteiro (os
+`measureOn` do timemap, §2.4, são os mesmos ids; `sceneIdOf` para `-rend<N>`).
+Tudo o mais vem da cena: as **notas do compasso** são os nós `note`
+descendentes do nó `measure` (não é preciso o `pitchpos.json`); a **pauta de
+desenho** de uma nota é a da regra 1 (`staff` do nó, §5.1, ou o ancestral).
+
+**8.1 O que some.** Para cada pauta de desenho `S` do compasso:
+  - `S` **tem alguma nota**: todas as notas dela entram em `H` (regras 1 a 3 as
+    levam com acorde, barra e linhas suplementares) e **as pausas de verdade**
+    (nós `rest`, não `mRest`) **também somem**, inclusive os pontos delas e o
+    traço de linha suplementar de uma pausa deslocada (a regra 3 passa a contar
+    as pausas escondidas como donas escondidas). Entra a pausa de compasso (8.3).
+  - `S` **não tem nenhuma nota** (só `rest` ou só `mRest`): o host **não faz
+    nada** nessa pauta; a pausa que existe já é o que o aluno veria.
+  - **Tercina** (nó `tuplet`): some o nó inteiro quando toda `note` e toda
+    `rest` descendente dele está escondida (leva o colchete e o número, nós
+    `tupletBracket`/`tupletNum`). O host o trata como a nota: cor transparente,
+    com a mesma exceção da regra 1 (`verse` fica).
+  - **Controles ancorados** (nós `tie`, `slur`, `phrase`, `arpeg` e `beamSpan`,
+    filhos do `measure` ou, quando cruzam a quebra de sistema, do `system`, sem
+    `id`): o **dono** é o conjunto de compassos que o controle toca. Para um
+    controle de caixa `[x0, _, x1, _]`, tocar um compasso `m` do mesmo sistema é
+    `min(x1, m.fim) − max(x0, m.início) > 1` (1 unidade de folga), onde
+    `[m.início, m.fim]` é o primeiro traço de linha de pauta do compasso (§5.1,
+    `p` filho do `staff`). O controle **some** quando todos os compassos que toca
+    estão em `M`; **fica** se toca algum compasso visível (a ligadura de
+    prolongamento que sai do compasso escondido para o seguinte). Sem `id`, ele é
+    identificado por `classe@x0,y0,x1,y1` (caixa, 1 casa).
+
+| O que mora no compasso | Nós no corpus¹ | O que acontece |
+| --- | --- | --- |
+| cabeça, haste, colchete, acidente, ponto, articulação | 21 738 notas | **somem** (regra 1) |
+| barra de ligação (`beam`) | 3 400 | **some** (regra 2) |
+| linha suplementar (`ledgerLines`) | 2 286 | **some** (regra 3; o traço de uma pausa que some conta) |
+| pausa de verdade (`rest`) em pauta que tem nota | 732 pautas de compasso | **some**, entra a pausa de compasso |
+| pausa de verdade em pauta sem nota | 35 pautas de compasso | **fica** |
+| tercina (`tuplet`, `tupletNum`, `tupletBracket`) | 90, 64, 4 | **some** quando todo o conteúdo some |
+| ligadura de prolongamento (`tie`) | 1 282 | **some** se toca só compassos escondidos (874); **fica** se cruza para um visível (408) |
+| ligadura de expressão (`slur`) e frase (`phrase`) | 555 e 12 | idem (496 e 3 somem; 59 e 9 cruzam e ficam) |
+| arpejo (`arpeg`), barra entre compassos (`beamSpan`) | 8, 47 | **somem** (o `beamSpan` deixa de ser limitação da regra 2) |
+| dinâmica, andamento, cifra, texto de direção, pedal, ottava, trinado, fermata, dedilhado, número do compasso | 184, 156, 168, 83, 656, 10, 16, 16, 8, 276 | **ficam** (não revelam altura nem ritmo; o aluno vê o contexto) |
+| letra (`verse`/`syl`), clave, armadura, fórmula, barra de compasso, `space`/`mSpace` | — | **ficam** |
+
+¹ 70 partituras (34 do G08c, 35 do aprendizado e `g11-compassos-especiais.mei`), páginas normais e alternativas
+(`compare/scripts/g11-sweep.py`). Escondendo **todos** os compassos de cada
+página, sobram desenhados só os nós da coluna "fica": **0 vazamentos** de nota,
+haste, barra, tercina ou ligadura (124 páginas, 1 517 compassos).
+
+**8.2 Pausa de compasso substituta.** Por pauta de desenho `S` que tem nota no
+compasso `m`, **uma** pausa, um `u` `{g, x, y, sx, sy}` pintado na cor do host:
+
+```text
+g    = "<fonte>:E4E3"                        // a semibreve, qualquer fórmula de compasso
+cx   = m.inner[0] + ⌊(m.inner[1] − m.inner[0]) / 2⌋     // divisão inteira
+x    = cx − ⌊largura de E4E3 × sx⌋ / 2                   // largura = bbox[2] / 10 × sx (§4), truncada; / 2 inteiro
+loc  = n − 1;  se loc ímpar: loc −= 1;  se n > 1: loc += 2   // a mesma conta da semibreve (regra 6, dur = 1)
+y    = topY + (2·(n − 1) − loc)·unit
+sx, sy = gs                                 // do nó staff (§5.1)
+```
+
+(`topY`, `unit`, `n` do `lines` e `gs` do nó `staff`.) Com `n = 5`, `loc` = 6 e
+`y = topY + 2·unit`. A pausa de compasso **não leva pontos** e não depende do
+`dur` de nenhuma nota. As contas são as do Verovio (`View::DrawMRest`,
+`Measure::GetInnerCenterX`, `CalcAlignmentPitchPosFunctor`). **Sem pausa de
+compasso substituta** (as notas somem do mesmo jeito): `.vsb` sem `inner` (anterior
+a G11); compasso de **2 semibreves ou mais** (o Verovio desenha a pausa de breve,
+`E4E2`, que não é glifo reservado; o compasso dura `qlen ≥ 8` semínimas, de
+`measureOn` consecutivos no timemap, §2.4; o último compasso até o fim do
+timemap); pauta com `n ≠ 5`; glifo `E4E3` ausente (`.vsb` anterior a G08b).
+**Anacruse e compasso incompleto:** o Verovio desenha a mesma semibreve
+centrada, e a regra vale igual (medido: 1 semínima, mesma pausa); decidir se se
+esconde uma anacruse é do host.
+
+**8.3 Compassos vizinhos, página e cross-staff.** Dois compassos escondidos
+lado a lado dão uma pausa de compasso **cada um**, sem pausa dupla (cada uma
+centrada no `inner` do seu compasso). Vale nas páginas normais e nas
+alternativas (§2.5). Cross-staff: a pausa vai para a pauta de **desenho** que
+tem notas; a pauta de origem, se ficou só com pausas, fica como está.
+
+**8.4 Provado contra o Verovio** (`compare/scripts/hide_oracle.py --measures`, G11):
+  - *sem rodar o Verovio de novo*: toda `mRest` de verdade do corpus (pauta de
+    uma camada): 11 conferidas, 0 divergências de glifo, `x`, `y` e escala;
+  - *rodando o Verovio*: numa cópia MEI de cada peça, **todo o conteúdo de todos
+    os compassos** (e de um em cada 3) é trocado por `<mRest/>`; 5 170 pausas
+    desenhadas pelo Verovio contra a regra: **0 divergências** (`x`, `y`, glifo,
+    escala; |dx| máximo 0,00) em todas as categorias: 612 primeiro do sistema,
+    3 699 comum, 742 último, 42 primeiro com barra de repetição à esquerda, 54
+    barra de repetição à esquerda, 21 cabeçalho no meio (armadura, fórmula ou
+    clave trocada); mais os 2 compassos de 2 semibreves, onde o Verovio desenha
+    `E4E2` e a regra, coerente, não dá pausa. Sem o campo `inner` isso não se
+    atingia: a margem de 87 a 90 unidades depois do cabeçalho não sai da cena
+    (um compasso com cabeçalho errava o centro em até 1,4 unidade, e em até 18 se a
+    borda usada era a de cada pauta em vez da mais larga das duas).
+
+**O que o host não deve fazer** (acréscimo): deduzir o centro do compasso pelo
+`bbox` do `measure` (inclui o número do compasso e as sobras) ou pela borda do
+cabeçalho; desenhar a pausa de compasso com `dur` de nota ou pontos; esconder
+`mRest` ou pausa de pauta sem nota.
+
+**Limitações da regra 8.** Pausa de compasso de várias vozes em camadas
+(`GetOptimalLayerLocation`: a posição vertical muda): fica na posição padrão da
+pauta; pausa multi-compasso (`multiRest`) fora; ligadura que cruza para um compasso
+visível fica (dá a entender que o som continua); dedilhado, ottava, trinado e
+fermata ficam; nota ligada a um compasso visível continua visível lá.
+
 ## Histórico de revisões
 
 | Data | Mudança |
@@ -1394,3 +1520,4 @@ na pauta de desenho) e página alternativa.
 | 2026-09-30 | G06 (fantasma cross-staff): **§10 passos 1 e 5** — a fantasma vai para a pauta onde a altura cabe (menos linhas suplementares brutas; desempates: menor `\|k − ref\|`, depois maior `ref`); coluna (x) do candidato mais próximo dentro da pauta escolhida; grafia e acidente usam o contexto da pauta (`co`/`sh`/`key`/`acc` do evento dela mais próximo de `k`); `8va`/`8vb`/`15ma`/`15mb` só no extremo do sistema ou com pauta única. Sem campo novo no `.vsb` (`version` continua `1`): o host alimenta `E` com as notas do passo + as pausas (`restsOn`) e as notas seguradas do instante — varredura do corpus (7 113 instantes): 183 sem cobertura (2,6%, quase todos de mão única soando sozinha), nunca as duas pautas sem evento. Referência (`ghost_ref.py`) + 6 vetores novos (32 casos, `resumo` à mão) + Ex. 4 no §10.1. Porta Dart no `zywny`. |
 | 2026-11-04 | G08a (nota escondida, D-SUM-FIGURA = (a), decisão do usuário): **`pitchpos.json`** (§2.8) ganha `dur` e `dots` por nota e pausa — a figura escrita, não deduzida do timemap; **glifos reservados** (§4) passam a 16, com as pausas `E4E3`-`E4E9` e o ponto `E1E7`; **§11 Nota escondida e pausa substituta** (normativo; regras 1-7, "o que o host não deve fazer" e esqueleto de §11.1). A regra 1 trata o **acorde** (haste, colchete e pontos são filhos do nó `chord`, não da nota) e a regra 6 corrige a posição vertical da pausa de mínima e semibreve para a do Verovio; os pontos são um círculo (`View::DrawDot`), não o glifo `E1E7`. Regras 3 e dos pontos sujeitas a conferência em G08c. Aditivo: `version` continua `1`, leitor antigo ignora tudo. Schema e `exemplo-pitchpos.json` atualizados. |
 | 2026-11-04 | G08c (nota escondida, referência e prova): **§11** corrigida onde a medição contradisse o texto de G08a — regra 3 passa a contar a **pausa deslocada** entre as donas do traço (o traço fundido com o dela fica); regra 6 troca `dur ≥ 2` por `dur ≤ 2` (era numericamente trocado), declara `n ≠ 5` sem pausa, a largura do glifo no cálculo do ponto é **truncada** (o Verovio usa `int`) e o `x` da pausa é o da cabeça por definição; regra 2 registra o `beamSpan` como limitação; §11.1 preenchida com os dois exemplos do hino 010. Medido: 7 381 traços, 0 sem dona, 0 com donas de colunas diferentes (D-SUM-NATIVO: sem dado novo na cena); 855 pausas de verdade e 840 colunas trocadas por pausa dentro do Verovio, 0 divergências de glifo/`y`/escala/pontos. Referência `hide_ref.py`, varredura `g08c-sweep.py`, oráculo `hide_oracle.py`, 11 vetores em `docs/formato/sumico/vetores.json`. Sem mudança no formato (`version` continua `1`). |
+| 2026-11-04 | G11 (esconder um compasso inteiro, D-SUM-COMPASSO = campo no formato, decisão do usuário): **`measure.inner`** (§5.1) — `[x0, x1]`, a faixa em que o Verovio centra a pausa de compasso (`GetDrawingX() + GetLeftBarLineRight()` e `+ GetRightBarLineLeft()`), gravado em todo nó `measure` (aditivo, `version` continua `1`; leitor antigo ignora); **§11.2, regra 8** (normativa): pausa de compasso substituta (glifo `E4E3`, `x` do centro de `inner`, `y` da regra da semibreve, sem pontos), o que some com o compasso (notas, pausas de verdade em pauta que tem nota, tercina, ligaduras de prolongamento/expressão, arpejo e `beamSpan` pelo dono = compassos que tocam), o que fica, e a classificação por ocorrências em 70 partituras. Provado: 5 170 pausas desenhadas pelo Verovio com 0 divergências de `x`, `y`, glifo e escala; 124 páginas, 1 517 compassos escondidos, 0 vazamentos. Sem o campo, o `x` de um compasso com cabeçalho errava até 1,4 unidade (até 18 por pauta). Exige refazer a `libverovio` (Linux, Android, Web). Schema (`measure.inner`) e 15 casos novos em `vetores.json` (`casosCompasso`). |

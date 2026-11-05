@@ -303,7 +303,7 @@ Os saltos em negrito cujo destino **não** é o 1º compasso de página normal
 | D-FANT-* | Nota fantasma: onde calcular, pauta, grafia, acidente, colisão, alcance, cabeça, duração, acordes, pausas | G04a-G05 | Resolvidas pelo usuário (2026-09-29) — ver [`G03`](G03-visao-geral-nota-fantasma.md): regras no `.vsb` + fórmula no host; pauta da nota esperada; grafia pela armadura (sem armadura: ♯ subindo, ♭ descendo); acidente só quando necessário; colisão desloca para o lado; > 4 linhas suplementares → 8va/15ma; cabeça sempre preta; visível enquanto a tecla está pressionada; uma fantasma por tecla; pausa usa a coluna da pausa, com `includeRests` no timemap |
 | D-SUM-UNIDADE, D-SUM-PAUSA, D-SUM-FICA, D-SUM-BARRA, D-SUM-SUPLEMENTAR, D-SUM-ERRO | Nota escondida e pausa substituta (trilha do decorar do `zywny`): o que some, o que fica, o que entra no lugar | G08a-G09 | Resolvidas pelo usuário (2026-10-01, entrevista no `zywny`) — ver [`G07`](G07-visao-geral-nota-escondida.md): some a coluna (notas de uma pauta no mesmo instante); entra uma pausa de outra cor com a figura da nota mais curta; a barra de ligação some quando todas as notas dela somem; as linhas suplementares da coluna somem; letra, ligaduras e dedilhado ficam |
 | D-SUM-FIGURA | De onde o host tira a figura (duração notada) da nota escondida? | G08a, G08b | Resolvida (2026-11-04, usuário): **(a)** `pitchpos.json` ganha `dur`/`dots` por nota e pausa (aditivo, `version` continua `1`); rejeitada a dedução pelo `qstamp` do timemap (erra em quiáltera e nota ligada). Escrita em G08a (spec §2.8, §11) |
-| D-SUM-NATIVO | A regra das linhas suplementares precisa de dado novo na cena? | G08c | **Aberta, condicional.** Recomendação: "sem nativo novo primeiro" (como em G06) — regra geométrica varrida no corpus; só se houver traço ambíguo, gravar no traço os ids de `LedgerLine::Dash::m_events` |
+| D-SUM-NATIVO | A regra das linhas suplementares precisa de dado novo na cena? | G08c | Resolvida (2026-11-04, G08c, medição): **sem dado novo na cena**. Varredura de 7 381 traços de linha suplementar em 36 peças: 0 sem dona e 0 com donas de colunas diferentes, contando a pausa deslocada como dona (§11, regra 3) |
 
 Decisões **já tomadas** (não reabrir): ver "Decisões arquiteturais já tomadas"
 no [`CLAUDE.md`](../../CLAUDE.md).
@@ -424,7 +424,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G07](G07-visao-geral-nota-escondida.md) | **Visão geral da nota escondida e da pausa substituta** (leitura obrigatória, não executável) | — | — | — |
 | [G08a](G08a-especificacao-nota-escondida.md) | Especificação: glifos de pausa reservados, figura no `pitchpos.json`, §11 | — | D-SUM-FIGURA (resolvida em 2026-11-04) | concluído |
 | [G08b](G08b-glifos-de-pausa-e-figura.md) | C++: glifos de pausa reservados e `dur`/`dots` no `pitchpos.json` | G08a | — | concluído |
-| [G08c](G08c-referencia-e-vetores-nota-escondida.md) | Referência, varredura do corpus, oráculo e vetores da nota escondida | G08b | D-SUM-NATIVO (só se a varredura falhar) | pendente |
+| [G08c](G08c-referencia-e-vetores-nota-escondida.md) | Referência, varredura do corpus, oráculo e vetores da nota escondida | G08b | D-SUM-NATIVO (só se a varredura falhar) | concluído |
 | [G09](G09-nota-para-zywny-nota-escondida.md) | Nota para o `zywny` (execução Dart fica lá: L02, L03) | G08c | — | pendente |
 | [G10](G10-marcas-de-expressao.md) | Marcas de expressão no `midi.json` (dinâmica, staccato, acento, ligadura de expressão), pedido do EX07 do `zywny-aprendizado` | G01 | D-MARCAS | pendente |
 
@@ -460,7 +460,7 @@ dicionário, a figura (`dur`/`dots`) no `pitchpos.json`, a regra normativa
 (§11 da spec: o que apagar — nota, barra de ligação, linhas suplementares —
 e onde desenhar a pausa), a prova contra o Verovio e os vetores de teste.
 Visão geral e decisões em [`G07`](G07-visao-geral-nota-escondida.md).
-**Em andamento**: G08a-G08b concluídos (2026-11-04); G08c-G09 pendentes; D-SUM-NATIVO continua aberta (condicional).
+**Em andamento**: G08a-G08c concluídos (2026-11-04); G09 pendente; D-SUM-NATIVO resolvida em G08c: sem dado novo na cena.
 
 A nota fantasma (G03-G06) mostra uma tecla errada do aluno como uma cabeça
 de nota de outra cor **na pauta**: na altura da tecla tocada, na coluna da

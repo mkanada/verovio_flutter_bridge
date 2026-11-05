@@ -1179,7 +1179,15 @@ barras propriamente ditas) deixam de ser pintadas quando **toda** `note`
 descendente desse `beam` está em `H`. Barras aninhadas: a regra vale para cada
 `beam` com as suas próprias descendentes. O host **não** esconde o nó `beam`
 (trocar a cor dele esconderia também as notas visíveis, descendentes dele);
-só as formas filhas diretas.
+só as formas filhas diretas. Medido em G08c (3 115 `beam` em 36 peças): todo
+`beam` tem ao menos uma forma filha direta e uma `note` descendente; nenhuma
+barra aninhada em outra; 2 entre pautas (cross-staff, na Clair de Lune: a regra
+vale como está, só some quando as notas das duas pautas somem); 1 615 têm um
+nó `chord` dentro (as notas dele contam como descendentes); nenhum `bTrem`/`fTrem`
+na amostra. O nó `beamSpan` (barra de ligação que atravessa compassos ou
+quebra de sistema: 47 casos, em 2 peças, nenhum nos hinos) **não é** um `beam`:
+é um nó próprio, sem nota descendente, e a regra 2 não o alcança — a barra dele
+continua desenhada (limitação da v1).
 
 **3. Linhas suplementares.** Os nós `ledgerLines` (classes `ledgerLines above`,
 `ledgerLines below` e as variantes cue) são filhos de `staff`, sem `id`; cada
@@ -1196,15 +1204,28 @@ segmento, no referencial do §5.1) e de `x` em `[a, b]`:
     desenho** (§5.1, `staff`), `[xl, xr] ⊆ [a − 1, b + 1]` (1 unidade de
     viewBox de folga) e o `loc` dela alcança a linha: acima, `loc ≥ 2·(n −
     1) + 2·k`; abaixo, `loc ≤ −2·k`;
-  - o traço **deixa de ser pintado** quando toda nota a que pertence está em
-    `H`. Um traço sem nenhuma dona (não deve existir) continua visível. Os
-    traços de uma coluna visível não são afetados.
+  - o traço **pertence também a uma pausa** (nó `rest` ou `mRest` da mesma
+    pauta de desenho) cujo glifo `u` ele cobre do mesmo jeito (`[xl, xr]` = o
+    contorno do glifo × `sx`) e cujo `loc` = `2·(n − 1) − (y − topY)/unit`
+    alcança a linha. O Verovio desenha traço para uma pausa deslocada (posição
+    explícita, ou deslocada por camada), e o dele pode **fundir-se** com o de
+    uma nota da outra camada. O host nunca esconde uma pausa de verdade, então
+    **um traço que tem uma pausa entre as donas fica**;
+  - o traço **deixa de ser pintado** quando toda dona dele é uma nota e toda
+    nota a que pertence está em `H`. Um traço sem nenhuma dona (não deve
+    existir) continua visível. Os traços de uma coluna visível não são
+    afetados.
 
-*Nesta versão do texto a regra 3 é a recomendação "sem nativo novo" de G07
-(D-SUM-NATIVO).* A varredura do corpus (G08c) confere os traços contra as
-donas; se achar um traço ambíguo, o exportador passa a gravar no traço os ids
-das notas que o geraram e esta regra é substituída por essa leitura direta.
-O leitor deve seguir a versão vigente desta seção.
+*Medido em G08c (D-SUM-NATIVO: não é preciso dado novo na cena).* Em 7 381
+traços de 36 peças (corpus + hinos; páginas normais e alternativas), com as
+donas acima: **nenhum traço sem dona e nenhum traço com donas de colunas
+diferentes**. As donas de um traço são sempre da mesma coluna (mesma pauta de
+desenho e mesmo instante, com uma ressalva: as notas de um acorde arpejado
+têm instantes ligeiramente diferentes no timemap — o `arpeg` espalha os
+`on` de 0,02 a 0,04 de semínima — mas são um acorde só na cena, e o traço de um
+arpejo some quando a **última** nota dele some). 108 traços têm uma pausa
+entre as donas (4 só dela, 104 fundidos com o de uma nota, em 4 peças): sem a
+pausa como dona, a regra apagaria um traço de que a pausa visível precisa.
 
 **4. Figura.** `dur` e `dots` da nota **mais curta** da coluna: o maior `dur`
 entre as notas de `C` (figura mais curta) e, no empate, o **menor** `dots`
@@ -1229,20 +1250,37 @@ sem esses glifos no dicionário, esconde a coluna do mesmo jeito, sem pausa.
 ```text
 x    = menor x de cabeça (u dentro de notehead) entre as notas de C
 loc  = n − 1                                  // linha do meio da pauta
-se dur ≥ 2 (mínima ou semibreve) e loc ímpar:  loc −= 1
+se dur ≤ 2 (mínima ou semibreve) e loc ímpar:  loc −= 1
 se dur == 1 e n > 1:                           loc += 2
 y    = topY + (2·(n − 1) − loc)·unit
 sx = gs[0], sy = gs[1]
 ```
+
+(`dur ≤ 2` é "mais longa que a semínima"; com `n = 5` o `loc` do meio, 4, é par e
+a condição nunca dispara.) **Pauta que não tem 5 linhas** (`n ≠ 5`) fica sem
+pausa substituta (limitações, abaixo).
 
 São as mesmas condições de `calcalignmentpitchposfunctor.cpp` para a posição
 automática de uma pausa (a linha do meio; a de duração maior que a semínima
 cai numa linha; a semibreve pendura-se uma linha acima), **sem** o ajuste por
 camada (`GetOptimalLayerLocation`): a pausa substituta é uma só por pauta. A
 pausa é um `u` com o glifo da regra 5, `{g, x, y, sx, sy}`, pintado na cor do
-host. A convenção para o `x` é a da cabeça da coluna; o desvio em relação à
-posição horizontal que o Verovio daria a uma pausa de verdade é medido em
-G08c.
+host. O `x` é o da cabeça da coluna **por definição**: não há oráculo para ele
+(trocar nota por pausa muda o espaçamento que o Verovio calcula). A pausa é de
+largura parecida com a da cabeça (226 unidades com `gs` 0,72): semínima 219,
+colcheia 198, semicolcheia 233, semibreve e mínima 216; só as de fusa (286) e
+semifusa (344) ultrapassam a cabeça, para a direita.
+
+*Posição, glifo e pontos são os do Verovio* (G08c, oráculo): em 855 pausas de
+verdade (pauta de uma camada, fora de barra, sem posição explícita) e em 840
+colunas trocadas por uma pausa dentro do próprio Verovio, **0 divergências** de
+glifo, `y`, escala e pontos, com tolerância de 0,5 unidade de viewBox
+(`compare/scripts/hide_oracle.py`). Ficam fora do oráculo, por serem posição que
+o Verovio muda por outro motivo: pausa com `@loc`/`@ploc` explícito, pauta de
+mais de uma camada (`GetOptimalLayerLocation`), pausa dentro de barra (altura
+pela vizinhança) e pauta que recebe nota cross-staff no mesmo compasso (a pausa
+desvia dela); nesses casos a pausa substituta fica na posição padrão da pauta,
+que pode encostar numa nota visível (limitação da v1).
 
 *Pontos de aumento* (`dots > 0`), na regra de `View::DrawDots` e
 `CalcDotsFunctor::VisitRest`: o Verovio desenha cada ponto como um círculo (não
@@ -1252,15 +1290,17 @@ substituta, com `ux = unit` e `loc` o da pausa acima:
 ```text
 locDot = loc;  se locDot é par: locDot += 1
 se dur == 32 ou 64: locDot += 2             // a pausa de fusa/semifusa é mais alta
-xRel   = (dur > 2) ? largura do glifo da pausa : 2,5·unit
-         // largura = extensão horizontal do contorno do glifo × sx
+xRel   = (dur > 2) ? ⌊largura do glifo da pausa⌋ : ⌊2,5·unit⌋
+         // largura = bbox[2] / 10 × sx (§4), truncada: o Verovio calcula em inteiros
 x0     = x + xRel + unit
 yDot   = topY + (2·(n − 1) − locDot)·unit
 ponto j (j = 0 … dots − 1): elipse { cx = x0 + j·1,5·unit, cy = yDot, rx = ry = r }
 ```
 
-Cada ponto é um círculo `fill` na cor da pausa, sem contorno. *G08c confere
-esta conta contra o Verovio (oráculo) e corrige este texto se ela diferir.*
+Cada ponto é um círculo `fill` na cor da pausa, sem contorno. A conta foi
+conferida contra o Verovio (oráculo, G08c) com pausas de todas as figuras de
+semibreve a semifusa, com 0, 1 e 2 pontos (`corpus/sumico/s01-pausas-pontuadas.mei`);
+o único acerto em relação ao texto de G08a foi o truncamento da largura.
 
 **7. Uma pausa por (pauta de desenho, instante).** Se o host esconde colunas
 de duas pautas no mesmo instante, desenha duas pausas, uma em cada pauta de
@@ -1283,17 +1323,54 @@ instante).
 visível vizinha (o espaçamento foi calculado para a nota); ligadura de
 prolongamento ou de expressão que começa ou termina numa nota escondida
 continua desenhada; dedilhado (`fing`) continua desenhado; apojaturas e
-ornamentos não somem; pauta que não tem 5 linhas, tablatura, percussão e
-notação mensural ficam sem pausa substituta.
+ornamentos não somem; `beamSpan` não some (regra 2); o traço fundido com o de uma
+pausa deslocada fica inteiro, mais largo do que a pausa precisa; pauta que não
+tem 5 linhas, tablatura, percussão e notação mensural ficam sem pausa
+substituta.
 
 ### 11.1 Exemplos trabalhados
 
-*A preencher com a fixture do hino que G08c põe no corpus* (duas vozes por
-pauta, letra, uma coluna com linha suplementar e uma dentro de barra de
-ligação), com os números reais de `x`, `y`, `loc`, traços e barras, e com o
-oráculo do Verovio ao lado. Até lá, o contrato é o texto acima; o Satie
-(§10.1) traz os números de pauta (`topY` 808, `unit` 90, `n` 5, `gs` 0,72)
-que as regras 6 e 3 usam.
+Os dois vêm do hino 010, *O Senhor está aqui* (`corpus/sumico/h010.musicxml`;
+página 0; `docs/formato/sumico/h010.vsb`): uma pauta de duas vozes em camadas
+separadas, com letra, de `topY` 1106, `unit` 90, `n` 5 e `gs` 0,72 — o caso dos
+hinos do `zywny`, que o Satie (§10.1) não cobre. Os números saem de
+`compare/scripts/hide_ref.py` e estão em `docs/formato/sumico/vetores.json`
+(`c01-duas-vozes`, `c06-pontuada`, mais nove casos), com um PNG de evidência por
+caso em `compare/out/g08c/` (git-ignorado; `g08c-make-vectors.py` o refaz). O
+oráculo do Verovio (`hide_oracle.py`) concorda com os dois em glifo, `y`,
+escala e pontos.
+
+**Ex. 1 — duas vozes, figuras diferentes, linha suplementar.** O instante 2 da
+pauta `c1k2xsnz`: soprano `r10709ff` (semínima, `loc` 3) e, em acorde `yy2zfkq`,
+alto `z1oagi0k` (mínima, `loc` 0) e tenor `x1848jna` (mínima, `loc` −2); todas
+com cabeça em `x` 3446. `C = H =` as três notas.
+
+  - regra 1: as três notas e o acorde `yy2zfkq` (as duas notas dele estão em
+    `H`) somem, com haste, colchete e pontos; a letra fica;
+  - regra 2: nenhuma barra (`r10709ff` é uma nota solta): `beams` vazio;
+  - regra 3: o tenor, em `loc` −2, pede 1 linha abaixo; o traço
+    `["c1k2xsnz", "below", 1, 3398, 3720]` (cabeça 3446-3672 ± 48 de extensão)
+    só tem essa coluna como dona e some; o traço do instante 0 (x 1678-2000),
+    vizinho, fica;
+  - regra 4: as figuras são (4, 0), (2, 0) e (2, 0): a mais curta é a semínima;
+  - regra 5: `dur` 4 -> `Leipzig:E4E5`;
+  - regra 6: `loc` = 5 − 1 = 4 (par; `dur` 4 não pede ajuste); `y` = 1106 +
+    (8 − 4)·90 = **1466**; `x` = **3446**; `sx` = `sy` = 0,72.
+
+**Ex. 2 — figura pontuada.** O instante 12 da pauta `wuhbofp` (topo 3519): `g1qqc06o`
+(mínima, `loc` 0) e `y4ih5in` (semínima pontuada, `loc` 4), `x` 12798.
+
+  - regra 4: a mais curta é a semínima pontuada, (4, 1);
+  - regra 5: `Leipzig:E4E5`; regra 6: `loc` 4, `y` = 3519 + 4·90 = **3879**;
+  - pontos: `loc` 4 é par -> `locDot` 5; `dur` 4 não sobe; `xRel` = ⌊219,6⌋ =
+    219 (largura de `E4E5` × 0,72); `x0` = 12798 + 219 + 90 = **13107**; `yDot` =
+    3519 + (8 − 5)·90 = **3789**; raio 2·90/5 = 36: um círculo `{cx: 13107,
+    cy: 3789, rx: 36, ry: 36}`.
+
+Os outros nove casos de `vetores.json` cobrem barra com 1 de 2 e 2 de 2 notas
+escondidas, semibreve (`loc` 6), empate de figura (a sem ponto vence), tercina,
+nota ligada (cabeça + continuação escondida pelo id), coluna cross-staff (pausa
+na pauta de desenho) e página alternativa.
 
 ## Histórico de revisões
 
@@ -1316,3 +1393,4 @@ que as regras 6 e 3 usam.
 | 2026-09-29 | G04a-G04d (nota fantasma, D-FANT-*): **`pitchpos.json`** (§2.8, novo) — contexto de notação por nota e pausa (`co`, `sh`, `key`, `acc`, `pn`/`o`/`alt`/`loc`), indexado pelo id **notado**; **nó `staff`** (§5.1) ganha `lines`/`ledger`/`ledgerCue`/`gs`, e nós de nota/acorde/pausa cross-staff ganham `staff`; **glifos reservados** (§4) sempre no dicionário (E0A4, E260-E262, E511/E512/E515/E516); **timemap** (§2.4) passa a ser pedido com `includeRests` (`restsOn`/`restsOff`, só essas chaves são novas); **§10 Nota fantasma** (normativo, com 3 exemplos do Satie), validada por oráculo Verovio (2 400 alvos, 100%) e vetores `docs/formato/fantasma/vetores.json`. Aditivo: `version` continua `1`, leitor antigo ignora tudo; `manifest.files.pitchpos`, propriedade `pitchpos` no JSON único, `$defs/pitchposDocument`/`pitchposEvent` no schema, `exemplo-pitchpos.json`. Flag `--no-vsb-pitchpos` desliga o arquivo. |
 | 2026-09-30 | G06 (fantasma cross-staff): **§10 passos 1 e 5** — a fantasma vai para a pauta onde a altura cabe (menos linhas suplementares brutas; desempates: menor `\|k − ref\|`, depois maior `ref`); coluna (x) do candidato mais próximo dentro da pauta escolhida; grafia e acidente usam o contexto da pauta (`co`/`sh`/`key`/`acc` do evento dela mais próximo de `k`); `8va`/`8vb`/`15ma`/`15mb` só no extremo do sistema ou com pauta única. Sem campo novo no `.vsb` (`version` continua `1`): o host alimenta `E` com as notas do passo + as pausas (`restsOn`) e as notas seguradas do instante — varredura do corpus (7 113 instantes): 183 sem cobertura (2,6%, quase todos de mão única soando sozinha), nunca as duas pautas sem evento. Referência (`ghost_ref.py`) + 6 vetores novos (32 casos, `resumo` à mão) + Ex. 4 no §10.1. Porta Dart no `zywny`. |
 | 2026-11-04 | G08a (nota escondida, D-SUM-FIGURA = (a), decisão do usuário): **`pitchpos.json`** (§2.8) ganha `dur` e `dots` por nota e pausa — a figura escrita, não deduzida do timemap; **glifos reservados** (§4) passam a 16, com as pausas `E4E3`-`E4E9` e o ponto `E1E7`; **§11 Nota escondida e pausa substituta** (normativo; regras 1-7, "o que o host não deve fazer" e esqueleto de §11.1). A regra 1 trata o **acorde** (haste, colchete e pontos são filhos do nó `chord`, não da nota) e a regra 6 corrige a posição vertical da pausa de mínima e semibreve para a do Verovio; os pontos são um círculo (`View::DrawDot`), não o glifo `E1E7`. Regras 3 e dos pontos sujeitas a conferência em G08c. Aditivo: `version` continua `1`, leitor antigo ignora tudo. Schema e `exemplo-pitchpos.json` atualizados. |
+| 2026-11-04 | G08c (nota escondida, referência e prova): **§11** corrigida onde a medição contradisse o texto de G08a — regra 3 passa a contar a **pausa deslocada** entre as donas do traço (o traço fundido com o dela fica); regra 6 troca `dur ≥ 2` por `dur ≤ 2` (era numericamente trocado), declara `n ≠ 5` sem pausa, a largura do glifo no cálculo do ponto é **truncada** (o Verovio usa `int`) e o `x` da pausa é o da cabeça por definição; regra 2 registra o `beamSpan` como limitação; §11.1 preenchida com os dois exemplos do hino 010. Medido: 7 381 traços, 0 sem dona, 0 com donas de colunas diferentes (D-SUM-NATIVO: sem dado novo na cena); 855 pausas de verdade e 840 colunas trocadas por pausa dentro do Verovio, 0 divergências de glifo/`y`/escala/pontos. Referência `hide_ref.py`, varredura `g08c-sweep.py`, oráculo `hide_oracle.py`, 11 vetores em `docs/formato/sumico/vetores.json`. Sem mudança no formato (`version` continua `1`). |

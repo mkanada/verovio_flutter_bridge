@@ -50,7 +50,7 @@ perguntas:
 | Id | Pergunta | Bloqueia | Recomendação |
 | --- | --- | --- | --- |
 | **D-SUM-FIGURA** | De onde o host tira a figura da nota? | G08a, G08b | **(a) `pitchpos.json` ganha `dur` e `dots`** por nota (e por pausa, de graça): é o arquivo de "como está escrito", indexado pelo id notado, e o Verovio tem o valor exato (`DurationInterface::GetActualDur`, `GetDots`). Rejeitar (b) deduzir do timemap (`qstamp` do `off` menos o do `on`): erra em quiáltera (52 dos 600 hinos do `zywny`), em nota ligada e em fermata/andamento, e obriga o host a uma tabela de arredondamento. |
-| **D-SUM-NATIVO** | A regra das linhas suplementares precisa de dado novo na cena? | G08c | **"Sem nativo novo primeiro"** (a mesma linha de G06): a regra é geométrica (§ Regras, 3) e G08c a varre no corpus. Só se a varredura achar traço ambíguo, o exportador passa a gravar no traço os ids das notas que o geraram (`LedgerLine::Dash::m_events` já existe no Verovio). |
+| **D-SUM-NATIVO** | A regra das linhas suplementares precisa de dado novo na cena? | G08c | **Resolvida em G08c (2026-11-04): não.** A regra geométrica (§ Regras, 3) bastou: em 7 381 traços de 36 peças, 0 sem dona e 0 com donas de colunas diferentes, **depois de dois acertos** que a varredura impôs — a pausa deslocada é dona do traço (o dela funde com o da nota), e as notas de um acorde arpejado, de instantes diferentes no timemap, são uma coluna só. O plano B (gravar `Dash::m_events` no traço) não foi preciso. |
 
 ## Fatos medidos (2026-10-01)
 
@@ -69,7 +69,7 @@ Cena de `Chopin_Etude_Op10_No9.vsb` (fixture do `zywny`) e fonte do fork:
 | Posição padrão da pausa: `loc` da linha do meio; **+2 para a semibreve** em pauta de mais de uma linha; depois ajuste por camada | `calcalignmentpitchposfunctor.cpp` ~L186 e L311 (`GetOptimalLayerLocation`) |
 | Glifos reservados hoje: `E0A4`, `E260`-`E262`, `E511`/`E512`/`E515`/`E516` | `BridgeDeviceContext::AddReservedGlyphs`, `bridgedevicecontext.cpp` L1254; spec §4 |
 | `pitchpos.json` não traz figura nem pontos | spec §2.8 |
-| O corpus não tem nenhuma peça com duas vozes por pauta e letra, que é o caso de **598 dos 600** hinos do `zywny` | `corpus/` |
+| O corpus não tinha nenhuma peça com duas vozes por pauta e letra, que é o caso de **598 dos 600** hinos do `zywny`; G08c trouxe dois (`corpus/sumico/h010`, `h056`) | `corpus/` |
 
 ## Regras (contrato comum a G08a-G09)
 
@@ -86,11 +86,13 @@ Tudo o que é musical vem do Verovio; o host só faz a conta. A especificação
    toda `note` descendente dele está escondida. Barras aninhadas: a regra
    vale para cada `beam` com as suas descendentes.
 3. **Linhas suplementares.** Um traço (forma `p` dentro de `ledgerLines …`)
-   **pertence** às notas da mesma pauta de desenho cuja cabeça (`bbox` do
-   `notehead`) ele cobre em x **e** cujo `loc` (`pitchpos.json`) alcança a
+   **pertence** às notas da mesma pauta de desenho cuja cabeça (contorno do
+   glifo) ele cobre em x **e** cujo `loc` (`pitchpos.json`) alcança a
    linha dele — acima: `loc ≥ 2·(n − 1) + 2·k`; abaixo: `loc ≤ −2·k`, sendo
-   `k` a ordem da linha a partir da pauta. O traço some quando todas as
-   notas a que pertence estão escondidas. Um traço sem dona (não deve
+   `k` a ordem da linha a partir da pauta — **e às pausas deslocadas** que ele
+   cobre do mesmo jeito (o traço de uma pausa funde com o da nota da outra
+   camada). O traço some quando todas as notas a que pertence estão
+   escondidas e nenhuma pausa é dona dele. Um traço sem dona (não deve
    existir) fica visível.
 4. **Figura.** `dur` e `dots` da nota mais curta da coluna (D-SUM-FIGURA).
    Quiáltera não muda a figura: usa-se a escrita.

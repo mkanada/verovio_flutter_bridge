@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0">
+  <meiHead><fileDesc><titleStmt><title>S01 pausas de todas as figuras, com 0-2 pontos (G08c)</title></titleStmt><pubStmt/></fileDesc></meiHead>
+  <music><body><mdiv><score>
+    <scoreDef meter.count="4" meter.unit="4"><staffGrp><staffDef n="1" lines="5" clef.shape="G" clef.line="2"/></staffGrp></scoreDef>
+    <section><measure n="1"><staff n="1"><layer n="1"><rest xml:id="s01-r1-0" dur="1"/><rest xml:id="s01-r1-1" dur="1" dots="1"/><rest xml:id="s01-r1-2" dur="1" dots="2"/></layer></staff></measure>
+<measure n="2"><staff n="1"><layer n="1"><rest xml:id="s01-r2-0" dur="2"/><rest xml:id="s01-r2-1" dur="2" dots="1"/><rest xml:id="s01-r2-2" dur="2" dots="2"/></layer></staff></measure>
+<measure n="3"><staff n="1"><layer n="1"><rest xml:id="s01-r4-0" dur="4"/><rest xml:id="s01-r4-1" dur="4" dots="1"/><rest xml:id="s01-r4-2" dur="4" dots="2"/></layer></staff></measure>
+<measure n="4"><staff n="1"><layer n="1"><rest xml:id="s01-r8-0" dur="8"/><rest xml:id="s01-r8-1" dur="8" dots="1"/><rest xml:id="s01-r8-2" dur="8" dots="2"/></layer></staff></measure>
+<measure n="5"><staff n="1"><layer n="1"><rest xml:id="s01-r16-0" dur="16"/><rest xml:id="s01-r16-1" dur="16" dots="1"/><rest xml:id="s01-r16-2" dur="16" dots="2"/></layer></staff></measure>
+<measure n="6"><staff n="1"><layer n="1"><rest xml:id="s01-r32-0" dur="32"/><rest xml:id="s01-r32-1" dur="32" dots="1"/><rest xml:id="s01-r32-2" dur="32" dots="2"/></layer></staff></measure>
+<measure n="7"><staff n="1"><layer n="1"><rest xml:id="s01-r64-0" dur="64"/><rest xml:id="s01-r64-1" dur="64" dots="1"/><rest xml:id="s01-r64-2" dur="64" dots="2"/></layer></staff></measure></section>
+  </score></mdiv></body></music>
+</mei>

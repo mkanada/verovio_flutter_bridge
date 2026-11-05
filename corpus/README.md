@@ -83,3 +83,23 @@ traz, por id da cabeça, a cadeia esperada; confere-se com
 | Arquivo | Caso |
 | --- | --- |
 | `l01-entre-camadas-e-casas.musicxml` | ligadura que troca de camada na barra de compasso; ligadura para dentro da casa 1 e da casa 2 (na 2ª passagem a cadeia vai para a casa 2, uma delas trocando de camada) |
+
+## `sumico/` — hinos e pausas da nota escondida (G08c)
+
+Material da nota escondida e da pausa substituta (§11): o caso principal dela — duas vozes
+por pauta em camadas separadas, letra, ponto de aumento, quiáltera — não existe em nenhuma
+peça das pastas acima.
+
+| Arquivo | Origem | Para quê |
+| --- | --- | --- |
+| `h010.musicxml` | hino 010, *O Senhor está aqui* (Silmar Correia; arranjo de Rafael Lindemute), de `/home/mauricio/IdeaProjects/Hymn_Grabber/musicxml/010.musicxml` (a pasta que `zywny-musicas/tool/build_hymn_assets.py` lê), descompactado, sem alteração | linhas suplementares nas duas pautas, acordes de duas vozes, barras, pontuadas, semibreve, nota ligada entre sistemas |
+| `h056.musicxml` | hino 056, *Nossa inspiração* (Samuel Gravino Júnior; arranjo de Juliana Pinheiro Sanches), mesma pasta, sem alteração | tercinas, muitas linhas suplementares |
+| `s01-pausas-pontuadas.mei` | escrito à mão para este projeto (sem restrição de licença) | uma pausa de cada figura (semibreve a semifusa) com 0, 1 e 2 pontos: o oráculo dos pontos de aumento |
+
+**Direitos:** as melodias e os arranjos dos hinos são protegidos (`<rights>` de cada arquivo:
+© dos autores; arranjo © 2020 Casa Publicadora Brasileira) e vêm da biblioteca do próprio `zywny`;
+estão aqui só como material de teste. **Não redistribua este repositório com `sumico/*.musicxml`
+sem resolver os direitos** (para publicar, troque-os por hinos de domínio público).
+`docs/formato/sumico/` traz os `.vsb` gerados deles (e de `f04-cross-staff`, `r04-casas`) e os
+vetores de teste.
+

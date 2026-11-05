@@ -110,4 +110,60 @@ Verovio para a posição da pausa, e os vetores de teste que o host vai usar.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+Concluído em 2026-11-04. Nenhuma linha de `verovio/` mudou (o passo é só referência,
+medição e documentação). Scripts em `compare/scripts/`: `hide_ref.py` (a referência, com
+`--self-test`), `g08c-sweep.py`, `hide_oracle.py`, `g08c-make-vectors.py`, `scene_svg.py`
+(desenha a página só para a evidência). Saídas em `compare/out/g08c/` (`sweep/`,
+`oraculo/`, um PNG por caso). Corpus novo: `corpus/sumico/` (`h010`, `h056`,
+`s01-pausas-pontuadas.mei`, escrito à mão); vetores e `.vsb` em `docs/formato/sumico/`.
+
+- **Critério 1 (regra 3): 0 e 0**, mas só depois de dois acertos que a varredura impôs
+  (D-SUM-NATIVO resolvida: **sem dado novo na cena**). 7 381 traços em 36 peças (páginas
+  normais e alternativas), 8 367 donas. Com a regra como a G08a a escreveu houve **4 sem dona**
+  (Mazurka, uma pausa de mínima deslocada para 4 linhas abaixo, com traço próprio) e **4
+  com donas de colunas diferentes** (Clair de Lune, um arpejo: o `arpeg` espalha os `on` de
+  0,02 a 0,04 de semínima, mas as notas são um acorde na cena). Acertos: (1) **a pausa é dona
+  do traço** — 108 traços têm uma pausa entre as donas (4 só dela, 104 fundidos com o de uma
+  nota da outra camada, em Mazurka/Bach/Satie/Scarlatti; nos hinos, 0): sem isso a regra
+  apagaria o traço de que uma pausa visível precisa; (2) coluna de arpejo = o nó `chord`.
+- **Critério 2 (regra 2)**: 3 115 `beam`; todos com ≥ 1 forma filha direta e ≥ 1 `note`
+  descendente; 0 aninhados; 2 cross-staff (Clair de Lune: a regra vale, some quando as duas
+  pautas somem); 1 615 com `chord` dentro; 0 `bTrem`/`fTrem`. **Achado**: `beamSpan` (47 casos
+  em Nocturne e Clair de Lune, nenhum nos hinos) é um nó próprio sem nota descendente — a
+  regra não o alcança e a barra dele fica (limitação nova, §11).
+- **Critério 3 (prova 1, sem Verovio)**: 855 pausas conferidas (pauta de uma camada, fora de
+  barra e de cue, sem posição explícita, sem cross-staff vindo de outra pauta), **0 exceções**,
+  27 delas com pontos; fora: 200 em pauta de 2 camadas e 6 de 3, 132 com `ploc`/`oloc`
+  explícitos (MusicXML `display-step`), 64 em barra, 7 em pauta que recebe cross-staff, 10 sem
+  figura (`mRest`/`multiRest`/fora da faixa).
+- **Critério 4 (prova 2, no Verovio)**: sorteio estratificado por figura (até 100 colunas
+  por semibreve…semifusa, pontuada ou não; `--seed 42`): 860 colunas, 6 inviáveis, **854
+  trocadas por uma pausa numa cópia MEI e renderizadas, 0 divergências de glifo, `y`, escala e
+  pontos** (840 conferidas + 14 em pauta que recebe cross-staff, que o Verovio desvia por
+  colisão, classificadas à parte). Cobre semibreve a semifusa; fusa e semifusa pontuadas só
+  existem em `s01` (prova 1). 69 cópias, ~50 s.
+- **O que o oráculo corrigiu na §11** (a spec segue o Verovio): (a) a conta dos pontos usa a
+  largura do glifo **truncada** (`int`; sem isso o ponto saía 0,7 unidade deslocado em dur 8);
+  (b) `dur ≥ 2` na regra 6 era numericamente invertido (o certo é `dur ≤ 2`, "mais longa que
+  a semínima"; com `n = 5` não dispara, por isso nada divergiu); (c) pausa só em pauta de
+  5 linhas, declarado; (d) o `x` não tem oráculo (a troca muda o espaçamento) — a spec agora
+  diz isso e dá as larguras das pausas em relação à cabeça, em vez de prometer uma medição.
+- **Armadilhas da prova 2**: trocar nota por pausa deixa para trás ligaduras, dinâmicas e
+  pedais que apontam para ids removidos, **em outros compassos também** (`endid` do outro
+  lado: o Verovio dá SIGSEGV); a cópia tem de varrer o documento inteiro e remover esses
+  controles. A barra tem de ser desfeita em **qualquer** nível (uma pausa numa tercina dentro
+  de `beam` é ajustada pela barra e muda de altura). As cópias usam `--xml-id-seed 7` (o
+  `-t mei` usa 42), como em G04d.
+- **Critério 5**: `hide_ref.py --self-test`: 11 casos, 0 divergências; `vetores.json` com os 9
+  casos mínimos + empate de figura + barra 1 de 2 (11 no total), `resumo` escrito à mão por
+  caso (a conta está em `conta`) e igual ao da referência na primeira passada.
+- **Critério 6**: 11 PNGs em `compare/out/g08c/c01…c11-*.png` (a coluna some, a pausa em
+  laranja; a letra, a clave e as outras colunas ficam). Olhados: c01, c04, c06, c09, c10.
+- **Critério 7**: `ghost_ref.py --self-test` verde (32 casos, 0 divergências).
+- **Direitos**: os dois hinos são protegidos (`<rights>`: © dos autores; arranjo © 2020
+  Casa Publicadora Brasileira). Estão em `corpus/sumico/` como material de teste, com a
+  ressalva no `corpus/README.md`; para publicar o repositório, trocar por hinos de domínio
+  público.
+- **Para G09 (nota ao `zywny`)**: as regras novas que o host precisa implementar — a pausa
+  deslocada é dona do traço (nunca é escondida), `dur ≤ 2`, largura truncada nos pontos,
+  `beamSpan` não some — estão na §11; o host compara com `vetores.json` (tolerância 0,5).

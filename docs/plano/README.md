@@ -425,7 +425,7 @@ no [`CLAUDE.md`](../../CLAUDE.md).
 | [G08a](G08a-especificacao-nota-escondida.md) | Especificação: glifos de pausa reservados, figura no `pitchpos.json`, §11 | — | D-SUM-FIGURA (resolvida em 2026-11-04) | concluído |
 | [G08b](G08b-glifos-de-pausa-e-figura.md) | C++: glifos de pausa reservados e `dur`/`dots` no `pitchpos.json` | G08a | — | concluído |
 | [G08c](G08c-referencia-e-vetores-nota-escondida.md) | Referência, varredura do corpus, oráculo e vetores da nota escondida | G08b | D-SUM-NATIVO (só se a varredura falhar) | concluído |
-| [G09](G09-nota-para-zywny-nota-escondida.md) | Nota para o `zywny` (execução Dart fica lá: L02, L03) | G08c | — | pendente |
+| [G09](G09-nota-para-zywny-nota-escondida.md) | Nota para o `zywny` (execução Dart fica lá: L02, L03) | G08c | — | concluído |
 | [G10](G10-marcas-de-expressao.md) | Marcas de expressão no `midi.json` (dinâmica, staccato, acento, ligadura de expressão), pedido do EX07 do `zywny-aprendizado` | G01 | D-MARCAS | pendente |
 
 Ordem sugerida, a partir de onde o projeto está (S08 e R01 concluídos):
@@ -460,7 +460,7 @@ dicionário, a figura (`dur`/`dots`) no `pitchpos.json`, a regra normativa
 (§11 da spec: o que apagar — nota, barra de ligação, linhas suplementares —
 e onde desenhar a pausa), a prova contra o Verovio e os vetores de teste.
 Visão geral e decisões em [`G07`](G07-visao-geral-nota-escondida.md).
-**Em andamento**: G08a-G08c concluídos (2026-11-04); G09 pendente; D-SUM-NATIVO resolvida em G08c: sem dado novo na cena.
+**Concluída neste repositório em 2026-11-04** (G08a-G09): glifos de pausa e `dur`/`dots` no `.vsb`, §11 da spec, referência `hide_ref.py`, 11 vetores e a nota para o host em [`docs/nota-para-zywny-sumico.md`](../nota-para-zywny-sumico.md); D-SUM-NATIVO resolvida em G08c: sem dado novo na cena. O lado Dart (L02 e L03) é executado no `zywny-comum`.
 
 A nota fantasma (G03-G06) mostra uma tecla errada do aluno como uma cabeça
 de nota de outra cor **na pauta**: na altura da tecla tocada, na coluna da

@@ -79,4 +79,47 @@ trilha do decorar sem reabrir decisões nem refazer medições.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+Concluído em 2026-11-04. Nenhuma linha de `verovio/`, `compare/` ou da spec mudou;
+só documentação neste repositório e, nos outros três, fixtures e planos (sem commit em
+nenhum, como manda o plano).
+
+- **Critério 1**: `docs/nota-para-zywny-sumico.md` escrita, nos 8 itens da lista. Segue o
+  molde de `nota-para-zywny-fantasma.md`; traz também a tabela do formato de
+  `vetores.json` (que a fantasma não precisava descrever) e, na seção 1, a lista de
+  plataformas da `libverovio`: **Linux** (`just native`), **Android** arm64-v8a + x86_64
+  (`just native-android`) e **Web/wasm** (`zywny-comum/tool/build_verovio_web.sh`). Windows,
+  macOS e iOS não têm build de `libverovio` no `zywny-comum` (conferi `tool/`, os `justfile`
+  dos dois apps e o `windows/` do `zywny-musicas`): lá o Verovio não existe.
+- **Critério 2**: copiados para `/home/mauricio/IdeaProjects/zywny-comum/score_bridge/test/fixtures/sumico/`
+  os 4 `.vsb` e o `vetores.json` (de `docs/formato/sumico/`). **Além do que o plano pedia**,
+  atualizei os 9 `.vsb` de `test/fixtures/fantasma/`: estavam na versão anterior a G08b
+  (sem os glifos reservados e sem `dur`/`dots`; `cmp` dava diferente nos 9) e a nota
+  prometia "fixtures regeneradas". O `vetores.json` da fantasma já era idêntico. Com tudo
+  no lugar, `cd score_bridge && flutter test` no `zywny-comum`: **301 passam, 7 ignorados,
+  0 falham** (a suíte inteira, 2 min 25 s; antes das fixtures da fantasma novas deu o
+  mesmo; os 3 arquivos da fantasma/corpus rodados em separado depois: 46 passam). O parser
+  de `pitchpos.json` ignora `dur`/`dots` sem mudança.
+- **Critério 3**: L02, L03 e L00 (zywny-musicas) e T16 (zywny-aprendizado) coerentes com a
+  §11 final. O que mudou nelas:
+  - **L02 estava errado num ponto que importa**: dizia que `setColor` no id da `note` leva
+    a haste junto. Num **acorde** a haste, o colchete e os pontos são filhos do nó `chord`
+    (regra 1 da §11). E os hinos **têm** nós `chord` — hino 010: 95 para 425 notas; hino
+    056: 70 para 356 — mesmo sem nenhum `<chord/>` no MusicXML (o importador do Verovio
+    junta numa `chord` as notas de uma voz que começam juntas; o alto e o tenor do Ex. 1 da
+    §11.1 são o acorde `yy2zfkq`). Corrigi o L02 e a linha "sem `<chord/>`" do L00, que
+    sugeria o contrário (a coluna típica "são duas notas em camadas diferentes").
+  - L02, regra 3: a **pausa deslocada é dona do traço**; `beamSpan` não é `beam`.
+  - L03: os pontos são **círculos** (o glifo `E1E7` fica reservado mas não é desenhado), a
+    largura do glifo na conta é **truncada**, `dur ≤ 2` (não `≥ 2`), pauta com `n ≠ 5` →
+    `null`, o `x` não tem oráculo.
+  - L00: os glifos de pausa e `dur`/`dots` "virão" → "vieram" (G08b).
+  - T16 (item 3): a frase "o G09 não foi executado" estava velha; agora diz que o bridge
+    está pronto e falta o Dart, e inclui a Web na lista de bibliotecas a refazer.
+- **Critério 4**: o usuário avisado (resumo da sessão) de que o trabalho segue no
+  `zywny-comum` (L02 e L03), que serve ao `zywny-musicas` e ao `zywny-aprendizado`.
+- **Sem commit**: as fixtures e as edições de plano ficaram como mudanças soltas nos
+  repositórios `zywny-comum`, `zywny-musicas` e `zywny-aprendizado`, e a nota e o README
+  neste. O `zywny-musicas` já tinha mudanças soltas em `linux/` e `windows/` (arquivos
+  gerados de plugin, `pubspec.lock`): não são desta sessão e não toquei neles.
+- **Direitos**: `h010.vsb` e `h056.vsb` (hinos protegidos) foram para as fixtures do
+  `zywny-comum` — a mesma biblioteca de onde vieram; o aviso está na nota (seção 8).

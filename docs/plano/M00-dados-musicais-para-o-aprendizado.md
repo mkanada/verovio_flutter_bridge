@@ -334,7 +334,7 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | concluído com ressalva: R2 (pauta de cifra em parte de duas pautas) sem caso no corpus; `numeral` só no caso sintético; alteração fracionária truncada (nenhuma no corpus); ver "Notas de execução" |
 | M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | concluído com ressalva: `loc` e `acc` saem `null` sem corte no carregamento (extensão de regra, ver notas); custo mediano de 43 ms, alvo de 50 ms não atingido em 5 de 20 hinos (`SetMidiDoc`), ver "Notas de execução" |
 | M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | pendente |
-| M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | pendente |
+| M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | concluído com ressalva: `just medidor` não executado (o aprendizado chama `getElementAttr` com dois argumentos, quebra do M05; ver "Notas de execução", M07); causas R3 (notas invisíveis) e R-TRINADO |
 | M08 | Nota para o `zywny-aprendizado` (a execução Dart de lá fica lá) | M06, M07 | pendente |
 
 ### M01 — Medir e decidir
@@ -887,3 +887,130 @@ faixa 102 a 303); `renderToMusicJson` **43,2** ms (44,1; faixa 25 a 60). Razão 
 
 **Passo M05:** concluído com ressalva (ver acima: `loc`/`acc` nulos sem corte, decisão de
 implementação a confirmar; alvo de 50 ms atingido na mediana e não em 5 de 20 hinos).
+
+**2026-11-08: M07 executado (oráculo, varredura e vetores)**
+
+Entregas:
+
+- `compare/scripts/music_oracle.py`, com três subcomandos: `verificar FONTE MUSIC.json`
+  (relatório em JSON), `varredura --out compare/out/m07 --jobs 4` e
+  `vetores --out-dir docs/formato/musica/vetores`.
+- `docs/formato/musica/vetores/`: oito `music.json` (`m02`, `ode`, `intro`, `menor`,
+  `recusa`, `twinkle`, `contrafato-1`, `folclore-2`) e `vetores.json` (índice, com o
+  `fonte_sha256` de cada fonte). Gerados por `-x 42 -t vsb-json` e gravados só com zero
+  divergência. `m02.music.json` é igual por valor a `m02-esperado.json`. As fontes do
+  aprendizado ficam lá (só leitura); o índice guarda o caminho relativo a
+  `zywny-aprendizado` e o hash.
+- Sem mudança no exportador, no `grace` nem no Dart. O binário `verovio/tools/verovio`
+  estava em `386ee76-dirty` (de antes do M05); foi recompilado (`cmake ../cmake && make
+  -j4`), e a varredura usou `ec8a8a2`.
+
+Como o oráculo lê a fonte:
+
+- **MusicXML**: lido direto (ElementTree), sem o Verovio. As regras de tradução seguem o
+  importador (`iomusxml.cpp`); as tabelas de texto (sufixo de `kind`, símbolos de
+  alteração, graus que recebem `add`, figuras do andamento) são **extraídas do fonte do
+  importador**, não digitadas. Isso mede a exportação, não um dicionário próprio de cifras.
+- **Comportamentos do importador que o oráculo precisa modelar** (sem eles haveria
+  divergências que não são da partitura): espaços `s` de preenchimento (`FillSpace`,
+  L559, também em `<forward>`); a camada de cada nota é a de `SelectLayer` (L470: a 1ª
+  nota desde o começo do compasso ou o último `<backup>`; a pauta do evento continua a
+  do nó); o colchete de quiáltera (`ReadMusicXmlTupletStart`, L4325), com a nota de acorde
+  herdando a quiáltera do início do acorde; o texto de andamento com metrônomo
+  (`PrintMetronome`, L784); `<words>` que começa por cresc/dim/decresc vira dinâmica, e
+  `<words>` vazio não vira `dir`. O `tuplet` de um `s` de preenchimento não é conferido
+  (vem do contêiner aberto no importador).
+- **MEI** (corpus nativo, sem MusicXML de origem): conferência parcial, sobre o MEI
+  exportado pelo Verovio (`<body>`; o `<incip>` do cabeçalho fica fora). Confere-se
+  compasso (`n`, barras, casa), eventos (tipo, acorde, apojatura, quiáltera, incluindo
+  `tupletSpan`), cifras (texto), direções (texto), andamentos e ornamentos. **Não**
+  conferidos: partes (R-PARTES), fórmula, armadura e a estrutura da cifra (só se confirma
+  que vem `null`).
+- **Não tocados**: o timemap define. Um compasso não tocado é o que o id notado não tem
+  no timemap; os que não vêm depois de uma barra final são divergência.
+
+Resultados (`varredura`, 617 fontes, 0 erros do Verovio; saída em `compare/out/m07/`,
+git-ignorada, com `resumo.json`, `relatorios/` e `music/`):
+
+| Grupo | Arquivos | Compassos | Eventos | Camadas | Cifras | Direções | Andamentos | Ornamentos | Divergências | Causa |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Fixture do repositório (`m02`) | 1 | 6 | 42 | 19 | 2 | 1 | 1 | 1 | 0 | — |
+| Fixtures do aprendizado (`ode`, `intro`, `menor`, `recusa`) | 4 | 25 | 117 | 52 | 0 | 0 | 4 | 1 | 0 | — |
+| Cursos com cifra (`twinkle`, `contrafato-1`, `folclore-2`) | 3 | 24 | 86 | 24 | 27 | 4 | 0 | 0 | 0 | — |
+| Corpus MusicXML (`.mxl`) | 5 | 324 | 6 364 | 873 | 0 | 27 | 101 | 2 | 16 | R3 (16) |
+| Corpus MEI (`.mei`, conferência parcial) | 5 | 291 | 4 704 | 668 | — | 39 | 1 | 2 | 0 | R-TRINADO (12, fora de `ornaments`, contados à parte) |
+| Hinos (`musicxml_simplificado`, 600 arquivos) | 600 | 19 730 | 141 214 | 39 522 | 30 512 | 21 | 599 | 0 | **0** | 2 arredondamentos de 6 algarismos (não contam) |
+
+Os 601 itens da pasta dos hinos são 600 `.musicxml` e `_avisos.log` (aviso de
+simplificação, um registro: `220: 8 sílabas na pauta de fá ficaram de fora`). O
+`_avisos.log` não é hino e não entra na conta.
+
+Não tocados nos hinos: 34 compassos depois da primeira barra final (`right="end"`). Desses,
+**9 não tocados** (hino 458, todos depois da barra final, fora do timemap) e 25 que o
+timemap **toca** (hinos 360, com 16, e 453, com 9): nesses dois, o `right="end"` é dupla
+barra no meio da peça, seguida de casa 2 e repetição; o timemap segue por ali (a regra
+"depois de barra final, não tocado" não vale em geral; ver "Desvios").
+
+Divergências explicadas (todas com causa; nenhuma nova):
+
+- **R3 (nota invisível, `print-object="no"`), 16 no corpus MusicXML.** Gymnopédie n.º 1:
+  10 compassos (21 a 30) em que uma pausa invisível não sai no `music.json`; removendo as
+  invisíveis do esperado, a divergência some (medido). Clair de Lune: 2 camadas (compassos
+  65 e 67, pauta 1, camada 1) em que a nota invisível não sai, e 4 quiálteras no compasso 22
+  (pautas 1 e 2, camadas 2 e 7) em que notas invisíveis abrem ou fecham o colchete. As outras
+  42 camadas com invisíveis saem com elas (o Verovio as mantém, com a invisibilidade perdida).
+- **R-TRINADO, 12 no corpus MEI** (trinados do Scarlatti só com `@tstamp`): fora de
+  `ornaments`, como mapeado no M03.
+- **Arredondamento de 6 algarismos**: `tstamp` e `bpm` saem com 6 algarismos
+  significativos (hinos 215 e 239: `1.16667` por `1.1666667`). Tolerância relativa de 5e-6;
+  contado em `arredondados_6_algarismos` (2 nos hinos). Não é erro, é a forma do JSON.
+
+Checagens do próprio oráculo (feitas para não confiar num zero à toa):
+
+- Mutação no `music.json` da fixture (apojatura, fórmula, `kindText`, texto de `chg`,
+  evento apagado, armadura, `right`): todas acusadas.
+- Mutação num hino (`001`: evento, barra, texto de cifra): acusada.
+- Fixture `m02`: 42 eventos, 6 compassos, 2 partes, 2 cifras e 1 trinado conferidos.
+
+`just medidor`: **não executado.** Motivos:
+
+1. O `medir` exige a pasta ou o arquivo (`Falta a pasta ou o arquivo .musicxml`); sem
+   argumento o `just medidor` falha.
+2. O aprendizado resolve `verovio_flutter_bridge` por `path` e o caminho é um link para este
+   repositório, com o binding Dart do M05: `getElementAttr(String xmlId)`. O
+   `music_toolkit.dart` (L22) chama `getElementAttr(id, '')` com dois argumentos, então o
+   medidor não compila até a troca do M08 (que está fora deste passo).
+3. Rodar exigiria escrever em `zywny-aprendizado` (`.dart_tool/` e, sem `--out`, `build/medidor`),
+   o que o escopo proíbe.
+
+Os números 149 / 25 / 6 / 7 / 56 / nenhum 506 não foram reproduzidos neste passo.
+
+Desvios e correções no M00:
+
+1. **R1 (inversão de `grace`) refutada.** O importador grava o valor do MEI: sem barra →
+   `acc` (apojatura, acentuada), com barra (`slash="yes"`) → `unacc` (acciaccatura). O oráculo
+   confere os 6 364 eventos do corpus MusicXML e os 141 214 dos hinos com essa regra. Spec
+   §2.9 corrigida (R1); importador não tocado.
+2. **"Compassos depois de barra final não entram no timemap"** vale para o hino 458 (9
+   compassos) e não é regra geral: 25 compassos depois de `right="end"` estão no timemap (360
+   e 453). O "não tocado" passa a ser definido pelo timemap.
+3. **"Notas invisíveis não entram no `Doc`" (M01)** vale só em parte: a maioria entra (42
+   camadas do Clair de Lune, com a invisibilidade perdida); saem 10 pausas invisíveis da
+   Gymnopédie e 2 camadas do Clair de Lune. O `music.json` não traz a visibilidade. Spec R3
+   atualizada.
+4. **`layer n` = `<voice>`** confirmado em todas as 147 515 notas medidas (corpus e hinos).
+   A pauta do evento é o `@staff` do nó, e 131 notas são cruzadas (confirmado).
+5. **Espaços `s` de preenchimento** (não estavam no M00): o `music.json` traz `s` que não são
+   pausas escritas (lacunas da camada). Spec §2.9, R6.
+6. **Arredondamento de 6 algarismos** em `tstamp` e `bpm` (não estava no M00): registrado acima.
+
+O que o M08 precisa saber:
+
+- Os oito vetores estão em `docs/formato/musica/vetores/` (`vetores.json` é o índice).
+- Eventos `s` aparecem em qualquer posição da camada, inclusive antes de uma nota, por
+  lacuna (`<forward>` ou voz que ainda não chegou). O app os trata como espaço, não como pausa.
+- Notas invisíveis podem sair como `n` em `music` (sem marca de visibilidade): o app não deve
+  supor que todo `n` é som escrito visível.
+- `tstamp` e `bpm` vêm com 6 algarismos significativos.
+- O `renderToMusicJson`/`getElementAttr` de 1 argumento (M05) quebra o medidor até o M08.
+- Trinados só com `@tstamp` (R-TRINADO) não aparecem em `ornaments`.

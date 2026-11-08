@@ -621,8 +621,8 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
    - `chord`: o `xml:id` do `<chord>` a que a nota pertence (todas as notas do
      acorde trazem o mesmo id); `null` fora de acorde e em pausa;
    - `grace`: `false`, ou `"acc"`/`"unacc"` como vem do `@grace` do MEI da nota
-     (ou do `<graceGrp>` pai); `false` em pausa. Ver a ressalva R1, que trata a
-     inversão desse valor no importador do MusicXML;
+     (ou do `<graceGrp>` pai); `false` em pausa. Ver a ressalva R1 (refutada no
+     M07: o valor é o do MEI);
    - `tuplet`: `{"num": n, "numbase": b}` da quiáltera **mais interna** que
      contém o evento (`@num`/`@numbase` do MEI); `null` fora de quiáltera. A
      razão composta fica fora (ver "Fica fora").
@@ -736,23 +736,36 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
 
 **Ressalvas (abertas, medidas no M01 e no M02):**
 
-- **R1 — `grace` está invertido no importador do MusicXML.** `iomusxml.cpp`
-  (L3310-3345) grava `GRACE_unacc` quando o `<grace>` traz `slash="yes"`
-  (acciaccatura no MusicXML) e `GRACE_acc` quando não traz. A fixture grava esses
-  valores como o MEI os dá: apojatura sem barra → `"acc"`; acciaccatura com barra
-  → `"unacc"`. A barra vem em `stem.mod="1slash"` (medido), então o desenho está
-  certo. **Corrigir o importador muda o MEI e o `getMEI` do corpus; é decisão do
-  usuário** (manter o valor do MEI com a tradução no leitor, ou corrigir o
-  importador). Até lá, este arquivo segue o valor do MEI, como o M00 pede.
+- **R1 — `grace`: refutada no M07.** O importador do MusicXML grava o valor
+  que o MEI pede: apojatura (sem barra) → `"acc"` (acentuada, como o MEI define
+  `acc`); acciaccatura (com barra, `slash="yes"`) → `"unacc"` (`iomusxml.cpp`,
+  L3370-3377). Não há inversão, e o importador não muda. O oráculo do M07 (que lê
+  o MusicXML direto) confere os 6 364 eventos do corpus MusicXML e os 141 214 dos
+  600 hinos com essa regra. A barra vem em `stem.mod="1slash"`, então o desenho também está certo.
 - **R2 — pauta de cifra em parte de duas pautas.** Não medida no corpus (nenhum
   `<harmony>` em parte de duas pautas). A fixture mostra o caso sintético: a
   cifra sai na primeira pauta da parte.
-- **R3 — notas invisíveis** (`print-object="no"`) não entram no `Doc`, portanto
-  não entram no timemap nem aqui (M01). O M07 decide como o oráculo trata isso.
+- **R3 — notas invisíveis** (`print-object="no"`). O M01 supôs que não entram no
+  `Doc`; o M07 mediu que a maioria entra (o Verovio as exporta com a invisibilidade
+  perdida: 42 camadas do Clair de Lune). Descartam-se as pausas invisíveis da
+  Gymnopédie n.º 1 (10 compassos) e 2 camadas do Clair de Lune; e notas invisíveis
+  abrem ou fecham colchetes de quiáltera, o que muda o `tuplet` das notas em volta
+  (4 eventos do compasso 22 do Clair de Lune). A conferência do M07 trata esses
+  casos como causa conhecida, com a lista no M00 ("Notas de execução", M07). O
+  `music.json` não traz a visibilidade: o leitor que precisa dela usa o notado.
 - **R4 — `numeral`, `time symbol` e `orn`.** `time symbol` e `orn` (trinado) estão
   na fixture; `numeral` não tem caso real no corpus e fica para o M07.
 - **R5 — `ending.n` com espaços.** Vem como a fonte o escreve (`"2, 3"`); o
   leitor separa por vírgula e tira os espaços (§2.9, regra 2).
+- **R6 — espaços de preenchimento (M07).** O importador do MusicXML cria `space`
+  para cobrir lacunas da camada (`FillSpace`, `iomusxml.cpp` L559): antes de cada
+  nota ou pausa, se o fim da camada vem antes do início dela (um `<forward>`, ou
+  uma voz que ainda não chegou). Esses `s` não são pausas escritas. O leitor trata
+  o `s` como espaço, em qualquer posição da camada, e não como pausa. O `tuplet` de
+  um `s` de preenchimento segue o colchete aberto no importador, não a partitura.
+  Medido: 147 515 notas do corpus e dos hinos, todas com a camada de `<voice>`
+  (`layer n` = voz em todas); só a pauta muda, em 131 notas cruzadas (o `@staff` do
+  nó é o da nota).
 
 **Fixture do M02.** `docs/formato/musica/m02-entrada.musicxml` (MusicXML 3.1
 sintético, duas partes, seis compassos, legível) e
@@ -770,8 +783,8 @@ Cobertura (compasso = `index`, 0-based):
 | Anacruse | compasso 0: `n` "0", `implicit="yes"` (MEI `metcon="false"`), 1 semínima em 3/4; é o `index` 0 |
 | Mudança de armadura | compasso 3: de Dó maior (`mode` "major") para Ré maior (`sig` "2s", `mode` null) |
 | Mudança de fórmula | compasso 4: 3/4 → 4/4 com `sym` "common"; compasso 5: → 2/2 com `sym` "cut" |
-| Apojatura | compasso 1: D5 sem barra antes de C5, `grace` "acc" (valor do MEI; R1) |
-| Acciaccatura | compasso 2: D5 com barra antes de E5, `grace` "unacc" (valor do MEI; R1) |
+| Apojatura | compasso 1: D5 sem barra antes de C5, `grace` "acc" (valor do MEI; R1, refutada no M07) |
+| Acciaccatura | compasso 2: D5 com barra antes de E5, `grace` "unacc" (valor do MEI; R1, refutada no M07) |
 | Quiáltera | compasso 1: E5-F5-G5 em 3:2, `tuplet` `{"num": 3, "numbase": 2}` |
 | Acorde | compasso 1: C4+E4, `chord` "vlc2j9p" nas duas notas |
 | Duas camadas numa pauta | compasso 1: pauta 2 com as camadas 5 e 6 (nos demais, a pauta 2 tem só a camada 5) |
@@ -1823,4 +1836,5 @@ fermata ficam; nota ligada a um compasso visível continua visível lá.
 | 2026-11-04 | G11 (esconder um compasso inteiro, D-SUM-COMPASSO = campo no formato, decisão do usuário): **`measure.inner`** (§5.1) — `[x0, x1]`, a faixa em que o Verovio centra a pausa de compasso (`GetDrawingX() + GetLeftBarLineRight()` e `+ GetRightBarLineLeft()`), gravado em todo nó `measure` (aditivo, `version` continua `1`; leitor antigo ignora); **§11.2, regra 8** (normativa): pausa de compasso substituta (glifo `E4E3`, `x` do centro de `inner`, `y` da regra da semibreve, sem pontos), o que some com o compasso (notas, pausas de verdade em pauta que tem nota, tercina, ligaduras de prolongamento/expressão, arpejo e `beamSpan` pelo dono = compassos que tocam), o que fica, e a classificação por ocorrências em 70 partituras. Provado: 5 170 pausas desenhadas pelo Verovio com 0 divergências de `x`, `y`, glifo e escala; 124 páginas, 1 517 compassos escondidos, 0 vazamentos. Sem o campo, o `x` de um compasso com cabeçalho errava até 1,4 unidade (até 18 por pauta). Exige refazer a `libverovio` (Linux, Android, Web). Schema (`measure.inner`) e 15 casos novos em `vetores.json` (`casosCompasso`). |
 | 2026-11-08 | M02 (`music.json`, §2.9, novo; ver M00): arquivo opcional com a estrutura da partitura notada, sem geometria — partes, compassos (`n`, casas, barras, fórmula, armadura e modo), pautas, camadas e eventos (nota, pausa, `mr`, acorde, apojatura, quiáltera), ornamentos, cifras (`harmonies`), direções (`directions`) e andamentos (`tempi`). `manifest.files.music`, propriedade `music` no JSON único, `$defs/musicDocument` (e auxiliares) no schema. Aditivo: `version` continua `1`; leitor antigo ignora. §2.9 traz as ressalvas R1-R5; a R1 (a inversão de `grace` pelo importador do MusicXML) fica pendente de decisão do usuário. Fixture: `docs/formato/musica/` (`m02-entrada.musicxml` sintético + `m02-esperado.json`), conferida contra o MusicXML e o MEI com `-x 42`. |
 | 2026-11-08 | M04 (`music.json`, §2.9, regras 7 e 8; ver M00): `harmonies` e `directions` passam a sair preenchidos. A estrutura da `<harmony>` (raiz, alteração, `kind`, `kind@text`, baixo, graus, numeral) é guardada pelo importador MusicXML num `HarmData` ligado ao `harm` e lida por `ReadBridgeMusic`; o MEI não muda. `text` sai do `Doc`, então `<words>` com formatação chega inteiro. Figured bass (`fb`) fica fora de `harmonies`. Aditivo: `version` continua `1`; o schema não muda (já previa os campos). |
+| 2026-11-08 | M07 (oráculo do `music.json`, `compare/scripts/music_oracle.py`): R1 corrigida (refutada: o importador grava o valor do MEI, sem inversão); R3 atualizada com a medição; R6 (espaços de preenchimento `s`, gerados pelo importador) acrescentada. Vetores em `docs/formato/musica/vetores/` (oito `music.json` conferidos contra a fonte). Sem mudança de forma: `version` continua `1`. |
 | 2026-11-08 | M05 (API; §2.8 e §2.10, novo): `renderToMusicJson` (C e Dart) devolve `timemap`, `midi`, `pitchpos` e `music` sem desenho e sem layout, nos ids da carga. Em `pitchpos`, `loc` e `acc` passam a poder sair `null` nessa chamada quando o documento não foi cortado no carregamento (`--breaks none` ou MEI com `<pages>`); o `.vsb` e o JSON único não mudam. Esquema: `musicJsonDocument`; `loc` e `acc` aceitam `null`. |

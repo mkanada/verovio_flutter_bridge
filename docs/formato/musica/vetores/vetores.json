@@ -1,0 +1,112 @@
+{
+ "descricao": "Vetores do music.json (M07). Cada `music` foi gerado por `-x 42 -t vsb-json` do Verovio deste repositório e conferido contra a fonte pelo oráculo (zero divergência). As fontes dos aprendizado ficam em zywny-aprendizado (só leitura); `fonte_sha256` identifica a versão conferida.",
+ "gerado_por": "compare/scripts/music_oracle.py vetores",
+ "semente": "42",
+ "m02_igual_a_esperado": true,
+ "casos": [
+  {
+   "nome": "m02",
+   "music": "m02.music.json",
+   "origem": "repositorio",
+   "fonte": "m02-entrada.musicxml",
+   "fonte_sha256": "2a4c1ffd5a7f1506883a75725d759ed02100dab5450e3683c7d9c58f131c7602",
+   "compassos": 6,
+   "eventos": 42,
+   "cifras": 2,
+   "direcoes": 1,
+   "andamentos": 1,
+   "ornamentos": 1
+  },
+  {
+   "nome": "ode",
+   "music": "ode.music.json",
+   "origem": "aprendizado",
+   "fonte": "test/music_reading/fixtures/src/ode.musicxml",
+   "fonte_sha256": "2e8d433b65e8ce7ec2d5d0d786419f47e0638b8eaf39dd1bfabf7b6e425889cd",
+   "compassos": 8,
+   "eventos": 62,
+   "cifras": 0,
+   "direcoes": 0,
+   "andamentos": 1,
+   "ornamentos": 0
+  },
+  {
+   "nome": "intro",
+   "music": "intro.music.json",
+   "origem": "aprendizado",
+   "fonte": "test/music_reading/fixtures/src/intro.musicxml",
+   "fonte_sha256": "ec603e8830c4656f17cfa992c692ff98d5c4942e71765db3b09ef5b0e69e6310",
+   "compassos": 6,
+   "eventos": 20,
+   "cifras": 0,
+   "direcoes": 0,
+   "andamentos": 1,
+   "ornamentos": 0
+  },
+  {
+   "nome": "menor",
+   "music": "menor.music.json",
+   "origem": "aprendizado",
+   "fonte": "test/music_reading/fixtures/src/menor.musicxml",
+   "fonte_sha256": "cb615d25c4718330a3366d8ab83677d029e0b75b724d8ca870131b1f220f6476",
+   "compassos": 9,
+   "eventos": 24,
+   "cifras": 0,
+   "direcoes": 0,
+   "andamentos": 1,
+   "ornamentos": 0
+  },
+  {
+   "nome": "recusa",
+   "music": "recusa.music.json",
+   "origem": "aprendizado",
+   "fonte": "test/music_reading/fixtures/src/recusa.musicxml",
+   "fonte_sha256": "00f51a81111e5644f39e6f2949af4dece47a11d6fb8789a6eb51f04ccbdb160b",
+   "compassos": 2,
+   "eventos": 11,
+   "cifras": 0,
+   "direcoes": 0,
+   "andamentos": 1,
+   "ornamentos": 1
+  },
+  {
+   "nome": "twinkle",
+   "music": "twinkle.music.json",
+   "origem": "aprendizado",
+   "fonte": "test/fixtures/cursos/lead-sheet/media/twinkle.musicxml",
+   "fonte_sha256": "0bab605a7aed4077634dee0a836c1ba3ba6930c2146285ef667429dd93f94088",
+   "compassos": 8,
+   "eventos": 28,
+   "cifras": 14,
+   "direcoes": 0,
+   "andamentos": 0,
+   "ornamentos": 0
+  },
+  {
+   "nome": "contrafato-1",
+   "music": "contrafato-1.music.json",
+   "origem": "aprendizado",
+   "fonte": "test/fixtures/cursos/lead-sheet/media/contrafato-1.musicxml",
+   "fonte_sha256": "23c24dc4f9c3cf8045737e097a99c3a97bd9abf5aa91f87543ff2c760f78c43e",
+   "compassos": 8,
+   "eventos": 31,
+   "cifras": 13,
+   "direcoes": 0,
+   "andamentos": 0,
+   "ornamentos": 0
+  },
+  {
+   "nome": "folclore-2",
+   "music": "folclore-2.music.json",
+   "origem": "aprendizado",
+   "fonte": "test/fixtures/cursos/harmonia/media/folclore-2.musicxml",
+   "fonte_sha256": "0bdf363b825d4cf56a9a3a11119974de238830d8c86b2c08ecacf619c32c46b1",
+   "compassos": 8,
+   "eventos": 27,
+   "cifras": 0,
+   "direcoes": 4,
+   "andamentos": 0,
+   "ornamentos": 0
+  }
+ ]
+}

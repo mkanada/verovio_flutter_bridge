@@ -1,0 +1,665 @@
+{
+ "version": 1,
+ "parts": [
+  {
+   "id": "P1",
+   "name": "Melodia",
+   "staves": [
+    1
+   ]
+  }
+ ],
+ "measures": [
+  {
+   "id": "voxym74",
+   "index": 0,
+   "n": "1",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "iov6pic",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "j196sd00",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "k1egcmst",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "l1z05zi4",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "m1ujlm1s",
+   "index": 1,
+   "n": "2",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "z1oagi0k",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "axzadr3",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "dgv5qh9",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "et64gdf",
+   "index": 2,
+   "n": "3",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "r1c5f34m",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "s1cm0mij",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "vlc2j9p",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "wg8qvcs",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "xznby47",
+   "index": 3,
+   "n": "4",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "ka32vyn",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "l1mgo02b",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "o16b3pjn",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "p13yosu",
+   "index": 4,
+   "n": "5",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "c2oswot",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "d1hhfw43",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "evotyww",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "f17mj3ny",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "gi3once",
+   "index": 5,
+   "n": "6",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "td1mixc",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "uzy0eqw",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "xdut1r2",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "y1ihrvzr",
+   "index": 6,
+   "n": "7",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "ld7kz8f",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "m1j3dlmg",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "p1hesd6c",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "qi10kis",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r16x677f",
+   "index": 7,
+   "n": "8",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 4,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "e7azsw1",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "f18097eq",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "i88ib9g",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "ornaments": [],
+ "harmonies": [
+  {
+   "id": "ft3bg3v",
+   "measure": 0,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  },
+  {
+   "id": "w1x5tsbc",
+   "measure": 1,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "F",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "F"
+  },
+  {
+   "id": "b107zbnm",
+   "measure": 1,
+   "staff": 1,
+   "tstamp": 3,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  },
+  {
+   "id": "orw55dt",
+   "measure": 2,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "F",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "F"
+  },
+  {
+   "id": "te33tju",
+   "measure": 2,
+   "staff": 1,
+   "tstamp": 3,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  },
+  {
+   "id": "hvopzum",
+   "measure": 3,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "G",
+   "rootAlter": 0,
+   "kind": "dominant",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "G7"
+  },
+  {
+   "id": "m15xbieh",
+   "measure": 3,
+   "staff": 1,
+   "tstamp": 3,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  },
+  {
+   "id": "ztk9w7q",
+   "measure": 4,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  },
+  {
+   "id": "qp7oc4k",
+   "measure": 5,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "F",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "F"
+  },
+  {
+   "id": "v2mptnt",
+   "measure": 5,
+   "staff": 1,
+   "tstamp": 3,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  },
+  {
+   "id": "i1qc3il3",
+   "measure": 6,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "F",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "F"
+  },
+  {
+   "id": "n1kkami7",
+   "measure": 6,
+   "staff": 1,
+   "tstamp": 3,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  },
+  {
+   "id": "bt2o6g8",
+   "measure": 7,
+   "staff": 1,
+   "tstamp": 1,
+   "root": "G",
+   "rootAlter": 0,
+   "kind": "dominant",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "G7"
+  },
+  {
+   "id": "gclqjnn",
+   "measure": 7,
+   "staff": 1,
+   "tstamp": 3,
+   "root": "C",
+   "rootAlter": 0,
+   "kind": "major",
+   "kindText": null,
+   "bass": null,
+   "bassAlter": null,
+   "degrees": [],
+   "numeral": null,
+   "text": "C"
+  }
+ ],
+ "directions": [],
+ "tempi": []
+}

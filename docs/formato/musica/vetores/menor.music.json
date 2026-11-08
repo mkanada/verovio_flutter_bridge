@@ -1,0 +1,554 @@
+{
+ "version": 1,
+ "parts": [
+  {
+   "id": "P1",
+   "name": "Piano",
+   "staves": [
+    1,
+    2
+   ]
+  }
+ ],
+ "measures": [
+  {
+   "id": "g1cokkdt",
+   "index": 0,
+   "n": "0",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "yy2zfkq",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "axzadr3",
+         "t": "r",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "b107zbnm",
+   "index": 1,
+   "n": "1",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "n169v4an",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "orw55dt",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "q1t6l0ej",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1c5f34m",
+   "index": 2,
+   "n": "2",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "di3wz6p",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "e1k8yn3w",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "g1injmpr",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "hvopzum",
+   "index": 3,
+   "n": "3",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "t1mebzmw",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "usn20wa",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "xj1ys1b",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "y1ug2fxy",
+   "index": 4,
+   "n": "4",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "k15ihioq",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "m19q5fgc",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "n1nkt294",
+   "index": 5,
+   "n": "5",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "z1u0w0ih",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "azajm30",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "c82sxmr",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "dku74hk",
+   "index": 6,
+   "n": "6",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "p1hesd6c",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "qi10kis",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "t1w3snik",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "uj8fi3k",
+   "index": 7,
+   "n": "7",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "gclqjnn",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "i88ib9g",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "l7hddzp",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mzvnoij",
+   "index": 8,
+   "n": "8",
+   "left": null,
+   "right": "end",
+   "ending": null,
+   "meter": {
+    "count": 2,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "yuf88p8",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "axjgrxw",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "ornaments": [],
+ "harmonies": [],
+ "directions": [],
+ "tempi": [
+  {
+   "id": "s2mypdb",
+   "measure": 0,
+   "bpm": 80,
+   "text": " = 80"
+  }
+ ]
+}

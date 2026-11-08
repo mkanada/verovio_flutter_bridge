@@ -1,0 +1,199 @@
+{
+ "version": 1,
+ "parts": [
+  {
+   "id": "P1",
+   "name": "Piano",
+   "staves": [
+    1,
+    2
+   ]
+  }
+ ],
+ "measures": [
+  {
+   "id": "g1cokkdt",
+   "index": 0,
+   "n": "1",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 6,
+    "unit": 8,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "x1848jna",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "yy2zfkq",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "z1oagi0k",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "axzadr3",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "c1l9pmwx",
+         "t": "n",
+         "chord": "dgv5qh9",
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "et64gdf",
+         "t": "n",
+         "chord": "dgv5qh9",
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      },
+      {
+       "n": 2,
+       "events": [
+        {
+         "id": "gowmo3o",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "i128p7z8",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "j97m9qh",
+   "index": 1,
+   "n": "2",
+   "left": null,
+   "right": "end",
+   "ending": null,
+   "meter": {
+    "count": 6,
+    "unit": 8,
+    "sym": null
+   },
+   "key": {
+    "sig": "0",
+    "fifths": 0,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "vlc2j9p",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      },
+      {
+       "n": 2,
+       "events": [
+        {
+         "id": "xznby47",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "z1o3fuh2",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "ornaments": [
+  {
+   "id": "b107zbnm",
+   "kind": "trill",
+   "startid": "axzadr3"
+  }
+ ],
+ "harmonies": [],
+ "directions": [],
+ "tempi": [
+  {
+   "id": "r10709ff",
+   "measure": 0,
+   "bpm": 120,
+   "text": " = 120"
+  }
+ ]
+}

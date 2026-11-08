@@ -1,0 +1,406 @@
+{
+ "version": 1,
+ "parts": [
+  {
+   "id": "P1",
+   "name": "Piano",
+   "staves": [
+    1,
+    2
+   ]
+  }
+ ],
+ "measures": [
+  {
+   "id": "g1cokkdt",
+   "index": 0,
+   "n": "1i",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 3,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "x1848jna",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "yy2zfkq",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "axzadr3",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "b107zbnm",
+   "index": 1,
+   "n": "2i",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 3,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "n169v4an",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "orw55dt",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "pw80rd",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "r1c5f34m",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "s1cm0mij",
+   "index": 2,
+   "n": "1",
+   "left": "rptstart",
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 3,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "e1k8yn3w",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "f1jsyhl9",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "hvopzum",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "i15e9gy3",
+   "index": 3,
+   "n": "2",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 3,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "usn20wa",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "v7yk110",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "w171yjko",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "y1ug2fxy",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ztk9w7q",
+   "index": 4,
+   "n": "3",
+   "left": null,
+   "right": null,
+   "ending": null,
+   "meter": {
+    "count": 3,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "l1wbisrw",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "m19q5fgc",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        },
+        {
+         "id": "o12qha2s",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "qp7oc4k",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rd83tjt",
+   "index": 5,
+   "n": "4",
+   "left": null,
+   "right": "rptend",
+   "ending": null,
+   "meter": {
+    "count": 3,
+    "unit": 4,
+    "sym": null
+   },
+   "key": {
+    "sig": "1s",
+    "fifths": 1,
+    "mode": null
+   },
+   "staves": [
+    {
+     "n": 1,
+     "layers": [
+      {
+       "n": 1,
+       "events": [
+        {
+         "id": "dku74hk",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "layers": [
+      {
+       "n": 5,
+       "events": [
+        {
+         "id": "fym8ko5",
+         "t": "n",
+         "chord": null,
+         "grace": false,
+         "tuplet": null
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "ornaments": [],
+ "harmonies": [],
+ "directions": [],
+ "tempi": [
+  {
+   "id": "r10709ff",
+   "measure": 0,
+   "bpm": 90,
+   "text": " = 90"
+  }
+ ]
+}

@@ -1,5 +1,7 @@
 # M00 — Os dados musicais que o `zywny-aprendizado` pede ao Verovio (`music.json`)
 
+**Status: concluído com ressalvas (2026-11-08, M08).** O M06 (`score_bridge` em Dart) **não foi executado neste repositório**: fica para o `zywny` (decisão do usuário, 2026-11-08; o pacote não está aqui). O `wasm` do `renderToMusicJson` não foi compilado aqui, e `just medidor` do aprendizado não rodou (depende da troca do `getElementAttr` no app). Detalhes em "Notas de execução" (M08) e na nota para o host, [`docs/nota-para-zywny-musica.md`](../nota-para-zywny-musica.md).
+
 **Depende de:** G01 e G04c (o `midi.json` e o `pitchpos.json` já existem) ·
 **Decisões:** **D-MUSICA-FORMA**, **D-MUSICA-CIFRA** e **D-MUSICA-Q** resolvidas pelo usuário em 2026-11-07 (abaixo); o `getElementAttr` do M05 também (ver "Notas de execução"). **Correção (M05-P, 2026-11-08):** `renderToMusicJson` monta o layout quando o carregamento não cortou, e `loc`/`acc` do `pitchpos` saem completos também sem corte (decisão do usuário; ver o fim de "Notas de execução")
 
@@ -329,13 +331,13 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | Passo | O quê | Depende de | Estado |
 | --- | --- | --- | --- |
 | M01 | **Medir** os fatos (decisões já tomadas, ver "Decisões necessárias"): o que o `Doc` notado tem (`Harm`, `Dir`, `KeySig::mode`, `layer n` = voz, id da parte), custo de `RenderToMusicJson` sem layout | — | concluído com ressalva: células de Chopin e Debussy só parcialmente explicadas (notas invisíveis), ver "Notas de execução" |
-| M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (inversão de `grace` pelo importador, decisão do usuário pendente), ver "Notas de execução" |
+| M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (premissa de que o importador troca os valores de `grace`; **refutada no M07**), ver "Notas de execução" |
 | M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | concluído com ressalva: R-PARTES e R-TRINADO resolvidas em R2 (2026-11-08), `score_bridge` sem teste (fonte fora do repositório), ver "Notas de execução" |
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | concluído com ressalva: R2 (pauta de cifra em parte de duas pautas) sem caso no corpus; `numeral` só no caso sintético; alteração fracionária truncada (nenhuma no corpus); ver "Notas de execução" |
 | M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | concluído; **corrigido em M05-P** (2026-11-08): `loc` e `acc` saem completos também sem corte (o layout é montado sem desenhar). Custo mediano de 43 ms com corte, alvo de 50 ms não atingido em 5 de 20 hinos (`SetMidiDoc`); sem corte, ~70 ms de mediana em 10 hinos (ver "Notas de execução") |
-| M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | pendente |
+| M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | **não executado aqui (fica no zywny)**: o pacote `score_bridge` foi para o `zywny-comum` (git subtree) e não está neste repositório; ver M08 |
 | M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | concluído com ressalva: `just medidor` não executado (o aprendizado chama `getElementAttr` com dois argumentos, quebra do M05; ver "Notas de execução", M07); causas R3 (notas invisíveis); R-TRINADO resolvida em R2 |
-| M08 | Nota para o `zywny-aprendizado` (a execução Dart de lá fica lá) | M06, M07 | pendente |
+| M08 | Nota para o `zywny-aprendizado` (a execução Dart de lá fica lá) | M06, M07 | concluído com ressalvas: wasm não compilado aqui, `score_bridge` (M06) não verificado aqui, `just medidor` não rodado, e os ids da Clair de Lune em sequência no mesmo processo (ver "Notas de execução", M08) |
 
 ### M01 — Medir e decidir
 
@@ -643,13 +645,13 @@ repositório, em `compare/out/`), com `verovio -x 42 -t mei` para os ids.
 
 **Fatos novos medidos (M02)**
 
-- `grace` está **invertido** no importador do MusicXML: `slash="yes"` (acciaccatura)
-  vira `unacc`, e a ausência de barra vira `acc` (`iomusxml.cpp` L3310-3345). O
-  desenho continua certo porque a barra vem em `stem.mod="1slash"`. A spec segue o
-  valor do MEI, como o M00 pede (`@grace`). **Pendente de decisão do usuário (R1):**
-  (a) manter o valor do MEI e traduzir no leitor; ou (b) corrigir o importador. A
-  (b) muda o MEI e o `getMEI` do corpus, o que fere o critério 3 do "Critérios de
-  aceite do conjunto". Nenhuma das duas foi decidida aqui.
+- **R1 (premissa refutada no M07):** à primeira leitura, parecia que o `grace` saía
+  trocado no importador do MusicXML: `slash="yes"` (acciaccatura) virando `unacc`, e a
+  ausência de barra virando `acc` (`iomusxml.cpp` L3310-3345). O M07 mostrou que o
+  importador grava exatamente o valor do MEI, e o desenho sempre esteve certo (a barra
+  vem em `stem.mod="1slash"`). A spec segue o valor do MEI, como o M00 pede (`@grace`),
+  e a alternativa de corrigir o importador (que mudaria o `getMEI` do corpus) não se
+  colocou.
 - `ending.n` com espaço (`"2, 3"`) passa do `@number` sem normalização.
 - Os ids da fixture vêm de `verovio -x 42` (binário do fork, `6.3.0-8aabb53-dirty`).
   O M03 precisa reproduzi-los para o teste do `ReadBridgeMusic`.
@@ -732,8 +734,8 @@ Desvios e ressalvas:
 - **R-TRINADO (decisão do usuário; resolvida em R2)**: 12 trinados do Scarlatti têm só `@tstamp`, sem
   `@startid`. O schema exige `startid`, então ficam fora de `ornaments` (aviso no log:
   `music: trill ... has no @startid`).
-- **R1 (pendente, mantida)**: `grace` invertido no importador do MusicXML. O
-  `music.json` segue o MEI (confirmado nos 14 733 eventos). O importador não foi tocado.
+- **R1 (refutada no M07)**: a premissa de que o `grace` sai trocado não se confirmou.
+  O `music.json` segue o MEI (confirmado nos 14 733 eventos). O importador não foi tocado.
 - **R-SCORE_BRIDGE**: o `score_bridge` não está neste repositório. O `compare/pubspec.yaml`
   aponta para `/home/mauricio/IdeaProjects/zywny/score_bridge`, que não existe (há só
   `build/unit_test_assets/packages/score_bridge/fonts`). Não rodei `flutter test` e não
@@ -756,7 +758,7 @@ Desvios em relação ao M00:
 - O `<figured-bass>` do MusicXML também vira `Harm` no importador (com `Fb`, sem texto de cifra). Não é `<harmony>`: fica fora de `harmonies`. Medido no caso sintético: o MEI tem o `harm` com `fb`, e `harmonies` tem só as cifras.
 - Cifra sem `@tstamp`, sem texto ou fora de compasso, e direção fora de compasso: saem com aviso, como o trinado sem `@startid` (R-TRINADO). Nenhum caso no corpus.
 - Direção sem texto (coda, segno) não entra em `directions`.
-- A reavaliação de R1 que o coordenador cita ("premissa refutada") não está registrada nestes documentos. Este passo não tocou `grace`; a §2.9 (R1) e o M02 continuam como pendentes, para atualização pelo coordenador.
+- A reavaliação de R1 ("premissa refutada") foi feita no M07, ver "Notas de execução", M07. Este passo não tocou `grace`.
 
 Linha de base e aceite (saídas em `compare/out/m04-base/` e `compare/out/m04-new/`, git-ignoradas):
 
@@ -987,7 +989,7 @@ Os números 149 / 25 / 6 / 7 / 56 / nenhum 506 não foram reproduzidos neste pas
 
 Desvios e correções no M00:
 
-1. **R1 (inversão de `grace`) refutada.** O importador grava o valor do MEI: sem barra →
+1. **R1 (premissa refutada).** O importador grava o valor do MEI: sem barra →
    `acc` (apojatura, acentuada), com barra (`slash="yes"`) → `unacc` (acciaccatura). O oráculo
    confere os 6 364 eventos do corpus MusicXML e os 141 214 dos hinos com essa regra. Spec
    §2.9 corrigida (R1); importador não tocado.
@@ -1121,3 +1123,59 @@ O que o M08 precisa saber:
   e batida (não pelo id notado).
 - O `id` de uma parte de MEI sem `xml:id` no grupo é gerado pelo Verovio (estável para a mesma carga, não
   para outro arquivo).
+
+**2026-11-08: M08 executado (nota para o `zywny-aprendizado`, limpeza de texto, portão e status)**
+
+Entregas:
+
+- `docs/nota-para-zywny-musica.md` (novo, 228 linhas; no molde da fantasma e da sumico): o que mudou,
+  como chamar, a quebra do `getElementAttr`, os campos pela §2.9, a tabela "No app hoje" → "Passa a
+  ser", o que pode apagar, as ressalvas para o host (Chopin, `s`, notas invisíveis, grace, trinado,
+  barra final), o M06 no `zywny`, a verificação e as pendências.
+- Limpeza de texto (R1, premissa refutada): **7 ocorrências** de "inversão"/"invertido" corrigidas
+  (4 neste arquivo: linha do M02 na tabela de passos, o bullet do M02 e o bullet do M03 que o
+  tratavam como pendente, e a linha do M07; 3 na spec: §2.9 R1, e as linhas do histórico de M02 e de M07).
+  Nenhuma ocorrência fica nos textos do repositório, exceto a docstring de `compare/scripts/music_oracle.py`
+  (L214, "A R1 do M02 (inversão) não se confirmou"), que é código e não foi alterada. Texto novo: "premissa
+  refutada (R1)": o importador grava o valor do MEI (`acc` sem barra, `unacc` com barra), e o desenho
+  sempre esteve certo. O M04 e o M03 também usavam "pendente" para a R1: já estavam superados pelo M07.
+- Spec: §2.9 (R1 e a fixture) e histórico (linhas de M02, M07 e M08). Nenhuma mudança de forma (`version` `1`).
+- M06 marcado como "não executado aqui (fica no zywny)" na tabela de passos (ver a seção 7 da nota).
+- O `libverovio.so` de `verovio/bindings/dart/` (git-ignorado) estava de 2026-11-05, sem `renderToMusicJson`:
+  foi recompilado com `verovio/bindings/dart/build_linux_so.sh` (o mesmo script do Linux). Nada versionado mudou.
+
+Portão (critérios do conjunto, medidos em 2026-11-08 no HEAD `2090558` e no binário pré-M00 `d30bfef`):
+
+| # | Critério | Resultado |
+| --- | --- | --- |
+| 1 | `music.json` no `.vsb` e no JSON único, validado pelo schema; §2.9 e histórico | **Atendido.** 144 `music.json` extraídos de `.vsb` gerados nesta conferência (72 fontes × `auto`/`none`) validam em `$defs/musicDocument`; o manifesto traz `music` em 144 de 144. Os 144 `music` do JSON único (`compare/out/r2-new`, do mesmo código) validam. §2.9 (regras 1-9, R1-R6, fixture) e o histórico (M02 a M08) estão atualizados. Schema: `docs/formato/schema-v1.json`. |
+| 2 | `renderToMusicJson` em C, Dart e wasm, sem layout de desenho, nos ids da carga | **Atendido em C e Dart; wasm não compilado aqui.** C: `vrvToolkit_renderToMusicJson` exportado no `libverovio.so` recompilado; em processo novo por carga, 144 de 144 cargas dão só `timemap`, `midi` (quando há nota), `pitchpos` e `music`, iguais aos de `renderToBridgeJson` na mesma carga, sem `loc`/`acc` `null` e válidas em `$defs/musicJsonDocument`. Dart: `renderToMusicJson()` e `getElementAttr(String xmlId)`; `dart analyze lib test example` sem avisos. Wasm: `_vrvToolkit_renderToMusicJson` está em `exports.txt`, mas **não compilado aqui**: o `verovio/emscripten/build/verovio.js` é de 2026-11-05 e não tem a função (não tentei o emsdk, como pedido). **Ressalva** (ver abaixo): no mesmo processo, carregando as 144 cargas em sequência, a Clair de Lune difere em `timemap`/`midi` em 1 de 3 execuções. |
+| 3 | Nenhuma saída existente muda | **Atendido.** 72 fontes × `auto`/`none` = 144 pacotes, gerados pelo binário pré-M00 (`d30bfef`, com `git archive`) e pelo atual, com `-x 42`: `getMEI`, SVG de todas as páginas, e no `.vsb` (zip) e no JSON único `timemap`, `midi`, `pitchpos`, `scene`, `glyphs`, `alternates`, `meta` e o manifesto são idênticos (normalizada a versão `6.3.0-<hash>` e o `isodate` do MEI). Diferem só `music.json` e a entrada `music` do manifesto. **Exceções registradas**, todas dentro do que é novo: o `music.json` mudou depois do M03 em duas frentes do R2 (`parts` de 20 arquivos MEI, de 2 para 1 entrada onde o `staffGrp` tem as duas pautas; `ornaments` de 3 arquivos: Scarlatti 2 → 14, Nocturne e `m02` ganham `measure` e `tstamp`) e o `pitchpos` de `renderToMusicJson` sem corte ganhou `loc`/`acc` no M05-P. Nada disso aparece nas saídas de CLI, que continuam como antes. |
+| 4 | Oráculo: zero divergência nas fixtures; hinos medidos e exceções explicadas | **Atendido.** `music_oracle.py verificar` nos 8 vetores e na fixture `m02`: zero divergência, e os `fonte_sha256` das fontes do aprendizado batem com `vetores.json`. Varredura do R2 (`compare/out/r2-varredura`, 617 fontes, 0 erros do Verovio; a tabela do M07 soma 618 porque conta a `m02`, que é conferida à parte): **600 de 600 hinos sem divergência**; corpus MusicXML: 16, todas R3 (notas invisíveis); corpus MEI e aprendizado: 0. **Não feito:** `just medidor` (ver abaixo). |
+| 5 | `score_bridge` lê o `music.json` e continua lendo `.vsb` antigos | **Não verificado aqui.** O pacote está em `zywny-comum/score_bridge`, que hoje não tem `VsbMusic` nem leitura de `music.json` (busca sem resultado). Não rodei `flutter test` lá (não se escreve no `zywny`). |
+| 6 | Nota para o host escrita | **Atendido.** `docs/nota-para-zywny-musica.md`. |
+
+Ressalvas e pendências (abertas para o usuário ou para o `zywny`):
+
+- **Ids da Clair de Lune em sequência (novo, não resolvido).** No mesmo processo, depois de carregar
+  muitas partituras, `renderToMusicJson` e `renderToBridgeJson` da mesma carga deram `timemap` e `midi`
+  com ids de nota diferentes (ids gerados, sem `xml:id` na fonte: `mx1rdxl` contra `o1r4wlty`, no
+  `--breaks none` e no automático, em 1 de 3 execuções). Em processo novo, por carga, dá igual (144 de
+  144, e 10 execuções seguidas da Clair de Lune dão o mesmo hash). `renderToBridgeJson` sozinho em sequência
+  não reproduz (0 em 3 execuções). Causa não investigada; a regra "ids iguais" vale hoje por processo. Para
+  o host: não misture os dois caminhos no mesmo isolate sem conferir, e prefira `renderToMusicJson` sozinho.
+  Reproduzir: `compare/out/m08/capi_diag.py` (sequência no mesmo processo) e `capi_fresh.py` (processo novo por carga).
+- **Nome da parte no Chopin Mazurka (MEI)** (decisão aberta): `parts[].name` sai `"1"`. Ver a nota, seção 6.
+- **Wasm**: `tool/build_verovio_web.sh` do `zywny-comum` precisa rodar de novo, e o `verovio_worker.js` ganhar a chamada.
+- **`just medidor`**: não rodado (depende da troca do `getElementAttr` no `zywny-aprendizado`, que está fora
+  deste repositório). Os números 149, 25, 6, 7, 56 e nenhum 506 (LM14/LM15) não foram reproduzidos.
+- **M06**: fica para o `zywny` (seção 7 da nota). `compare/pubspec.yaml` ainda aponta para
+  `/home/mauricio/IdeaProjects/zywny/score_bridge`, que não existe; o pacote está em `zywny-comum/score_bridge`.
+  Não alterado aqui (fora do escopo).
+- **Docstring de `music_oracle.py` (L214)** ainda diz "A R1 do M02 (inversão)". Código, não alterado; a correção
+  de texto fica para um passo de código.
+
+Scripts do portão: `compare/out/m08/` (git-ignorado; `compare.py` compara o binário pré-M00 por `PRE_BIN`, `capi_fresh.py` e `capi_diag.py` testam a API C, `vetores.py` e `validate_music.py` o oráculo e o schema).
+
+Passo M08: **concluído com ressalvas** (wasm não compilado aqui; `score_bridge` não verificado aqui; `just medidor`
+não rodado; ids da Clair de Lune em sequência no mesmo processo). M00: **concluído com ressalvas** (M06 no zywny).

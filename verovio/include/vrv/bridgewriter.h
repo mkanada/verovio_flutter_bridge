@@ -157,6 +157,15 @@ public:
         const std::vector<BridgeAlternateSequence> &sequences = {}, const std::string &debugOptionsJson = "",
         const std::string &debugSource = "", const MIDIEventLog *midiLog = nullptr,
         const BridgePitchPos *pitchPos = nullptr, const BridgeMusic *music = nullptr);
+
+    /**
+     * Serializes the document of Toolkit::RenderToMusicJson (§2.10, M05): {timemap[, midi][, pitchpos]
+     * [, music]}, the same bodies as in the single JSON and the same omit rules, with no manifest,
+     * glyphs, scene or alternates - nothing here is drawn. `timemapJson` is the raw array from
+     * Toolkit::RenderToTimemap, empty for "no timemap".
+     */
+    static std::string WriteMusicJson(const std::string &timemapJson, const MIDIEventLog *midiLog,
+        const BridgePitchPos *pitchPos, const BridgeMusic *music);
 };
 
 } // namespace vrv

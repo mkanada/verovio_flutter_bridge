@@ -110,8 +110,9 @@ class VerovioBindings {
         getDescriptiveFeatures =
             lib.lookupFunction<_Utf8FromPtrStrNative, _Utf8FromPtrStrDart>(
                 'vrvToolkit_getDescriptiveFeatures'),
-        getElementAttr = lib.lookupFunction<_Utf8FromPtrStrStrNative,
-            _Utf8FromPtrStrStrDart>('vrvToolkit_getElementAttr'),
+        getElementAttr =
+            lib.lookupFunction<_Utf8FromPtrStrNative, _Utf8FromPtrStrDart>(
+                'vrvToolkit_getElementAttr'),
         getElementsAtTime =
             lib.lookupFunction<_Utf8FromPtrIntNative, _Utf8FromPtrIntDart>(
                 'vrvToolkit_getElementsAtTime'),
@@ -203,6 +204,9 @@ class VerovioBindings {
         renderToMIDIFile =
             lib.lookupFunction<_BoolFromPtrStrNative, _BoolFromPtrStrDart>(
                 'vrvToolkit_renderToMIDIFile'),
+        renderToMusicJson =
+            lib.lookupFunction<_Utf8FromPtrNative, _Utf8FromPtrDart>(
+                'vrvToolkit_renderToMusicJson'),
         renderToPAE = lib.lookupFunction<_Utf8FromPtrNative, _Utf8FromPtrDart>(
             'vrvToolkit_renderToPAE'),
         renderToPAEFile =
@@ -262,7 +266,7 @@ class VerovioBindings {
   final _Utf8FromPtrDart getAvailableOptions;
   final _Utf8FromPtrDart getDefaultOptions;
   final _Utf8FromPtrStrDart getDescriptiveFeatures;
-  final _Utf8FromPtrStrStrDart getElementAttr;
+  final _Utf8FromPtrStrDart getElementAttr;
   final _Utf8FromPtrIntDart getElementsAtTime;
   final _Utf8FromPtrStrDart getExpansionIdsForElement;
   final _Utf8FromPtrDart getHumdrum;
@@ -297,6 +301,7 @@ class VerovioBindings {
   final _BoolFromPtrStrDart renderToExpansionMapFile;
   final _Utf8FromPtrDart renderToMIDI;
   final _BoolFromPtrStrDart renderToMIDIFile;
+  final _Utf8FromPtrDart renderToMusicJson;
   final _Utf8FromPtrDart renderToPAE;
   final _BoolFromPtrStrDart renderToPAEFile;
   final _Utf8FromPtrIntBoolDart renderToSVG;

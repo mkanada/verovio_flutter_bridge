@@ -81,6 +81,7 @@ char *Toolkit::m_humdrumBuffer = NULL;
 Toolkit::Toolkit(bool initFont)
 {
     m_midiDoc = NULL;
+    m_layoutAtLoad = false;
 
     m_humdrumBuffer = NULL;
     m_cString = NULL;
@@ -921,7 +922,10 @@ bool Toolkit::LoadData(const std::string &data, bool resetLogBuffer)
         breaks = (m_doc.HasFacsimile()) ? BREAKS_encoded : BREAKS_none;
     }
 
+    // M05: a cast-off at load is what lays out the pages that pitchpos's loc and acc come from
+    m_layoutAtLoad = false;
     if (breaks != BREAKS_none) {
+        m_layoutAtLoad = true;
         if (input->GetLayoutInformation() == LAYOUT_ENCODED
             && (breaks == BREAKS_encoded || breaks == BREAKS_line || breaks == BREAKS_smart)) {
             if (breaks == BREAKS_encoded) {
@@ -2386,12 +2390,13 @@ MIDIEventLog Toolkit::RenderMidiEventLog()
     return midiLog;
 }
 
-BridgePitchPos Toolkit::RenderPitchPos(int firstPage, int lastPage, const MIDIEventLog &midiLog)
+BridgePitchPos Toolkit::RenderPitchPos(int firstPage, int lastPage, const MIDIEventLog &midiLog, bool withLayout)
 {
     if (m_options->m_noVsbPitchpos.GetValue()) return BridgePitchPos();
     if (lastPage < 0) lastPage = this->GetPageCount();
 
-    BridgePitchPos pitchPos = BridgePitchPosBuilder::Build(&m_doc, firstPage - 1, lastPage - 1, midiLog);
+    BridgePitchPos pitchPos
+        = BridgePitchPosBuilder::Build(&m_doc, firstPage - 1, lastPage - 1, midiLog, withLayout);
     if (pitchPos.missingShift > 0) {
         LogWarning("pitchpos: %d note/rest(s) without a MIDI shift (never visited by the MIDI export)",
             pitchPos.missingShift);
@@ -2409,6 +2414,42 @@ bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, 
     std::string output = this->RenderToBridgeJson(fromPage, toPage);
     if (output.empty()) return false;
 
+    std::ofstream outfile(filename.c_str());
+    if (!outfile.is_open()) return false;
+
+    outfile << output;
+    return true;
+}
+
+std::string Toolkit::RenderToMusicJson()
+{
+    this->ResetLogBuffer();
+
+    // The same timemap as RenderToBridgeJson, with the same options and omit rule. It is read from the
+    // expanded document (SetMidiDoc), which does not need the layout.
+    std::string timemapJson = this->RenderToTimemap("{\"includeMeasures\": true, \"includeRests\": true}");
+    jsonxx::Array timemapArray;
+    if (!timemapArray.parse(timemapJson) || timemapArray.empty()) timemapJson.clear();
+
+    // M05: the same midi.json events as RenderToBridgeJson (RenderMidiEventLog reads the expanded
+    // document, not the pages).
+    const MIDIEventLog midiLog = this->RenderMidiEventLog();
+
+    // §2.8 without drawing: loc and acc come from the layout, which the load already did when the
+    // document was cast off (m_layoutAtLoad); otherwise they are null. Nothing here lays out the pages.
+    const BridgePitchPos pitchPos = this->RenderPitchPos(1, -1, midiLog, m_layoutAtLoad);
+
+    // §2.9 (M03): the notated structure, read from the Doc like RenderToBridgeJson does
+    const BridgeMusic music = ReadBridgeMusic(m_doc);
+
+    return BridgeWriter::WriteMusicJson(timemapJson, &midiLog, &pitchPos, &music);
+}
+
+bool Toolkit::RenderToMusicJsonFile(const std::string &filename)
+{
+    this->ResetLogBuffer();
+
+    std::string output = this->RenderToMusicJson();
     std::ofstream outfile(filename.c_str());
     if (!outfile.is_open()) return false;
 

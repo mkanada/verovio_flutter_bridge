@@ -517,6 +517,18 @@ mínima.)
 - Notas ocultas (`visible="false"`) têm entrada como as demais — o host pode
   esperá-las —, mas o nó delas na cena é `hidden`. Uma nota sem `@pname`
   (dado de origem incompleto) não tem entrada.
+- **Sem layout (M05, §2.10).** `loc` e `acc` dependem do layout das páginas,
+  que existe no carregamento só quando o documento é cortado (`--breaks`
+  diferente de `none`, e não é MEI com layout codificado: `<pages>`). Em
+  `renderToMusicJson` de um documento sem esse corte, `acc` de todo elemento e
+  `loc` de toda nota saem `null`. O `.vsb` e o JSON único **nunca** trazem `null`:
+  são montados com o layout. Os demais campos não dependem de layout: medido, a
+  chamada sem nenhum layout de página dá `t`, `co`, `key`, `alt`, `pn`, `o`, `dur`
+  e `dots` iguais aos do `.vsb` em `--breaks` auto (72 arquivos do corpus) e em
+  line, smart e encoded (5 arquivos; em `line` a Mazurka não tem comparação, o HEAD
+  cai nela); com `none` (72 arquivos), só `loc` e `acc`
+  diferem do `.vsb`; num MEI com `<pages>` (`-t mei-pb`), `loc` difere (5 de 6
+  notas no caso medido) e `co` é igual.
 - **Som e notação podem divergir na fonte.** `alt` é o que soa; `key`/`acc`
   são o que a notação escrita diz. Numa fonte fiel os dois concordam
   (`alt == acc[<letra><o>] ?? key[<letra>] ?? 0` para toda nota sem acidente
@@ -777,6 +789,29 @@ Conferência: `compare/out/m02/check_m02.py` (saída em `compare/out/`, não ver
 confere o schema (Draft 2020-12), os eventos por (compasso, pauta, camada)
 contra o MusicXML, os ids, as casas, as barras, as cifras, a alça do trinado e
 a fórmula e a armadura de cada compasso.
+
+### 2.10 `renderToMusicJson` (M05)
+
+`Toolkit::RenderToMusicJson()` (C: `vrvToolkit_renderToMusicJson(tk)`; Dart:
+`renderToMusicJson()`) devolve **um objeto JSON** com a estrutura do documento
+notado, sem desenho e sem layout:
+
+```json
+{ "timemap": [ ... ], "midi": { ... }, "pitchpos": { ... }, "music": { ... } }
+```
+
+- Cada chave tem o corpo de §2.4, §2.7, §2.8 e §2.9 e a regra de omissão de §2.2
+  (a chave some quando o documento não tem o dado). Não há `manifest`, `glyphs`,
+  `scene`, `alternates` nem `meta`: nada é desenhado.
+- Os ids são os da carga: na mesma carga, os corpos de `timemap`, `midi`,
+  `pitchpos` e `music` são iguais aos de `renderToBridgeJson` (medido nos 72
+  arquivos do corpus, nas duas ordens de chamada).
+- Não muda o estado do documento: não há `Select`, `RedoLayout` nem layout de
+  página. `getMEI`, `renderToTimemap` e `renderToSVG` dão o mesmo resultado
+  antes e depois da chamada.
+- `pitchpos` segue §2.8: `loc` e `acc` saem `null` quando o documento não foi
+  cortado no carregamento.
+- Esquema: `$defs/musicJsonDocument` em `docs/formato/schema-v1.json`.
 
 ## 3. Unidades e ajuste de página
 
@@ -1788,3 +1823,4 @@ fermata ficam; nota ligada a um compasso visível continua visível lá.
 | 2026-11-04 | G11 (esconder um compasso inteiro, D-SUM-COMPASSO = campo no formato, decisão do usuário): **`measure.inner`** (§5.1) — `[x0, x1]`, a faixa em que o Verovio centra a pausa de compasso (`GetDrawingX() + GetLeftBarLineRight()` e `+ GetRightBarLineLeft()`), gravado em todo nó `measure` (aditivo, `version` continua `1`; leitor antigo ignora); **§11.2, regra 8** (normativa): pausa de compasso substituta (glifo `E4E3`, `x` do centro de `inner`, `y` da regra da semibreve, sem pontos), o que some com o compasso (notas, pausas de verdade em pauta que tem nota, tercina, ligaduras de prolongamento/expressão, arpejo e `beamSpan` pelo dono = compassos que tocam), o que fica, e a classificação por ocorrências em 70 partituras. Provado: 5 170 pausas desenhadas pelo Verovio com 0 divergências de `x`, `y`, glifo e escala; 124 páginas, 1 517 compassos escondidos, 0 vazamentos. Sem o campo, o `x` de um compasso com cabeçalho errava até 1,4 unidade (até 18 por pauta). Exige refazer a `libverovio` (Linux, Android, Web). Schema (`measure.inner`) e 15 casos novos em `vetores.json` (`casosCompasso`). |
 | 2026-11-08 | M02 (`music.json`, §2.9, novo; ver M00): arquivo opcional com a estrutura da partitura notada, sem geometria — partes, compassos (`n`, casas, barras, fórmula, armadura e modo), pautas, camadas e eventos (nota, pausa, `mr`, acorde, apojatura, quiáltera), ornamentos, cifras (`harmonies`), direções (`directions`) e andamentos (`tempi`). `manifest.files.music`, propriedade `music` no JSON único, `$defs/musicDocument` (e auxiliares) no schema. Aditivo: `version` continua `1`; leitor antigo ignora. §2.9 traz as ressalvas R1-R5; a R1 (a inversão de `grace` pelo importador do MusicXML) fica pendente de decisão do usuário. Fixture: `docs/formato/musica/` (`m02-entrada.musicxml` sintético + `m02-esperado.json`), conferida contra o MusicXML e o MEI com `-x 42`. |
 | 2026-11-08 | M04 (`music.json`, §2.9, regras 7 e 8; ver M00): `harmonies` e `directions` passam a sair preenchidos. A estrutura da `<harmony>` (raiz, alteração, `kind`, `kind@text`, baixo, graus, numeral) é guardada pelo importador MusicXML num `HarmData` ligado ao `harm` e lida por `ReadBridgeMusic`; o MEI não muda. `text` sai do `Doc`, então `<words>` com formatação chega inteiro. Figured bass (`fb`) fica fora de `harmonies`. Aditivo: `version` continua `1`; o schema não muda (já previa os campos). |
+| 2026-11-08 | M05 (API; §2.8 e §2.10, novo): `renderToMusicJson` (C e Dart) devolve `timemap`, `midi`, `pitchpos` e `music` sem desenho e sem layout, nos ids da carga. Em `pitchpos`, `loc` e `acc` passam a poder sair `null` nessa chamada quando o documento não foi cortado no carregamento (`--breaks none` ou MEI com `<pages>`); o `.vsb` e o JSON único não mudam. Esquema: `musicJsonDocument`; `loc` e `acc` aceitam `null`. |

@@ -781,7 +781,11 @@ std::string BridgeWriter::WritePitchPos(const BridgePitchPos &pitchPos)
             }
             out += '}';
         }
-        if (!event.acc.empty()) {
+        if (!pitchPos.layout) {
+            // M05: no layout, so the column accidentals are unknown (§2.8), not "none in force"
+            out += ",\"acc\":null";
+        }
+        else if (!event.acc.empty()) {
             out += ",\"acc\":";
             AppendAlterations(out, event.acc);
         }
@@ -789,7 +793,7 @@ std::string BridgeWriter::WritePitchPos(const BridgePitchPos &pitchPos)
             out += std::string(",\"pn\":\"") + PITCHPOS_LETTERS[event.pname - 1] + "\"";
             out += ",\"o\":" + std::to_string(event.oct);
             out += ",\"alt\":" + std::to_string(event.alt);
-            out += ",\"loc\":" + std::to_string(event.loc);
+            out += pitchPos.layout ? ",\"loc\":" + std::to_string(event.loc) : std::string(",\"loc\":null");
         }
         if (event.dur > 0) {
             out += ",\"dur\":" + std::to_string(event.dur);
@@ -1067,6 +1071,43 @@ std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> 
         out += ",\"debug\":{\"options\":";
         out += debugOptionsJson;
         out += ",\"source\":\"" + EscapeJsonString(debugSource) + "\"}";
+    }
+    out += '}';
+    return out;
+}
+
+std::string BridgeWriter::WriteMusicJson(const std::string &timemapJson, const MIDIEventLog *midiLog,
+    const BridgePitchPos *pitchPos, const BridgeMusic *music)
+{
+    const bool hasTimemap = !timemapJson.empty();
+    const bool hasMidi = midiLog && !midiLog->events.empty();
+    const bool hasPitchPos = pitchPos && !pitchPos->IsEmpty();
+    const bool hasMusic = music && !music->IsEmpty();
+
+    // Same keys and omit rules as the single JSON (§2.2), without manifest, glyphs or scene: this is
+    // the document of renderToMusicJson (§2.10), which draws nothing.
+    std::string out = "{";
+    bool first = true;
+    const auto openKey = [&out, &first](const char *name) {
+        if (!first) out += ',';
+        first = false;
+        out += std::string("\"") + name + "\":";
+    };
+    if (hasTimemap) {
+        openKey("timemap");
+        out += timemapJson;
+    }
+    if (hasMidi) {
+        openKey("midi");
+        out += WriteMidi(*midiLog);
+    }
+    if (hasPitchPos) {
+        openKey("pitchpos");
+        out += WritePitchPos(*pitchPos);
+    }
+    if (hasMusic) {
+        openKey("music");
+        out += WriteMusic(*music);
     }
     out += '}';
     return out;

@@ -35,6 +35,7 @@ _vrvToolkit_renderToBridgeFile
 _vrvToolkit_renderToBridgeJson
 _vrvToolkit_renderToExpansionMap
 _vrvToolkit_renderToMIDI
+_vrvToolkit_renderToMusicJson
 _vrvToolkit_renderToPAE
 _vrvToolkit_renderToSVG
 _vrvToolkit_renderToTimemap

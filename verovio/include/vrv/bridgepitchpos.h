@@ -46,6 +46,9 @@ struct BridgePitchPosEvent {
 struct BridgePitchPos {
     // Document order; the key is the notated xml:id
     std::vector<std::pair<std::string, BridgePitchPosEvent>> events;
+    // false when the drawing positions were not computed (M05, RenderToMusicJson of a document without
+    // layout at load): `loc` and `acc` of every event are then written as null (§2.8).
+    bool layout = true;
     // Diagnostics (LogWarning-ed by the caller when non-zero): elements the MIDI functor never
     // visited (no shift), and ids visited more than once with different shifts.
     int missingShift = 0;
@@ -65,8 +68,14 @@ public:
      * (0-based, inclusive) of the notated `doc`, which must already be laid out for those pages
      * (the drawing loc and the cross-staff pointers are layout products). `midiLog->shifts` comes
      * from the expanded document; ids are matched by the §2.4 suffix rule.
+     *
+     * `withLayout` false (M05, RenderToMusicJson of a document whose layout was not computed at
+     * load: `--breaks none`, or a page-based MEI) skips what only the layout provides - `loc` and
+     * `acc` - and sets BridgePitchPos::layout to false. Every other field is read from the notated
+     * data and is the same with or without layout (measured on the corpus, M05).
      */
-    static BridgePitchPos Build(Doc *doc, int firstPage, int lastPage, const MIDIEventLog &midiLog);
+    static BridgePitchPos Build(
+        Doc *doc, int firstPage, int lastPage, const MIDIEventLog &midiLog, bool withLayout = true);
 };
 
 } // namespace vrv

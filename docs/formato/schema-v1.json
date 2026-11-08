@@ -548,11 +548,11 @@
         "co": { "type": "integer" },
         "sh": { "type": "integer" },
         "key": { "$ref": "#/$defs/pitchposAlterations" },
-        "acc": { "$ref": "#/$defs/pitchposAlterations" },
+        "acc": { "anyOf": [{ "$ref": "#/$defs/pitchposAlterations" }, { "type": "null" }] },
         "pn": { "enum": ["c", "d", "e", "f", "g", "a", "b"] },
         "o": { "type": "integer" },
         "alt": { "type": "integer", "minimum": -2, "maximum": 2 },
-        "loc": { "type": "integer" },
+        "loc": { "type": ["integer", "null"] },
         "dur": { "enum": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024] },
         "dots": { "type": "integer", "minimum": 0, "maximum": 4 }
       },
@@ -786,6 +786,17 @@
         "measure": { "type": "integer", "minimum": 0 },
         "bpm": { "type": ["number", "null"], "exclusiveMinimum": 0 },
         "text": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "musicJsonDocument": {
+      "type": "object",
+      "description": "renderToMusicJson (§2.10, M05): the notated structure without drawing; every key is optional",
+      "properties": {
+        "timemap": { "$ref": "#/$defs/timemapDocument" },
+        "midi": { "$ref": "#/$defs/midiDocument" },
+        "pitchpos": { "$ref": "#/$defs/pitchposDocument" },
+        "music": { "$ref": "#/$defs/musicDocument" }
       },
       "additionalProperties": false
     },

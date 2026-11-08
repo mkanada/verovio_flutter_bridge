@@ -332,7 +332,7 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (inversão de `grace` pelo importador, decisão do usuário pendente), ver "Notas de execução" |
 | M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | concluído com ressalva: R-PARTES e R-TRINADO (decisão do usuário), `score_bridge` sem teste (fonte fora do repositório), ver "Notas de execução" |
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | concluído com ressalva: R2 (pauta de cifra em parte de duas pautas) sem caso no corpus; `numeral` só no caso sintético; alteração fracionária truncada (nenhuma no corpus); ver "Notas de execução" |
-| M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | pendente |
+| M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | concluído com ressalva: `loc` e `acc` saem `null` sem corte no carregamento (extensão de regra, ver notas); custo mediano de 43 ms, alvo de 50 ms não atingido em 5 de 20 hinos (`SetMidiDoc`), ver "Notas de execução" |
 | M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | pendente |
 | M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | pendente |
 | M08 | Nota para o `zywny-aprendizado` (a execução Dart de lá fica lá) | M06, M07 | pendente |
@@ -781,3 +781,109 @@ Ressalvas abertas:
 - `<words>` com quebra de linha perde a quebra em `text` (a §2.9 manda concatenar sem separador, como `TextRendition` desenha).
 
 Passo M04: concluído com ressalva (R2, R4 e a alteração fracionária, acima).
+
+**2026-11-08: M05 executado (API: `renderToMusicJson`, C, Dart e `getElementAttr`)**
+
+Entregas:
+
+- `Toolkit::RenderToMusicJson()` e `RenderToMusicJsonFile()` (`toolkit.h/.cpp`): `timemap`
+  (mesmas opções de `RenderToBridgeJson`), `RenderMidiEventLog`, `RenderPitchPos(..., withLayout)`
+  e `ReadBridgeMusic`. Sem `RenderPagesToBridge` e sem `Select`. `BridgeWriter::WriteMusicJson`
+  monta `{timemap, midi, pitchpos, music}`, com as mesmas regras de omissão do JSON único.
+- `BridgePitchPosBuilder::Build(..., withLayout)` e `BridgePitchPos::layout`
+  (`bridgepitchpos.h/.cpp`). Com `layout` falso, `loc` e `acc` saem `null` (`WritePitchPos`).
+  O `.vsb` e o JSON único seguem com `layout` verdadeiro: a saída deles não muda.
+- `Toolkit::m_layoutAtLoad`, ligado no `LoadData` no ramo do corte (`--breaks` diferente de
+  `none`). O MEI com `<pages>` cai em `none` (`LAYOUT_DONE`), então também fica sem.
+- C: `vrvToolkit_renderToMusicJson(tk)` (`tools/c_wrapper.h/.cpp`); `emscripten/exports.txt`:
+  `_vrvToolkit_renderToMusicJson`.
+- Dart: `VerovioToolkit.renderToMusicJson()` (`verovio_toolkit.dart`, `verovio_bindings.dart`).
+  `dart analyze lib test example`: sem problemas; `dart format`: limpo.
+- Spec: §2.8 (regra "Sem layout"), §2.10 (novo: `renderToMusicJson`), `schema-v1.json`
+  (`loc` e `acc` aceitam `null`; `$defs/musicJsonDocument`) e a linha de histórico.
+
+**`pitchpos` sem layout: a prova (experimento temporário, removido antes do commit)**
+
+O M01 supunha que `loc` precisava do layout de página. A medição corrige isso: o
+carregamento já faz o trabalho, para todo documento que é cortado nele.
+
+- Com corte no carregamento, **nenhuma** chamada de layout é necessária. Montado logo após o
+  `LoadData`, sem `Page::LayOut`, o `pitchpos` (`co`, `key`, `acc`, `alt`, `pn`, `o`, `loc`,
+  `dur`, `dots`) bate com a linha de base com layout em `--breaks` auto nos 72 arquivos do
+  corpus, e em line, smart e encoded em 5 arquivos (matriz: Mazurka, f04, f02, Clair de
+  Lune e r06; em `line` a Mazurka não tem comparação, o HEAD cai nela). O `sh` é o único campo que depende do MIDI, e o experimento não o montava.
+  Os 72 arquivos com auto foram confirmados de novo pelo harness (`ids`), na chamada final.
+- Sem corte (`--breaks none`): o `loc` calculado sem layout estaria errado em 859 de 896
+  notas da Mazurka e 1647 de 1720 do Clair de Lune; o `acc` em 120 e 213 eventos. Por isso
+  saem `null`. Nos mesmos casos, os demais campos (`t`, `co`, `key`, `alt`, `pn`, `o`, `dur`,
+  `dots`) continuam iguais: 72 de 72 arquivos, sem nenhuma diferença fora de `loc` e `acc`.
+- MEI page-based (`-t mei-pb`, `<pages>`, `LAYOUT_DONE`), caso de `f04-cross-staff`: `loc`
+  diferente em 5 de 6 notas. Com o layout completo (controle), bate. Um passe só de
+  `pitchpos` (`LayOutPitchPos`, sem o alinhamento horizontal) derrubou o processo (SIGSEGV),
+  por isso não foi adotado.
+- **Decisão de implementação (para o usuário confirmar):** quando o corte não aconteceu no
+  carregamento, `loc` e `acc` saem `null`. A regra do plano cobria só `loc`; estendi a `acc`,
+  porque um `acc` ausente sairia como "nenhum acidental em vigor", que é dado errado sem aviso.
+  A alternativa é montar o layout nesses casos. Isso mudaria o "sem layout" da chamada e
+  precisa de decisão à parte.
+
+**Ids e estado (harness C contra `libverovio.so` recompilada; `compare/out/m05-base` e scripts fora do repositório)**
+
+- Ordem nos dois sentidos, na mesma carga (semente 42): `timemap`, `midi`, `pitchpos` e
+  `music` de `renderToMusicJson` são iguais aos de `renderToBridgeJson` em 72 de 72 arquivos
+  (JSON parseado).
+- Chamada nova contra os `vsb/*.json` da linha de base (CLI, `-x 42`): 72 de 72.
+- Estado: `getMEI` e `renderToTimemap` iguais antes e depois de `renderToMusicJson` em 72 de 72.
+  O SVG "depois" é igual ao SVG de um controle sem a chamada nova em 72 de 72. Entre um SVG e
+  o seguinte já difere em 9 arquivos, porque cada render gera `id` de `tspan` novos (acontece
+  sem a chamada nova também; é anterior ao M05).
+
+**Aceite de não mudança (ordem 4 do M05)**
+
+- Linha de base com o binário de HEAD `386ee76`, **com `-x 42`**. Sem semente, cada processo sorteia
+  os `xml:id` gerados (o `scene.json` e o SVG mudam de uma rodada para outra; a mesma causa
+  está no `Object::SeedID`). O M02 a M04 já usavam `-x 42`; o M07 deve usar o mesmo.
+- Depois: 72 pacotes, 0 falhas. Comparação de 722 arquivos (getMEI, SVG de cada página e os JSON do
+  pacote, com o `.vsb` descompactado, já que o zip tem data): **0 diferenças**.
+- Build: `tools` sem aviso novo (os 6 de `stl_algobase.h` continuam os mesmos). A `build-library`
+  foi reconfigurada (`cmake -S ../cmake`), porque o `libverovio.so` anterior não tinha o
+  `bridgemusic.cpp` (o glob é avaliado na configuração).
+
+**Custo: `renderToBridgeJson` contra `renderToMusicJson` (20 hinos da lista do M01, 7 cargas novas por hino e operação)**
+
+| Hino | `renderToBridgeJson` (ms, mediana) | `renderToMusicJson` (ms, mediana) |
+| --- | --- | --- |
+| 001 | 115,5 | 36,5 |
+| 213 | 206,4 | 37,8 |
+| 248 | 171,9 | 59,7 |
+| 458 | 142,5 | 25,3 |
+
+Os 20 hinos (mediana das medianas; média das médias): `renderToBridgeJson` **175,3** ms (177,2;
+faixa 102 a 303); `renderToMusicJson` **43,2** ms (44,1; faixa 25 a 60). Razão de ~4x.
+
+- Alvo ≤ 50 ms: **atingido na mediana** (43 ms), **não em todos os hinos**: 15 de 20 ficam ≤ 50 ms;
+  passam 248 (60), 036 (57), 011 (57), 033 (55) e 031 (51).
+- Motivo medido: a primeira chamada de `renderToTimemap` na carga (que dispara `SetMidiDoc`, o
+  reexport e a reimportação do MEI expandido) é 37,7 ms de mediana; o resto da chamada
+  (MIDI, `pitchpos`, `music`) leva ~4,5 ms. Não foi otimizado (fora do passo). A alavanca é o
+  `SetMidiDoc`; rever no M07.
+- Medição feita com o `libverovio.so` deste passo, no mesmo ambiente das duas chamadas. O número
+  do M01 (157 ms de `renderToBridgeJson`) foi tirado em outra sessão; não é comparável diretamente.
+
+**Quebras e ressalvas**
+
+- **`getElementAttr`**: a função Dart passa a ter um argumento (`getElementAttr(String xmlId)`,
+  batendo com `vrvToolkit_getElementAttr(tk, xmlId)`). **Quebra** para quem chama com dois
+  (o `zywny`, que o M08 registra). Chamadores neste repositório: nenhum (`grep -rn getElementAttr
+  verovio/bindings compare`; `score_bridge` não está aqui, ver R-SCORE_BRIDGE).
+- **Defeito pré-existente (fora do escopo, não tocado)**: o HEAD (`386ee76`) derruba com SIGSEGV o
+  `-t vsb` de `Chopin_Mazurka_Op6_No1.mei` com `--breaks line`, e de seu MEI page-based
+  (`-t mei-pb`). A chamada nova não passa por esse caminho de layout no MEI page-based (sem corte,
+  `loc` sai `null`), e não foi testada com `--breaks line` na Mazurka.
+- **R-PARTES, R-TRINADO e R1 (`grace`)**: nada mudou neste passo.
+- **Ressalva do M06**: `score_bridge` não está neste repositório; o parser de `renderToMusicJson` (raiz
+  com `timemap`/`midi`/`pitchpos`/`music` opcionais, `loc` e `acc` `null` sem corte) não foi
+  testado aqui.
+
+**Passo M05:** concluído com ressalva (ver acima: `loc`/`acc` nulos sem corte, decisão de
+implementação a confirmar; alvo de 50 ms atingido na mediana e não em 5 de 20 hinos).

@@ -500,6 +500,28 @@ public:
     bool RenderToBridgeJsonFile(const std::string &filename, int fromPage = 1, int toPage = -1);
 
     /**
+     * Render the notated structure of the document without drawing it (`renderToMusicJson` in the
+     * bindings, §2.10, M05): one JSON object with `timemap`, `midi`, `pitchpos` and `music`, the same
+     * bodies and ids as RenderToBridgeJson of the same load, and no layout. Nothing is laid out or
+     * selected: the Doc is read as it is after LoadData. `pitchpos` takes `loc` and `acc` from the layout,
+     * so they are written as null when the layout was not computed at load (`--breaks none`, page-based
+     * MEI); see §2.8.
+     *
+     * @return The JSON object as a string
+     */
+    std::string RenderToMusicJson();
+
+    /**
+     * Render RenderToMusicJson's document and save it to a file.
+     *
+     * @remark nojs
+     *
+     * @param filename The output filename
+     * @return True if the file was successfully written
+     */
+    bool RenderToMusicJsonFile(const std::string &filename);
+
+    /**
      * Render the whole document to the `.vsb` package (`-t vsb`): a zip archive with
      * manifest.json, scene.json and glyphs.json, plus timemap.json when the piece produces one
      * (docs/formato/especificacao-v1.md §2 - a piece with no usable rhythmic information omits
@@ -936,8 +958,11 @@ private:
      * The pages must already have been rendered/laid out, and the Doc must not be Select()ed: call
      * it right after RenderPagesToBridge, before RenderAlternatesToBridge. `midiLog` supplies the
      * shifts (RenderMidiEventLog). Empty when `--no-vsb-pitchpos`.
+     *
+     * `withLayout` false (RenderToMusicJson, M05) leaves out `loc` and `acc`, the only fields the layout
+     * provides; the pages are not laid out for it.
      */
-    BridgePitchPos RenderPitchPos(int firstPage, int lastPage, const MIDIEventLog &midiLog);
+    BridgePitchPos RenderPitchPos(int firstPage, int lastPage, const MIDIEventLog &midiLog, bool withLayout = true);
 
     /**
      * Measure id -> 0-based position in document order (`m_doc.FindAllDescendantsByType(MEASURE,
@@ -998,6 +1023,13 @@ private:
     Doc *m_midiDoc;
 
     Options *m_options;
+
+    /**
+     * True when LoadData cast the document off (any `--breaks` but none, and not a page-based MEI), so
+     * the pages already carry the layout that `pitchpos`'s `loc` and `acc` come from (M05). LoadData
+     * sets it at the cast-off decision.
+     */
+    bool m_layoutAtLoad;
 
     /**
      * The document exactly as passed to LoadData (docs/formato/especificacao-v1.md §2.6, debug

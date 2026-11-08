@@ -49,6 +49,7 @@ toolkit.setOutputTo('vsb'); // before loadFile: see note below
 toolkit.loadFile('score.mei');
 toolkit.renderToBridgeFile('score.vsb');  // whole score as a package, -t vsb
 final json = toolkit.renderToBridgeJson(); // every page as one JSON, -t vsb-json
+final music = toolkit.renderToMusicJson(); // notated structure only: timemap, midi, pitchpos, music; no layout
 toolkit.dispose();
 ```
 

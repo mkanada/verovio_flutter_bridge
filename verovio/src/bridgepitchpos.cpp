@@ -167,10 +167,12 @@ namespace {
 
 } // namespace
 
-BridgePitchPos BridgePitchPosBuilder::Build(Doc *doc, int firstPage, int lastPage, const MIDIEventLog &midiLog)
+BridgePitchPos BridgePitchPosBuilder::Build(
+    Doc *doc, int firstPage, int lastPage, const MIDIEventLog &midiLog, bool withLayout)
 {
     assert(doc);
     BridgePitchPos result;
+    result.layout = withLayout;
 
     // Shift by id. The first pass carries the notated id, later passes `<id>-rend<N>`; the notation
     // context is the same in every pass, so a pass that disagrees with the first one is a bug.
@@ -201,6 +203,8 @@ BridgePitchPos BridgePitchPosBuilder::Build(Doc *doc, int firstPage, int lastPag
             // Written accidentals of the measure, by the staff they are drawn on
             std::map<const Staff *, std::vector<WrittenAccid>> written;
             for (Object *object : elements) {
+                // Without layout there is no alignment column to place the accidentals in (M05)
+                if (!withLayout) break;
                 if (!object->Is(NOTE)) continue;
                 Note *note = vrv_cast<Note *>(object);
                 if (!IsPitched(note)) continue;
@@ -258,7 +262,7 @@ BridgePitchPos BridgePitchPosBuilder::Build(Doc *doc, int firstPage, int lastPag
                 if (note) {
                     event.pname = note->GetPname();
                     event.oct = NoteOct(note);
-                    event.loc = note->GetDrawingLoc();
+                    if (withLayout) event.loc = note->GetDrawingLoc();
                     // The sounding alteration, exactly what Note::GetMIDIPitch applies (accid.ges over
                     // accid, else none): the Verovio never applies the key signature by itself - the
                     // importers write accid.ges on the notes the key signature alters.

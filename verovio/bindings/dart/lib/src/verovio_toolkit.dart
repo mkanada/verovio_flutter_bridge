@@ -133,11 +133,10 @@ class VerovioToolkit {
       using((arena) => _fromUtf8(_bindings.getDescriptiveFeatures(
           _tk, options.toNativeUtf8(allocator: arena))));
 
-  String getElementAttr(String element, String attribute) =>
-      using((arena) => _fromUtf8(_bindings.getElementAttr(
-          _tk,
-          element.toNativeUtf8(allocator: arena),
-          attribute.toNativeUtf8(allocator: arena))));
+  /// The attributes of one element, as JSON (`{"n": "1"}` for a `measure`, `staff` or `layer`, ...),
+  /// by its xml:id. Takes one argument: the C function is `vrvToolkit_getElementAttr(tk, xmlId)`.
+  String getElementAttr(String xmlId) => using((arena) => _fromUtf8(
+      _bindings.getElementAttr(_tk, xmlId.toNativeUtf8(allocator: arena))));
 
   String getElementsAtTime(int millisec) =>
       _fromUtf8(_bindings.getElementsAtTime(_tk, millisec));
@@ -253,6 +252,14 @@ class VerovioToolkit {
 
   bool renderToMIDIFile(String filename) => using((arena) =>
       _bindings.renderToMIDIFile(_tk, filename.toNativeUtf8(allocator: arena)));
+
+  /// The notated structure of the document as one JSON object, with no layout and no drawing:
+  /// `timemap`, `midi`, `pitchpos` and `music` (docs/formato/especificacao-v1.md §2.10). The ids are
+  /// the same as `renderToBridgeJson` gives for the same load. `loc` and `acc` of `pitchpos` are null
+  /// when the document was not cast off at load (`--breaks none`, a page-based MEI; §2.8).
+  ///
+  /// Call `setOutputTo('vsb-json')` before `loadFile`/`loadData`, as for `renderToBridgeJson`.
+  String renderToMusicJson() => _fromUtf8(_bindings.renderToMusicJson(_tk));
 
   String renderToPAE() => _fromUtf8(_bindings.renderToPAE(_tk));
 

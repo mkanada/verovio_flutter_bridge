@@ -89,12 +89,49 @@ struct BridgeMusicTempo {
     std::string text; // "" = null
 };
 
+struct BridgeMusicDegree {
+    int value = 0;
+    int alter = 0;
+    std::string type; // "add", "alter" or "subtract"
+};
+
+// One <harmony> (§2.9, rule 7). The structured fields come from the MusicXML (HarmData); a MEI source has
+// none of them, so they stay empty and `text` is the only one set. rootAlter is null when root is; bassAlter
+// is null when bass is.
+struct BridgeMusicHarmony {
+    std::string id;
+    int measure = 0; // index of the measure
+    int staff = 1;
+    double tstamp = 1.0;
+    std::string root; // "" = null (a numeral has no root)
+    int rootAlter = 0;
+    std::string kind; // "" = null
+    std::string kindText; // "" = null
+    std::string bass; // "" = null
+    int bassAlter = 0;
+    std::vector<BridgeMusicDegree> degrees;
+    std::string numeralRoot; // "" = no numeral
+    int numeralAlter = 0;
+    std::string text; // what the Verovio draws; never empty
+};
+
+// One <direction> with words (§2.9, rule 8). `place` is "above", "below" or "" (null).
+struct BridgeMusicDirection {
+    std::string id;
+    int measure = 0; // index of the measure
+    int staff = 1;
+    double tstamp = 1.0;
+    std::string place;
+    std::string text; // the words, joined in document order; never empty
+};
+
 // The notated musical structure of a document (docs/formato/especificacao-v1.md §2.9, music.json).
-// harmonies and directions are filled by M04; until then the writer emits them empty.
 struct BridgeMusic {
     std::vector<BridgeMusicPart> parts;
     std::vector<BridgeMusicMeasure> measures;
     std::vector<BridgeMusicOrnament> ornaments;
+    std::vector<BridgeMusicHarmony> harmonies;
+    std::vector<BridgeMusicDirection> directions;
     std::vector<BridgeMusicTempo> tempi;
 
     // The caller omits music.json when there is no measure (same rule as the other documents).

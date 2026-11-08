@@ -658,7 +658,9 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
      que é o `@staff` do `harm`. O MusicXML não traz pauta em `<harmony>` (nenhum
      `<harmony>` do corpus tem `<staff>`). Medido: em todas as cifras dos arquivos
      com fonte MusicXML do M01, a pauta do `harm` é a única pauta da parte. Em
-     parte de duas pautas, a regra não foi medida no corpus (ressalva R2).
+     parte de duas pautas, a regra não foi medida no corpus (ressalva R2). Um
+     `harm` sem `@staff` (MEI que não o traz) sai com a primeira pauta do compasso
+     (M04; o schema exige um inteiro).
    - `root` e `rootAlter`: `root/root-step` e `root/root-alter` (inteiro; `0`
      quando o elemento falta). `null` quando não há raiz (numeral, abaixo).
    - `kind`: o texto de `<kind>`, **sem tradução** (`"major-seventh"`,
@@ -682,12 +684,18 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
      incompleta (o M01 não encontrou esse caso no corpus).
    - De um MEI, onde só há o texto, os campos estruturados saem `null` (com
      `degrees: []`) e `text` vale.
+   - **Fica fora (M04):** o `harm` com `fb` (cifra de baixo cifrado, do
+     `<figured-bass>` do MusicXML) não é `<harmony>`; e a cifra sem `@tstamp` ou
+     fora de compasso sai com aviso, como o trinado sem `@startid`.
+   - `text` sai do `Doc` (o `Harm` que o desenho usa), não do MEI, então é o texto
+     exato que o Verovio desenha; o bemol sai como `♭` (U+266D).
 8. **`directions`**: uma por `<direction>` com `<words>` que o importador grava
    como `dir`.
    - `text`: o texto de `<words>` **cru** (sem formatação), concatenado na ordem do
-     documento, sem separador (como o desenho junta, `TextRendition`). Até o M04,
-     `<words>` com formatação (`rend`) pode sair partido no MEI: a regra do M04 é
-     que o texto chegue inteiro.
+     documento, sem separador (como o desenho junta, `TextRendition`). Sai do `Doc`
+     (M04), então `<words>` com formatação (`rend`) chega inteiro, sem o espaço de
+     indentação que o MEI pode ter em volta do `<rend>`. Um `dir` sem texto (coda,
+     segno) não entra.
    - `place`: `"above"` ou `"below"` (`@placement` da fonte); `null` sem ele.
    - `staff`: a pauta que o importador dá ao `dir` (o `<staff>` da `<direction>`,
      senão a primeira pauta da parte). `measure` e `tstamp` como nas cifras.
@@ -1779,3 +1787,4 @@ fermata ficam; nota ligada a um compasso visível continua visível lá.
 | 2026-11-04 | G08c (nota escondida, referência e prova): **§11** corrigida onde a medição contradisse o texto de G08a — regra 3 passa a contar a **pausa deslocada** entre as donas do traço (o traço fundido com o dela fica); regra 6 troca `dur ≥ 2` por `dur ≤ 2` (era numericamente trocado), declara `n ≠ 5` sem pausa, a largura do glifo no cálculo do ponto é **truncada** (o Verovio usa `int`) e o `x` da pausa é o da cabeça por definição; regra 2 registra o `beamSpan` como limitação; §11.1 preenchida com os dois exemplos do hino 010. Medido: 7 381 traços, 0 sem dona, 0 com donas de colunas diferentes (D-SUM-NATIVO: sem dado novo na cena); 855 pausas de verdade e 840 colunas trocadas por pausa dentro do Verovio, 0 divergências de glifo/`y`/escala/pontos. Referência `hide_ref.py`, varredura `g08c-sweep.py`, oráculo `hide_oracle.py`, 11 vetores em `docs/formato/sumico/vetores.json`. Sem mudança no formato (`version` continua `1`). |
 | 2026-11-04 | G11 (esconder um compasso inteiro, D-SUM-COMPASSO = campo no formato, decisão do usuário): **`measure.inner`** (§5.1) — `[x0, x1]`, a faixa em que o Verovio centra a pausa de compasso (`GetDrawingX() + GetLeftBarLineRight()` e `+ GetRightBarLineLeft()`), gravado em todo nó `measure` (aditivo, `version` continua `1`; leitor antigo ignora); **§11.2, regra 8** (normativa): pausa de compasso substituta (glifo `E4E3`, `x` do centro de `inner`, `y` da regra da semibreve, sem pontos), o que some com o compasso (notas, pausas de verdade em pauta que tem nota, tercina, ligaduras de prolongamento/expressão, arpejo e `beamSpan` pelo dono = compassos que tocam), o que fica, e a classificação por ocorrências em 70 partituras. Provado: 5 170 pausas desenhadas pelo Verovio com 0 divergências de `x`, `y`, glifo e escala; 124 páginas, 1 517 compassos escondidos, 0 vazamentos. Sem o campo, o `x` de um compasso com cabeçalho errava até 1,4 unidade (até 18 por pauta). Exige refazer a `libverovio` (Linux, Android, Web). Schema (`measure.inner`) e 15 casos novos em `vetores.json` (`casosCompasso`). |
 | 2026-11-08 | M02 (`music.json`, §2.9, novo; ver M00): arquivo opcional com a estrutura da partitura notada, sem geometria — partes, compassos (`n`, casas, barras, fórmula, armadura e modo), pautas, camadas e eventos (nota, pausa, `mr`, acorde, apojatura, quiáltera), ornamentos, cifras (`harmonies`), direções (`directions`) e andamentos (`tempi`). `manifest.files.music`, propriedade `music` no JSON único, `$defs/musicDocument` (e auxiliares) no schema. Aditivo: `version` continua `1`; leitor antigo ignora. §2.9 traz as ressalvas R1-R5; a R1 (a inversão de `grace` pelo importador do MusicXML) fica pendente de decisão do usuário. Fixture: `docs/formato/musica/` (`m02-entrada.musicxml` sintético + `m02-esperado.json`), conferida contra o MusicXML e o MEI com `-x 42`. |
+| 2026-11-08 | M04 (`music.json`, §2.9, regras 7 e 8; ver M00): `harmonies` e `directions` passam a sair preenchidos. A estrutura da `<harmony>` (raiz, alteração, `kind`, `kind@text`, baixo, graus, numeral) é guardada pelo importador MusicXML num `HarmData` ligado ao `harm` e lida por `ReadBridgeMusic`; o MEI não muda. `text` sai do `Doc`, então `<words>` com formatação chega inteiro. Figured bass (`fb`) fica fora de `harmonies`. Aditivo: `version` continua `1`; o schema não muda (já previa os campos). |

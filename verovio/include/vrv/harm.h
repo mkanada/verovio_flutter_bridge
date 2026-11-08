@@ -8,6 +8,11 @@
 #ifndef __VRV_HARM_H__
 #define __VRV_HARM_H__
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "controlelement.h"
 #include "textdirinterface.h"
 #include "timeinterface.h"
@@ -16,6 +21,32 @@
 namespace vrv {
 
 class TextElement;
+
+//----------------------------------------------------------------------------
+// HarmData
+//----------------------------------------------------------------------------
+
+// One <degree> of a MusicXML <harmony>. `type` is "add", "alter" or "subtract".
+struct HarmDegree {
+    int value = 0;
+    int alter = 0;
+    std::string type;
+};
+
+// The structure of a MusicXML <harmony> (D-MUSICA-CIFRA, docs/plano/M00-dados-musicais-para-o-aprendizado.md).
+// Only MusicXmlInput::ReadMusicXmlHarmony sets it; the drawn text does not read it, so the MEI export does
+// not change. "" means absent (for the strings) and 0 means absent (for the alterations).
+struct HarmData {
+    std::string root; // root-step
+    int rootAlter = 0; // root-alter, in semitones
+    std::string kind; // text of <kind>
+    std::string kindText; // kind/@text
+    std::string bass; // bass-step
+    int bassAlter = 0; // bass-alter
+    std::vector<HarmDegree> degrees;
+    std::string numeralRoot; // numeral-root (its @text, if any, else its text); only when there is no root
+    int numeralAlter = 0; // numeral-alter
+};
 
 //----------------------------------------------------------------------------
 // Harm (harmony)
@@ -75,6 +106,13 @@ public:
     bool GetBassPitch(TransPitch &pitch) const;
     void SetBassPitch(const TransPitch &pitch);
 
+    /**
+     * The MusicXML structure of the harmony, or NULL (a MEI harm, or a figured bass line).
+     * Shared between copies: Clone() is a shallow copy.
+     */
+    const HarmData *GetHarmData() const { return m_harmData.get(); }
+    void SetHarmData(std::shared_ptr<const HarmData> harmData) { m_harmData = std::move(harmData); }
+
     //----------//
     // Functors //
     //----------//
@@ -96,7 +134,7 @@ private:
 public:
     //
 private:
-    //
+    std::shared_ptr<const HarmData> m_harmData;
 };
 
 } // namespace vrv

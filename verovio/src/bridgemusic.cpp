@@ -18,10 +18,12 @@
 #include "attconverter.h"
 #include "chord.h"
 #include "comparison.h"
+#include "dir.h"
 #include "doc.h"
 #include "durationinterface.h"
 #include "ending.h"
 #include "gracegrp.h"
+#include "harm.h"
 #include "keysig.h"
 #include "label.h"
 #include "layer.h"
@@ -428,6 +430,54 @@ namespace {
         return startid;
     }
 
+    //------------------------------------------------------------------------
+    // Harmonies and directions
+    //------------------------------------------------------------------------
+
+    // "above", "below" or "" (null): the @place of a control element
+    std::string PlaceText(data_STAFFREL place)
+    {
+        if (place == STAFFREL_above) return "above";
+        if (place == STAFFREL_below) return "below";
+        return "";
+    }
+
+    // The first staff of a control element's @staff; a MEI element may have none, then the measure's first staff
+    int StaffOf(const xsdPositiveInteger_List &staves, int fallback)
+    {
+        if (!staves.empty()) return staves.front();
+        return std::max(1, fallback);
+    }
+
+    // The structure the MusicXML gave the harmony (HarmData), and the text the Verovio draws
+    BridgeMusicHarmony HarmonyOf(const Harm *harm, int measure, int staff)
+    {
+        BridgeMusicHarmony out;
+        out.id = harm->GetID();
+        out.measure = measure;
+        out.staff = staff;
+        out.tstamp = harm->GetTstamp();
+        out.text = PlainText(harm);
+        if (const HarmData *data = harm->GetHarmData()) {
+            out.root = data->root;
+            out.rootAlter = data->rootAlter;
+            out.kind = data->kind;
+            out.kindText = data->kindText;
+            out.bass = data->bass;
+            out.bassAlter = data->bassAlter;
+            for (const HarmDegree &degree : data->degrees) {
+                BridgeMusicDegree entry;
+                entry.value = degree.value;
+                entry.alter = degree.alter;
+                entry.type = degree.type;
+                out.degrees.push_back(entry);
+            }
+            out.numeralRoot = data->numeralRoot;
+            out.numeralAlter = data->numeralAlter;
+        }
+        return out;
+    }
+
 } // namespace
 
 BridgeMusic ReadBridgeMusic(Doc &doc)
@@ -445,7 +495,7 @@ BridgeMusic ReadBridgeMusic(Doc &doc)
     // Everything else, in document order: a measure precedes its changes, layers and controls, and a
     // scoreDef of a section precedes the measures after it.
     ClassIdsComparison comparison(
-        { SCOREDEF, STAFFDEF, STAFF, MEASURE, KEYSIG, METERSIG, TRILL, MORDENT, TURN, TEMPO });
+        { SCOREDEF, STAFFDEF, STAFF, MEASURE, KEYSIG, METERSIG, TRILL, MORDENT, TURN, TEMPO, HARM, DIR });
     ListOfObjects objects;
     doc.FindAllDescendantsByComparison(&objects, &comparison);
 
@@ -515,6 +565,50 @@ BridgeMusic ReadBridgeMusic(Doc &doc)
             entry.bpm = tempo->HasMidiBpm() ? tempo->GetMidiBpm() : 0.0;
             entry.text = PlainText(tempo);
             music.tempi.push_back(entry);
+        }
+        else if (object->Is(HARM)) {
+            const Harm *harm = vrv_cast<const Harm *>(object);
+            // A figured bass (<figured-bass>) is a Harm too, with F elements instead of a text: not a <harmony>
+            if (harm->FindDescendantByType(FB)) continue;
+            const Object *measureObject = object->GetFirstAncestor(MEASURE);
+            const auto indexIt = measureObject ? measureIndex.find(measureObject) : measureIndex.end();
+            if (indexIt == measureIndex.end()) {
+                LogWarning("music: harmony %s is outside a measure, left out of music.json", harm->GetID().c_str());
+                continue;
+            }
+            if (PlainText(harm).empty() || (harm->GetTstamp() < 1.0)) {
+                LogWarning("music: harmony %s has no text or no @tstamp, left out of music.json",
+                    harm->GetID().c_str());
+                continue;
+            }
+            const Measure *measure = vrv_cast<const Measure *>(measureObject);
+            const int staff = StaffOf(harm->GetStaff(), FirstStaffOf(measure, state));
+            music.harmonies.push_back(HarmonyOf(harm, indexIt->second, staff));
+        }
+        else if (object->Is(DIR)) {
+            const Dir *dir = vrv_cast<const Dir *>(object);
+            // A coda or a segno without words has no text: it is not a direction (§2.9, rule 8)
+            const std::string text = PlainText(dir);
+            if (text.empty()) continue;
+            const Object *measureObject = object->GetFirstAncestor(MEASURE);
+            const auto indexIt = measureObject ? measureIndex.find(measureObject) : measureIndex.end();
+            if (indexIt == measureIndex.end()) {
+                LogWarning("music: direction %s is outside a measure, left out of music.json", dir->GetID().c_str());
+                continue;
+            }
+            if (dir->GetTstamp() < 1.0) {
+                LogWarning("music: direction %s has no @tstamp, left out of music.json", dir->GetID().c_str());
+                continue;
+            }
+            const Measure *measure = vrv_cast<const Measure *>(measureObject);
+            BridgeMusicDirection entry;
+            entry.id = dir->GetID();
+            entry.measure = indexIt->second;
+            entry.staff = StaffOf(dir->GetStaff(), FirstStaffOf(measure, state));
+            entry.tstamp = dir->GetTstamp();
+            entry.place = PlaceText(dir->GetPlace());
+            entry.text = text;
+            music.directions.push_back(entry);
         }
     }
 

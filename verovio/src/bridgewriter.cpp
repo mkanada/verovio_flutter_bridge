@@ -924,6 +924,46 @@ namespace {
         out += "]}";
     }
 
+    void AppendHarmony(std::string &out, const BridgeMusicHarmony &harmony)
+    {
+        out += "{\"id\":\"" + EscapeJsonString(harmony.id) + "\"";
+        out += ",\"measure\":" + std::to_string(harmony.measure);
+        out += ",\"staff\":" + std::to_string(harmony.staff);
+        out += ",\"tstamp\":" + FormatNumber(harmony.tstamp);
+        out += ",\"root\":" + NullableString(harmony.root);
+        out += ",\"rootAlter\":" + (harmony.root.empty() ? std::string("null") : std::to_string(harmony.rootAlter));
+        out += ",\"kind\":" + NullableString(harmony.kind);
+        out += ",\"kindText\":" + NullableString(harmony.kindText);
+        out += ",\"bass\":" + NullableString(harmony.bass);
+        out += ",\"bassAlter\":" + (harmony.bass.empty() ? std::string("null") : std::to_string(harmony.bassAlter));
+        out += ",\"degrees\":[";
+        for (std::size_t d = 0; d < harmony.degrees.size(); ++d) {
+            if (d) out += ',';
+            const BridgeMusicDegree &degree = harmony.degrees[d];
+            out += "{\"value\":" + std::to_string(degree.value) + ",\"alter\":" + std::to_string(degree.alter);
+            out += ",\"type\":\"" + EscapeJsonString(degree.type) + "\"}";
+        }
+        out += "],\"numeral\":";
+        if (harmony.numeralRoot.empty()) {
+            out += "null";
+        }
+        else {
+            out += "{\"root\":\"" + EscapeJsonString(harmony.numeralRoot) + "\"";
+            out += ",\"alter\":" + std::to_string(harmony.numeralAlter) + "}";
+        }
+        out += ",\"text\":\"" + EscapeJsonString(harmony.text) + "\"}";
+    }
+
+    void AppendDirection(std::string &out, const BridgeMusicDirection &direction)
+    {
+        out += "{\"id\":\"" + EscapeJsonString(direction.id) + "\"";
+        out += ",\"measure\":" + std::to_string(direction.measure);
+        out += ",\"staff\":" + std::to_string(direction.staff);
+        out += ",\"tstamp\":" + FormatNumber(direction.tstamp);
+        out += ",\"place\":" + NullableString(direction.place);
+        out += ",\"text\":\"" + EscapeJsonString(direction.text) + "\"}";
+    }
+
 } // namespace
 
 std::string BridgeWriter::WriteMusic(const BridgeMusic &music)
@@ -953,8 +993,17 @@ std::string BridgeWriter::WriteMusic(const BridgeMusic &music)
         out += ",\"kind\":\"" + ornament.kind + "\"";
         out += ",\"startid\":\"" + EscapeJsonString(ornament.startid) + "\"}";
     }
-    // harmonies and directions come with M04; the schema requires the keys already
-    out += "],\"harmonies\":[],\"directions\":[],\"tempi\":[";
+    out += "],\"harmonies\":[";
+    for (std::size_t h = 0; h < music.harmonies.size(); ++h) {
+        if (h) out += ',';
+        AppendHarmony(out, music.harmonies[h]);
+    }
+    out += "],\"directions\":[";
+    for (std::size_t d = 0; d < music.directions.size(); ++d) {
+        if (d) out += ',';
+        AppendDirection(out, music.directions[d]);
+    }
+    out += "],\"tempi\":[";
     for (std::size_t t = 0; t < music.tempi.size(); ++t) {
         if (t) out += ',';
         const BridgeMusicTempo &tempo = music.tempi[t];

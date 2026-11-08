@@ -2862,6 +2862,34 @@ void MusicXmlInput::ReadMusicXmlHarmony(pugi::xml_node node, Measure *measure)
 
     int durOffset = 0;
 
+    // The structure of the harmony, kept on the Harm for music.json (D-MUSICA-CIFRA); the text below does not read it
+    auto data = std::make_shared<HarmData>();
+    data->root = GetContentOfChild(node, "root/root-step");
+    data->rootAlter = node.child("root").child("root-alter").text().as_int();
+    pugi::xml_node numeralNode = node.child("numeral");
+    if (data->root.empty() && numeralNode) {
+        pugi::xml_node numeralRoot = numeralNode.child("numeral-root");
+        data->numeralRoot = numeralRoot.attribute("text") ? numeralRoot.attribute("text").as_string()
+                                                          : numeralRoot.text().as_string();
+        data->numeralAlter = numeralNode.child("numeral-alter").text().as_int();
+    }
+    if (pugi::xml_node kindNode = node.child("kind")) {
+        data->kind = GetContent(kindNode);
+        data->kindText = kindNode.attribute("text").as_string();
+    }
+    if (pugi::xml_node bassNode = node.child("bass")) {
+        data->bass = bassNode.child("bass-step").text().as_string();
+        data->bassAlter = bassNode.child("bass-alter").text().as_int();
+    }
+    // degree-type is required by the MusicXML schema, so it is read as it is
+    for (pugi::xml_node degree : node.children("degree")) {
+        HarmDegree value;
+        value.value = degree.child("degree-value").text().as_int();
+        value.alter = degree.child("degree-alter").text().as_int();
+        value.type = degree.child("degree-type").text().as_string();
+        data->degrees.push_back(value);
+    }
+
     std::string harmText = GetContentOfChild(node, "root/root-step");
     pugi::xpath_node alter = node.select_node("root/root-alter");
     if (harmText.empty()) {
@@ -2890,6 +2918,7 @@ void MusicXmlInput::ReadMusicXmlHarmony(pugi::xml_node node, Measure *measure)
             + ConvertAlterToSymbol(bass.child("bass-alter").text().as_string());
     }
     Harm *harm = new Harm();
+    harm->SetHarmData(data);
     Text *text = new Text();
     text->SetText(UTF8to32(harmText));
     harm->SetPlace(harm->AttPlacementRelStaff::StrToStaffrel(node.attribute("placement").as_string()));

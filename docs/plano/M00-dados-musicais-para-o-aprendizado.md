@@ -331,7 +331,7 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | M01 | **Medir** os fatos (decisões já tomadas, ver "Decisões necessárias"): o que o `Doc` notado tem (`Harm`, `Dir`, `KeySig::mode`, `layer n` = voz, id da parte), custo de `RenderToMusicJson` sem layout | — | concluído com ressalva: células de Chopin e Debussy só parcialmente explicadas (notas invisíveis), ver "Notas de execução" |
 | M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (inversão de `grace` pelo importador, decisão do usuário pendente), ver "Notas de execução" |
 | M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | concluído com ressalva: R-PARTES e R-TRINADO (decisão do usuário), `score_bridge` sem teste (fonte fora do repositório), ver "Notas de execução" |
-| M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | pendente |
+| M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | concluído com ressalva: R2 (pauta de cifra em parte de duas pautas) sem caso no corpus; `numeral` só no caso sintético; alteração fracionária truncada (nenhuma no corpus); ver "Notas de execução" |
 | M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | pendente |
 | M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | pendente |
 | M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | pendente |
@@ -740,3 +740,44 @@ Desvios e ressalvas:
   li o parser Dart: o campo extra `music` no pacote não foi verificado do lado do leitor.
   Fechar quando o pacote estiver disponível.
 - **Camadas vazias**: 12 (2 no Clair de Lune, 10 na Gymnopédie), saem com `"events": []`.
+
+**2026-11-08: M04 executado (C++: cifras e direções no `music.json`)**
+
+Entregas:
+
+- `verovio/include/vrv/harm.h`: `HarmDegree` e `HarmData` (a estrutura da `<harmony>`) e `Harm::SetHarmData`/`GetHarmData`, com `std::shared_ptr<const HarmData>` (sobrevive a `Harm::Clone()`, que é cópia rasa). Sem atributo MEI. A tabela lateral do `Doc` não foi preciso (D-MUSICA-CIFRA).
+- `MusicXmlInput::ReadMusicXmlHarmony` (`iomusxml.cpp`) preenche o `HarmData` ao lado do texto, que não mudou. Só o importador MusicXML preenche: o `harm` de MEI fica sem.
+- `verovio/include/vrv/bridgemusic.h` e `src/bridgemusic.cpp`: `BridgeMusicHarmony`, `BridgeMusicDirection`; `ReadBridgeMusic` acrescenta `HARM` e `DIR` ao percurso que já fazia (ordem do documento, depois do compasso). `bridgewriter.cpp`: `AppendHarmony`/`AppendDirection` em `WriteMusic`.
+- Onde o percurso acha as cifras e as direções: `HARM` e `DIR` são filhos do `Measure` também depois do cast-off (como `TEMPO`), então o percurso sobre o `Doc` alcança as páginas. Nada de `View`, `getMEI` nem SVG mudou.
+
+Desvios em relação ao M00:
+
+- `staff` de um `harm` sem `@staff` (MEI que não o traz): a primeira pauta do compasso, porque o schema exige inteiro. Não estava no M00; a spec (§2.9, regra 7) registra.
+- O `<figured-bass>` do MusicXML também vira `Harm` no importador (com `Fb`, sem texto de cifra). Não é `<harmony>`: fica fora de `harmonies`. Medido no caso sintético: o MEI tem o `harm` com `fb`, e `harmonies` tem só as cifras.
+- Cifra sem `@tstamp`, sem texto ou fora de compasso, e direção fora de compasso: saem com aviso, como o trinado sem `@startid` (R-TRINADO). Nenhum caso no corpus.
+- Direção sem texto (coda, segno) não entra em `directions`.
+- A reavaliação de R1 que o coordenador cita ("premissa refutada") não está registrada nestes documentos. Este passo não tocou `grace`; a §2.9 (R1) e o M02 continuam como pendentes, para atualização pelo coordenador.
+
+Linha de base e aceite (saídas em `compare/out/m04-base/` e `compare/out/m04-new/`, git-ignoradas):
+
+- Linha de base com o binário do HEAD `680cb1d`, antes de editar: 72 pacotes (lista do M03), 0 falhas. Depois: 72 pacotes, 0 falhas.
+- Comparação arquivo a arquivo (650 arquivos: `getmei`, páginas SVG e os JSON do pacote): **só `vsb/music.json` difere, em 10 pacotes**. `manifest.json` igual em 72 de 72. Dentro de `music.json`, só `harmonies` e `directions` mudam: os demais campos são iguais em 72 de 72.
+  - `harmonies`: `h010` 0 → 52, `h056` 0 → 45, fixture 0 → 2.
+  - `directions`: Chopin Étude 0 → 29, Mazurka 0 → 10, Nocturne 0 → 21, Clair de Lune 0 → 5, Gymnopédie 0 → 1, r08 0 → 2, r09 0 → 4, fixture 0 → 1.
+  - `getmei`, SVG, `timemap`, `midi`, `pitchpos`, `scene`, `glyphs`, `alternates` e `meta`: nenhuma diferença.
+- Fixture: o bloco `music` inteiro é igual por valor a `m02-esperado.json` (os 7 campos). O esperado não precisou de correção.
+- Conferência independente (script de fora do repositório): os 99 `<harmony>` dos MusicXML do corpus viram 99 `harmonies`; a estrutura (raiz, alteração, `kind`, `kind@text`, baixo, graus) confere como multiconjunto; ids, texto, pauta, `tstamp` e compasso batem com o `getmei.mei` do mesmo binário (72 pacotes, 0 divergências); os textos de `<words>` dos MusicXML batem com `directions` pela regra do importador (multiconjunto, 34 textos); os `music.json` de origem MEI não têm campo estruturado.
+- Schema: 72 de 72 `music.json` válidos em `$defs/musicDocument`.
+- Texto desenhado: a fixture desenha `CMaj7`, `chg` e `G7(` + U+EA64 (glifo de bemol da fonte Leipzig) + `9)/B`; `harmonies` traz `G7(♭9)/B` com U+266D, o mesmo bemol.
+- Caso sintético fora do corpus (numeral com alteração, `<figured-bass>`, `<words>` extra): numeral `{"root": "V", "alter": -1}`, `root` e `rootAlter` `null`, `text` `V♭7`; o figured bass fica fora.
+- Build: sem aviso novo (os 6 avisos de `stl_algobase.h` já existiam).
+
+Ressalvas abertas:
+
+- **R2** (pauta de cifra em parte de duas pautas): sem caso no corpus.
+- **R4** (`numeral`): só o caso sintético acima; o M07 traz fixture real.
+- `root-alter`, `bass-alter` e `degree-alter` são lidos com `as_int`: uma alteração fracionária (quarto de tom) sai truncada. Nenhuma no corpus (medido: todos inteiros).
+- `degree-type` sai como vem (o MusicXML exige o elemento).
+- `<words>` com quebra de linha perde a quebra em `text` (a §2.9 manda concatenar sem separador, como `TextRendition` desenha).
+
+Passo M04: concluído com ressalva (R2, R4 e a alteração fracionária, acima).

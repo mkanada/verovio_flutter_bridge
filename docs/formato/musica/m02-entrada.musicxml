@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<!--
+  M02 (music.json): fixture sintetica, pequena, feita para cobrir os itens do
+  aceite do M02 (docs/plano/M00-dados-musicais-para-o-aprendizado.md). Não é
+  partitura real. Divisões: 6 por semínima (colcheia = 3, semínima pontuada = 9).
+
+  Compassos (índice 0-based do music.json; "n" é o @number):
+    0  n="0"  anacruse (implicit), 3/4, tom de Dó maior (mode major), Andante 80
+    1  n="1"  barra de início de repetição; C maj7 (cifra); dinâmica p (fica fora)
+    2  n="2"  casa 1 (number "1"), barra de fim de repetição; apojatura de
+              acciaccatura (slash) antes de E5
+    3  n="3"  casa "2, 3" (lista); muda a armadura para Ré maior (sem mode);
+              G7 (b9)/B (cifra com kind, degree e bass)
+    4  n="4"  muda a fórmula para 4/4 (common); direção "chg"; compasso de pausa
+    5  n="5"  muda a fórmula para 2/2 (cut); barra final (light-heavy)
+  Os itens de direção/cifra e de fórmula estão marcados nos comentários abaixo.
+-->
+<score-partwise version="3.1">
+  <part-list>
+    <score-part id="P1">
+      <part-name>Piano</part-name>
+    </score-part>
+    <score-part id="P2">
+      <part-name>Canto</part-name>
+    </score-part>
+  </part-list>
+
+  <!-- ===================== P1: piano, duas pautas, pauta 1 com voz 1 e pauta 2 com vozes 5 e 6 ===================== -->
+  <part id="P1">
+    <!-- compasso 0: anacruse (implicit), 1 semínima; Andante 80 -->
+    <measure number="0" implicit="yes">
+      <attributes>
+        <divisions>6</divisions>
+        <key><fifths>0</fifths><mode>major</mode></key>
+        <time><beats>3</beats><beat-type>4</beat-type></time>
+        <staves>2</staves>
+        <clef number="1"><sign>G</sign><line>2</line></clef>
+        <clef number="2"><sign>F</sign><line>4</line></clef>
+      </attributes>
+      <direction placement="above">
+        <direction-type><words>Andante</words></direction-type>
+        <sound tempo="80"/>
+      </direction>
+      <note>
+        <pitch><step>G</step><octave>4</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <backup><duration>6</duration></backup>
+      <note>
+        <rest/><duration>6</duration><voice>5</voice><type>quarter</type><staff>2</staff>
+      </note>
+    </measure>
+
+    <!-- compasso 1: barra de início de repetição; cifra C maj7; dinâmica p (não vai a music.json) -->
+    <measure number="1">
+      <barline location="left">
+        <bar-style>heavy-light</bar-style>
+        <repeat direction="forward"/>
+      </barline>
+      <harmony>
+        <root><root-step>C</root-step></root>
+        <kind>major-seventh</kind>
+      </harmony>
+      <direction placement="below">
+        <direction-type><dynamics><p/></dynamics></direction-type>
+        <staff>1</staff>
+      </direction>
+      <!-- apojatura sem barra (appoggiatura) antes de C5 -->
+      <note>
+        <grace/>
+        <pitch><step>D</step><octave>5</octave></pitch>
+        <voice>1</voice><type>eighth</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>C</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <!-- quiáltera: três colcheias no tempo de duas (3:2) -->
+      <note>
+        <pitch><step>E</step><octave>5</octave></pitch>
+        <duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>
+        <notations><tuplet type="start" bracket="yes"/></notations>
+      </note>
+      <note>
+        <pitch><step>F</step><octave>5</octave></pitch>
+        <duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>
+      </note>
+      <note>
+        <pitch><step>G</step><octave>5</octave></pitch>
+        <duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>
+        <notations><tuplet type="stop"/></notations>
+      </note>
+      <!-- acorde C4+E4 com trinado no primeiro som -->
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><ornaments><trill-mark/></ornaments></notations>
+      </note>
+      <note>
+        <chord/>
+        <pitch><step>E</step><octave>4</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <backup><duration>18</duration></backup>
+      <!-- pauta 2: duas camadas (voz 5 e voz 6) -->
+      <note>
+        <pitch><step>C</step><octave>3</octave></pitch>
+        <duration>12</duration><voice>5</voice><type>half</type><staff>2</staff>
+      </note>
+      <note>
+        <rest/><duration>6</duration><voice>5</voice><type>quarter</type><staff>2</staff>
+      </note>
+      <backup><duration>18</duration></backup>
+      <note>
+        <rest/><duration>12</duration><voice>6</voice><type>half</type><staff>2</staff>
+      </note>
+      <note>
+        <pitch><step>E</step><octave>3</octave></pitch>
+        <duration>6</duration><voice>6</voice><type>quarter</type><staff>2</staff>
+      </note>
+    </measure>
+
+    <!-- compasso 2: casa 1 (fim da repetição); acciaccatura (slash) antes de E5 -->
+    <measure number="2">
+      <barline location="left">
+        <ending number="1" type="start">1.</ending>
+      </barline>
+      <note>
+        <grace slash="yes"/>
+        <pitch><step>D</step><octave>5</octave></pitch>
+        <voice>1</voice><type>eighth</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>E</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>F</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>G</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <backup><duration>18</duration></backup>
+      <note>
+        <pitch><step>C</step><octave>3</octave></pitch>
+        <duration>12</duration><voice>5</voice><type>half</type><staff>2</staff>
+      </note>
+      <note>
+        <pitch><step>D</step><octave>3</octave></pitch>
+        <duration>6</duration><voice>5</voice><type>quarter</type><staff>2</staff>
+      </note>
+      <barline location="right">
+        <ending number="1" type="stop"/>
+        <repeat direction="backward"/>
+      </barline>
+    </measure>
+
+    <!-- compasso 3: casa "2, 3" (lista de números); muda a armadura para Ré maior; cifra G7 (b9)/B -->
+    <measure number="3">
+      <barline location="left">
+        <ending number="2, 3" type="start">2, 3.</ending>
+      </barline>
+      <attributes>
+        <key><fifths>2</fifths></key>
+      </attributes>
+      <harmony>
+        <root><root-step>G</root-step></root>
+        <kind text="7">dominant</kind>
+        <bass><bass-step>B</bass-step></bass>
+        <degree>
+          <degree-value>9</degree-value>
+          <degree-alter>-1</degree-alter>
+          <degree-type>add</degree-type>
+        </degree>
+      </harmony>
+      <note>
+        <pitch><step>D</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>E</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>F</step><alter>1</alter><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <backup><duration>18</duration></backup>
+      <note>
+        <pitch><step>D</step><octave>3</octave></pitch>
+        <duration>12</duration><voice>5</voice><type>half</type><staff>2</staff>
+      </note>
+      <note>
+        <pitch><step>D</step><octave>3</octave></pitch>
+        <duration>6</duration><voice>5</voice><type>quarter</type><staff>2</staff>
+      </note>
+      <barline location="right">
+        <ending number="2, 3" type="discontinue"/>
+      </barline>
+    </measure>
+
+    <!-- compasso 4: muda a fórmula para 4/4 (common); direção "chg"; pausa de compasso na pauta 2 -->
+    <measure number="4">
+      <attributes>
+        <time symbol="common"><beats>4</beats><beat-type>4</beat-type></time>
+      </attributes>
+      <direction placement="above">
+        <direction-type><words>chg</words></direction-type>
+        <staff>1</staff>
+      </direction>
+      <note>
+        <pitch><step>A</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>B</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>A</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>G</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <backup><duration>24</duration></backup>
+      <note>
+        <rest measure="yes"/>
+        <duration>24</duration><voice>5</voice><type>whole</type><staff>2</staff>
+      </note>
+    </measure>
+
+    <!-- compasso 5: muda a fórmula para 2/2 (cut); barra final -->
+    <measure number="5">
+      <attributes>
+        <time symbol="cut"><beats>2</beats><beat-type>2</beat-type></time>
+      </attributes>
+      <note>
+        <pitch><step>D</step><octave>5</octave></pitch>
+        <duration>12</duration><voice>1</voice><type>half</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>A</step><octave>5</octave></pitch>
+        <duration>12</duration><voice>1</voice><type>half</type><staff>1</staff>
+      </note>
+      <backup><duration>24</duration></backup>
+      <note>
+        <pitch><step>D</step><octave>3</octave></pitch>
+        <duration>24</duration><voice>5</voice><type>whole</type><staff>2</staff>
+      </note>
+      <barline location="right">
+        <bar-style>light-heavy</bar-style>
+      </barline>
+    </measure>
+  </part>
+
+  <!-- ===================== P2: canto, uma pauta, voz 1 ===================== -->
+  <part id="P2">
+    <measure number="0" implicit="yes">
+      <attributes>
+        <divisions>6</divisions>
+        <key><fifths>0</fifths><mode>major</mode></key>
+        <time><beats>3</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <note>
+        <rest/><duration>6</duration><voice>1</voice><type>quarter</type>
+      </note>
+    </measure>
+    <measure number="1">
+      <barline location="left">
+        <bar-style>heavy-light</bar-style>
+        <repeat direction="forward"/>
+      </barline>
+      <note>
+        <pitch><step>B</step><octave>4</octave></pitch>
+        <duration>12</duration><voice>1</voice><type>half</type>
+      </note>
+      <note>
+        <rest/><duration>6</duration><voice>1</voice><type>quarter</type>
+      </note>
+    </measure>
+    <measure number="2">
+      <barline location="left">
+        <ending number="1" type="start">1.</ending>
+      </barline>
+      <note>
+        <pitch><step>C</step><octave>5</octave></pitch>
+        <duration>12</duration><voice>1</voice><type>half</type>
+      </note>
+      <note>
+        <pitch><step>D</step><octave>5</octave></pitch>
+        <duration>6</duration><voice>1</voice><type>quarter</type>
+      </note>
+      <barline location="right">
+        <ending number="1" type="stop"/>
+        <repeat direction="backward"/>
+      </barline>
+    </measure>
+    <measure number="3">
+      <barline location="left">
+        <ending number="2, 3" type="start">2, 3.</ending>
+      </barline>
+      <attributes>
+        <key><fifths>2</fifths></key>
+      </attributes>
+      <note>
+        <pitch><step>A</step><octave>5</octave></pitch>
+        <duration>12</duration><voice>1</voice><type>half</type>
+      </note>
+      <note>
+        <rest/><duration>6</duration><voice>1</voice><type>quarter</type>
+      </note>
+      <barline location="right">
+        <ending number="2, 3" type="discontinue"/>
+      </barline>
+    </measure>
+    <measure number="4">
+      <attributes>
+        <time symbol="common"><beats>4</beats><beat-type>4</beat-type></time>
+      </attributes>
+      <note>
+        <rest/><duration>12</duration><voice>1</voice><type>half</type>
+      </note>
+      <note>
+        <pitch><step>E</step><octave>5</octave></pitch>
+        <duration>12</duration><voice>1</voice><type>half</type>
+      </note>
+    </measure>
+    <measure number="5">
+      <attributes>
+        <time symbol="cut"><beats>2</beats><beat-type>2</beat-type></time>
+      </attributes>
+      <note>
+        <rest/><duration>24</duration><voice>1</voice><type>whole</type>
+      </note>
+      <barline location="right">
+        <bar-style>light-heavy</bar-style>
+      </barline>
+    </measure>
+  </part>
+</score-partwise>

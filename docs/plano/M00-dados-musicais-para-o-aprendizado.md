@@ -329,7 +329,7 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | Passo | O quê | Depende de | Estado |
 | --- | --- | --- | --- |
 | M01 | **Medir** os fatos (decisões já tomadas, ver "Decisões necessárias"): o que o `Doc` notado tem (`Harm`, `Dir`, `KeySig::mode`, `layer n` = voz, id da parte), custo de `RenderToMusicJson` sem layout | — | concluído com ressalva: células de Chopin e Debussy só parcialmente explicadas (notas invisíveis), ver "Notas de execução" |
-| M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | pendente |
+| M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (inversão de `grace` pelo importador, decisão do usuário pendente), ver "Notas de execução" |
 | M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | pendente |
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | pendente |
 | M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | pendente |
@@ -587,5 +587,77 @@ Saídas em `compare/out/m01/` (git-ignorado): `resumo.json`, `levantamento.json`
 - **`orn`** nunca apareceu nos 38 arquivos.
 
 **Passo M01:** concluído com ressalva (ver acima: as células divergentes de Chopin e Debussy só estão parcialmente explicadas; o M07 é o lugar de fechar).
+
+**2026-11-08: M02 executado (especificação, schema e fixture; sem código de produção)**
+
+Entregas: §2.9 em `docs/formato/especificacao-v1.md` (com a regra 1 a 9 deste
+arquivo corrigidas, §2.1, §2.2, §9 e histórico); `$defs/musicDocument` e
+auxiliares em `docs/formato/schema-v1.json`; fixture em `docs/formato/musica/`
+(`m02-entrada.musicxml`, sintético, duas partes, seis compassos, e
+`m02-esperado.json`). Conferência: `compare/out/m02/check_m02.py` (fora do
+repositório, em `compare/out/`), com `verovio -x 42 -t mei` para os ids.
+
+**Aceite**
+
+| Critério | Resultado |
+| --- | --- |
+| Schema valida a fixture | `jsonschema` 4.10.3, Draft 2020-12: `musicDocument` aceita `m02-esperado.json`; a raiz (`oneOf`) tem 0 erros; os três exemplos existentes (`exemplo-minimo`, `exemplo-pitchpos`, `exemplo-alternates`) continuam válidos. Sete casos negativos são rejeitados (pausa com `chord`, `grace` inválido, `version` 2, `sym` inválido, `tuplet` sem `numbase`, harmonia sem `text`, casa com campo extra). |
+| Cobertura da fixture | tabela em §2.9 ("Cobertura"), item a item: casas (compassos 1 a 3), anacruse (0), armadura (3), fórmula (4 e 5), apojatura (1), acciaccatura (2), quiáltera (1), acorde (1), duas camadas (1), cifra com `kind`, `degree` e baixo (3), `chg` (4). |
+| Confronto com o MusicXML | `check_m02.py`: eventos por (compasso, pauta, camada) com `t`, `chord`, `grace`, `tuplet`: 42 eventos, 0 divergências; fórmula e armadura vigentes em cada compasso: 0 divergências; 42 eventos na pauta e na camada que o MEI declara. |
+| Confronto com o MEI | ids dos compassos e eventos, casas, barras (`left`/`right`), harmonias (texto, pauta, `tstamp`), ornamento (`startid`), direção e andamento: 0 divergências. |
+| JSON | `json.loads` em `m02-esperado.json` e `schema-v1.json`: ok. |
+
+**Desvios e correções em relação ao M00**
+
+- **Caminho do schema.** O M00 pede `docs/formato/schema/` (`music.schema.json`),
+  mas o schema do formato é um único arquivo, `docs/formato/schema-v1.json`, com um
+  `$defs` por documento (`midiDocument`, `pitchposDocument`, `alternatesDocument`).
+  Acrescentado lá, no mesmo molde; não se criou pasta nova.
+- **`version`.** O `music.json` leva `"version": 1`, como no exemplo do M00. É o
+  único documento do pacote que repete o campo (`midi` e `pitchpos` não o têm).
+  Mantido, sem efeito sobre o leitor.
+- **Regra 3 (fórmula e armadura).** A frase "um compasso novo só repete o que mudou
+  se o leitor comparar com o anterior" era ambígua. A spec fixa: todo compasso traz
+  `meter` e `key` com os valores vigentes no começo dele.
+- **Regra 4 (eventos).** O exemplo do M00 omitia `chord`, `grace` e `tuplet` na pausa.
+  A spec fixa os cinco campos em todo evento (em pausa, `chord` `null`, `grace` `false`).
+- **Regra 4 (pauta de nota cruzada).** Fixado: a camada é a de origem (`layer n`); a
+  pauta do evento é o `@staff` do nó (ou a que o contém). O evento aparece na pauta
+  do nó, com a camada de origem.
+- **Regra 2 (`ending.n`).** O valor é o `@number` como o MEI o grava, com os espaços
+  da fonte: a fixture produz `"2, 3"`; o M01 viu `"2,3,4"` nas peças reais. A spec
+  manda o leitor separar por vírgula e tirar os espaços (R5).
+- **Pauta da cifra (não registrada no M01).** O M01 dizia só "não usar o `staff` do
+  `harm` sem checar". Medido agora: nenhum `<harmony>` do corpus traz `<staff>`, e
+  em todos os arquivos com cifra do M01 o `harm@staff` é a pauta única da parte onde
+  está o `<harmony>`. A spec adota essa regra (§2.9, regra 7); a parte de duas pautas
+  fica como ressalva R2 (só no caso sintético).
+- **Pauta da direção.** A spec segue o importador (`ReadMusicXmlDirection`): o
+  `<staff>` da `<direction>`, senão a primeira pauta da parte. Conferido em contagem
+  nos 20 hinos com `<words>` (contagem total por arquivo, 0 divergências); o M07
+  confere pauta por pauta.
+- **Trinado em acorde.** Novo fato: o `startid` do trinado de uma nota de acorde
+  aponta para o `chord`, não para a nota (medido na fixture). Está na regra 6.
+- **Numeração de `index`.** `index` é 0-based (como no exemplo do M00); a
+  "ocorrência" do M00 é `index + 1`. Escrito na regra 1.
+
+**Fatos novos medidos (M02)**
+
+- `grace` está **invertido** no importador do MusicXML: `slash="yes"` (acciaccatura)
+  vira `unacc`, e a ausência de barra vira `acc` (`iomusxml.cpp` L3310-3345). O
+  desenho continua certo porque a barra vem em `stem.mod="1slash"`. A spec segue o
+  valor do MEI, como o M00 pede (`@grace`). **Pendente de decisão do usuário (R1):**
+  (a) manter o valor do MEI e traduzir no leitor; ou (b) corrigir o importador. A
+  (b) muda o MEI e o `getMEI` do corpus, o que fere o critério 3 do "Critérios de
+  aceite do conjunto". Nenhuma das duas foi decidida aqui.
+- `ending.n` com espaço (`"2, 3"`) passa do `@number` sem normalização.
+- Os ids da fixture vêm de `verovio -x 42` (binário do fork, `6.3.0-8aabb53-dirty`).
+  O M03 precisa reproduzi-los para o teste do `ReadBridgeMusic`.
+
+**Ressalvas para o M03 e o M07 (não bloqueiam o M02)**
+
+- R2: pauta da cifra em parte de duas pautas, só no caso sintético.
+- R3: notas invisíveis (`print-object="no"`), ainda fora do timemap e de `music.json`.
+- R4: `numeral` sem caso real; fixture não cobre (M07).
 
 Os desvios e os números do M07 entram aqui quando o passo rodar.

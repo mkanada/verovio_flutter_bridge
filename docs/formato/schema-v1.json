@@ -10,7 +10,8 @@
     { "$ref": "#/$defs/metaDocument" },
     { "$ref": "#/$defs/alternatesDocument" },
     { "$ref": "#/$defs/midiDocument" },
-    { "$ref": "#/$defs/pitchposDocument" }
+    { "$ref": "#/$defs/pitchposDocument" },
+    { "$ref": "#/$defs/musicDocument" }
   ],
   "$defs": {
     "number": {
@@ -313,6 +314,7 @@
             "alternates": { "const": "alternates.json" },
             "midi": { "const": "midi.json" },
             "pitchpos": { "const": "pitchpos.json" },
+            "music": { "const": "music.json" },
             "debugOptions": { "const": "debug-options.json" },
             "debugSource": { "const": "debug-source.txt" }
           },
@@ -595,6 +597,198 @@
       },
       "additionalProperties": false
     },
+    "musicDocument": {
+      "type": "object",
+      "required": ["version", "parts", "measures", "ornaments", "harmonies", "directions", "tempi"],
+      "properties": {
+        "version": { "const": 1 },
+        "parts": { "type": "array", "items": { "$ref": "#/$defs/musicPart" } },
+        "measures": { "type": "array", "items": { "$ref": "#/$defs/musicMeasure" } },
+        "ornaments": { "type": "array", "items": { "$ref": "#/$defs/musicOrnament" } },
+        "harmonies": { "type": "array", "items": { "$ref": "#/$defs/musicHarmony" } },
+        "directions": { "type": "array", "items": { "$ref": "#/$defs/musicDirection" } },
+        "tempi": { "type": "array", "items": { "$ref": "#/$defs/musicTempo" } }
+      },
+      "additionalProperties": false
+    },
+    "musicPart": {
+      "type": "object",
+      "required": ["id", "name", "staves"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": ["string", "null"], "minLength": 1 },
+        "staves": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } }
+      },
+      "additionalProperties": false
+    },
+    "musicMeasure": {
+      "type": "object",
+      "required": ["id", "index", "n", "left", "right", "ending", "meter", "key", "staves"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "index": { "type": "integer", "minimum": 0 },
+        "n": { "type": "string", "minLength": 1 },
+        "left": { "type": ["string", "null"], "minLength": 1 },
+        "right": { "type": ["string", "null"], "minLength": 1 },
+        "ending": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["n"],
+              "properties": { "n": { "type": "string", "minLength": 1 } },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "meter": { "$ref": "#/$defs/musicMeter" },
+        "key": { "$ref": "#/$defs/musicKey" },
+        "staves": { "type": "array", "items": { "$ref": "#/$defs/musicStaff" } }
+      },
+      "additionalProperties": false
+    },
+    "musicMeter": {
+      "type": "object",
+      "required": ["count", "unit", "sym"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 1 },
+        "unit": { "type": "integer", "minimum": 1 },
+        "sym": { "enum": ["common", "cut", null] }
+      },
+      "additionalProperties": false
+    },
+    "musicKey": {
+      "type": "object",
+      "required": ["sig", "fifths", "mode"],
+      "properties": {
+        "sig": { "type": ["string", "null"], "pattern": "^[0-9]+[sf]?$" },
+        "fifths": { "type": "integer" },
+        "mode": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "musicStaff": {
+      "type": "object",
+      "required": ["n", "layers"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 1 },
+        "layers": { "type": "array", "items": { "$ref": "#/$defs/musicLayer" } }
+      },
+      "additionalProperties": false
+    },
+    "musicLayer": {
+      "type": "object",
+      "required": ["n", "events"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 1 },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/musicEvent" } }
+      },
+      "additionalProperties": false
+    },
+    "musicEvent": {
+      "type": "object",
+      "required": ["id", "t", "chord", "grace", "tuplet"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "t": { "enum": ["n", "r", "mr", "s"] },
+        "chord": { "type": ["string", "null"], "minLength": 1 },
+        "grace": { "enum": [false, "acc", "unacc"] },
+        "tuplet": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["num", "numbase"],
+              "properties": {
+                "num": { "type": "integer", "minimum": 1 },
+                "numbase": { "type": "integer", "minimum": 1 }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "if": { "properties": { "t": { "enum": ["r", "mr", "s"] } }, "required": ["t"] },
+      "then": { "properties": { "chord": { "const": null }, "grace": { "const": false } } },
+      "additionalProperties": false
+    },
+    "musicOrnament": {
+      "type": "object",
+      "required": ["id", "kind", "startid"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["trill", "mordent", "turn"] },
+        "startid": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "musicDegree": {
+      "type": "object",
+      "required": ["value", "alter", "type"],
+      "properties": {
+        "value": { "type": "integer", "minimum": 1 },
+        "alter": { "type": "integer" },
+        "type": { "enum": ["add", "alter", "subtract"] }
+      },
+      "additionalProperties": false
+    },
+    "musicHarmony": {
+      "type": "object",
+      "required": ["id", "measure", "staff", "tstamp", "root", "rootAlter", "kind", "kindText", "bass", "bassAlter", "degrees", "numeral", "text"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "measure": { "type": "integer", "minimum": 0 },
+        "staff": { "type": "integer", "minimum": 1 },
+        "tstamp": { "type": "number", "minimum": 1 },
+        "root": { "type": ["string", "null"], "minLength": 1 },
+        "rootAlter": { "type": ["integer", "null"] },
+        "kind": { "type": ["string", "null"], "minLength": 1 },
+        "kindText": { "type": ["string", "null"] },
+        "bass": { "type": ["string", "null"], "minLength": 1 },
+        "bassAlter": { "type": ["integer", "null"] },
+        "degrees": { "type": "array", "items": { "$ref": "#/$defs/musicDegree" } },
+        "numeral": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["root", "alter"],
+              "properties": {
+                "root": { "type": "string", "minLength": 1 },
+                "alter": { "type": "integer" }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "text": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "musicDirection": {
+      "type": "object",
+      "required": ["id", "measure", "staff", "tstamp", "place", "text"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "measure": { "type": "integer", "minimum": 0 },
+        "staff": { "type": "integer", "minimum": 1 },
+        "tstamp": { "type": "number", "minimum": 1 },
+        "place": { "enum": ["above", "below", null] },
+        "text": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "musicTempo": {
+      "type": "object",
+      "required": ["id", "measure", "bpm", "text"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "measure": { "type": "integer", "minimum": 0 },
+        "bpm": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "text": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "debug": {
       "type": "object",
       "required": ["options", "source"],
@@ -616,6 +810,7 @@
         "alternates": { "$ref": "#/$defs/alternatesDocument" },
         "midi": { "$ref": "#/$defs/midiDocument" },
         "pitchpos": { "$ref": "#/$defs/pitchposDocument" },
+        "music": { "$ref": "#/$defs/musicDocument" },
         "debug": { "$ref": "#/$defs/debug" }
       },
       "additionalProperties": false

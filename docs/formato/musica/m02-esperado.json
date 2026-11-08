@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "parts": [
+    { "id": "P1", "name": "Piano", "staves": [1, 2] },
+    { "id": "P2", "name": "Canto", "staves": [3] }
+  ],
+  "measures": [
+    {
+      "id": "g1cokkdt", "index": 0, "n": "0",
+      "left": null, "right": null, "ending": null,
+      "meter": { "count": 3, "unit": 4, "sym": null },
+      "key": { "sig": "0", "fifths": 0, "mode": "major" },
+      "staves": [
+        { "n": 1, "layers": [
+          { "n": 1, "events": [
+            { "id": "vhtnoag", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 2, "layers": [
+          { "n": 5, "events": [
+            { "id": "x1848jna", "t": "r", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 3, "layers": [
+          { "n": 1, "events": [
+            { "id": "hngeo8z", "t": "r", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "id": "yy2zfkq", "index": 1, "n": "1",
+      "left": "rptstart", "right": null, "ending": null,
+      "meter": { "count": 3, "unit": 4, "sym": null },
+      "key": { "sig": "0", "fifths": 0, "mode": "major" },
+      "staves": [
+        { "n": 1, "layers": [
+          { "n": 1, "events": [
+            { "id": "orw55dt", "t": "n", "chord": null, "grace": "acc", "tuplet": null },
+            { "id": "pw80rd", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "r1c5f34m", "t": "n", "chord": null, "grace": false, "tuplet": { "num": 3, "numbase": 2 } },
+            { "id": "s1cm0mij", "t": "n", "chord": null, "grace": false, "tuplet": { "num": 3, "numbase": 2 } },
+            { "id": "te33tju", "t": "n", "chord": null, "grace": false, "tuplet": { "num": 3, "numbase": 2 } },
+            { "id": "umdvq0l", "t": "n", "chord": "vlc2j9p", "grace": false, "tuplet": null },
+            { "id": "xznby47", "t": "n", "chord": "vlc2j9p", "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 2, "layers": [
+          { "n": 5, "events": [
+            { "id": "z1o3fuh2", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "aep08ey", "t": "r", "chord": null, "grace": false, "tuplet": null }
+          ] },
+          { "n": 6, "events": [
+            { "id": "c10k6eu3", "t": "r", "chord": null, "grace": false, "tuplet": null },
+            { "id": "di3wz6p", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 3, "layers": [
+          { "n": 1, "events": [
+            { "id": "t1hslndl", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "u1rdh9nl", "t": "r", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "id": "e1k8yn3w", "index": 2, "n": "2",
+      "left": null, "right": "rptend", "ending": { "n": "1" },
+      "meter": { "count": 3, "unit": 4, "sym": null },
+      "key": { "sig": "0", "fifths": 0, "mode": "major" },
+      "staves": [
+        { "n": 1, "layers": [
+          { "n": 1, "events": [
+            { "id": "qkcdn2b", "t": "n", "chord": null, "grace": "unacc", "tuplet": null },
+            { "id": "rzr1u8s", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "s31acvx", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "t1mebzmw", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 2, "layers": [
+          { "n": 5, "events": [
+            { "id": "v7yk110", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "w171yjko", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 3, "layers": [
+          { "n": 1, "events": [
+            { "id": "gvx8skn", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "h19ru3c8", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "id": "xj1ys1b", "index": 3, "n": "3",
+      "left": null, "right": null, "ending": { "n": "2, 3" },
+      "meter": { "count": 3, "unit": 4, "sym": null },
+      "key": { "sig": "2s", "fifths": 2, "mode": null },
+      "staves": [
+        { "n": 1, "layers": [
+          { "n": 1, "events": [
+            { "id": "n1nkt294", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "o12qha2s", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "p1n03y7u", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 2, "layers": [
+          { "n": 5, "events": [
+            { "id": "s1eoakd", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "td1mixc", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 3, "layers": [
+          { "n": 1, "events": [
+            { "id": "t1g27rkm", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "uml6a4r", "t": "r", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "id": "uzy0eqw", "index": 4, "n": "4",
+      "left": null, "right": null, "ending": null,
+      "meter": { "count": 4, "unit": 4, "sym": "common" },
+      "key": { "sig": "2s", "fifths": 2, "mode": null },
+      "staves": [
+        { "n": 1, "layers": [
+          { "n": 1, "events": [
+            { "id": "kf0fkqg", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "ld7kz8f", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "m1j3dlmg", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "n1kkami7", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 2, "layers": [
+          { "n": 5, "events": [
+            { "id": "p1hesd6c", "t": "mr", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 3, "layers": [
+          { "n": 1, "events": [
+            { "id": "g3qfi4t", "t": "r", "chord": null, "grace": false, "tuplet": null },
+            { "id": "hbju5tb", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "id": "qi10kis", "index": 5, "n": "5",
+      "left": null, "right": "end", "ending": null,
+      "meter": { "count": 2, "unit": 2, "sym": "cut" },
+      "key": { "sig": "2s", "fifths": 2, "mode": null },
+      "staves": [
+        { "n": 1, "layers": [
+          { "n": 1, "events": [
+            { "id": "e7azsw1", "t": "n", "chord": null, "grace": false, "tuplet": null },
+            { "id": "f18097eq", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 2, "layers": [
+          { "n": 5, "events": [
+            { "id": "h1m0j4dm", "t": "n", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] },
+        { "n": 3, "layers": [
+          { "n": 1, "events": [
+            { "id": "tdowfwl", "t": "r", "chord": null, "grace": false, "tuplet": null }
+          ] }
+        ] }
+      ]
+    }
+  ],
+  "ornaments": [
+    { "id": "wg8qvcs", "kind": "trill", "startid": "vlc2j9p" }
+  ],
+  "harmonies": [
+    {
+      "id": "j97m9qh", "measure": 1, "staff": 1, "tstamp": 1,
+      "root": "C", "rootAlter": 0, "kind": "major-seventh", "kindText": null,
+      "bass": null, "bassAlter": null, "degrees": [], "numeral": null,
+      "text": "CMaj7"
+    },
+    {
+      "id": "k15ihioq", "measure": 3, "staff": 1, "tstamp": 1,
+      "root": "G", "rootAlter": 0, "kind": "dominant", "kindText": "7",
+      "bass": "B", "bassAlter": 0,
+      "degrees": [ { "value": 9, "alter": -1, "type": "add" } ],
+      "numeral": null,
+      "text": "G7(♭9)/B"
+    }
+  ],
+  "directions": [
+    { "id": "hp9pij7", "measure": 4, "staff": 1, "tstamp": 1, "place": "above", "text": "chg" }
+  ],
+  "tempi": [
+    { "id": "s2mypdb", "measure": 0, "bpm": 80, "text": "Andante" }
+  ]
+}

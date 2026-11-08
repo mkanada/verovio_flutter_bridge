@@ -33,8 +33,8 @@ flags de saída são:
 
 | Formato de saída | Arquivo | Conteúdo |
 | --- | --- | --- |
-| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json`, `meta.json`, `alternates.json`, `midi.json` e `pitchpos.json` |
-| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap`, `meta`, `alternates`, `midi` e `pitchpos` |
+| `-t vsb` | `<nome>.vsb` (zip) | `manifest.json`, `scene.json`, `glyphs.json` e, quando disponíveis, `timemap.json`, `meta.json`, `alternates.json`, `midi.json`, `pitchpos.json` e `music.json` |
+| `-t vsb-json` | `<nome>.json` | um objeto JSON com `manifest`, `glyphs`, `scene` e, quando disponíveis, `timemap`, `meta`, `alternates`, `midi`, `pitchpos` e `music` |
 
 O `timemap.json` é **embutido no pacote** quando o Verovio produz um timemap
 não vazio. Se a peça não produzir timemap, o arquivo e a entrada correspondente
@@ -62,6 +62,12 @@ calcular onde uma nota **tocada** ficaria escrita na pauta (a nota fantasma,
 §10). Segue a mesma regra de omissão: uma peça sem nenhuma nota nem pausa não
 tem o arquivo nem a entrada do manifest.
 
+O `music.json` (§2.9) leva a estrutura musical da partitura **notada** —
+partes, compassos com fórmula, armadura e modo, casas, pautas, camadas e
+eventos, cifras, direções e andamentos —, sem geometria, para o host ler a
+música sem ler o MusicXML nem o MEI (M00). Segue a mesma regra de omissão: uma
+peça sem nenhum compasso não tem o arquivo nem a entrada do manifest.
+
 ### 2.1 `manifest.json`
 
 ```json
@@ -76,7 +82,8 @@ tem o arquivo nem a entrada do manifest.
     "timemap": "timemap.json",
     "meta": "meta.json",
     "midi": "midi.json",
-    "pitchpos": "pitchpos.json"
+    "pitchpos": "pitchpos.json",
+    "music": "music.json"
   }
 }
 ```
@@ -88,10 +95,10 @@ tem o arquivo nem a entrada do manifest.
 - `pageCount` é o número de páginas em `scene.pages` (as páginas **normais**;
   não conta nenhuma página de `alternates.json`).
 - `files.scene` e `files.glyphs` são obrigatórios. `files.timemap`,
-  `files.meta`, `files.alternates`, `files.midi` e `files.pitchpos` existem
-  somente quando o pacote contém `timemap.json`, `meta.json`,
-  `alternates.json`, `midi.json` e `pitchpos.json`, respectivamente (§2.4,
-  §2.3, §2.5, §2.7, §2.8).
+  `files.meta`, `files.alternates`, `files.midi`, `files.pitchpos` e
+  `files.music` existem somente quando o pacote contém `timemap.json`,
+  `meta.json`, `alternates.json`, `midi.json`, `pitchpos.json` e `music.json`,
+  respectivamente (§2.4, §2.3, §2.5, §2.7, §2.8, §2.9).
 - No JSON único, `manifest.files` mantém os nomes lógicos acima mesmo sem
   arquivos físicos separados.
 
@@ -108,16 +115,18 @@ A raiz de `-t vsb-json` é:
   "meta": { "title": "..." },
   "alternates": { "sequences": [] },
   "midi": { "notes": [], "pedal": [] },
-  "pitchpos": { "events": {} }
+  "pitchpos": { "events": {} },
+  "music": { "version": 1, "parts": [], "measures": [], "ornaments": [],
+             "harmonies": [], "directions": [], "tempi": [] }
 }
 ```
 
-`timemap`, `meta`, `alternates`, `midi` e `pitchpos` são opcionais e seguem
-exatamente o conteúdo de `timemap.json`, `meta.json`, `alternates.json`,
-`midi.json` e `pitchpos.json`. O parser deve aceitar tanto a raiz única quanto
-os documentos individuais `scene.json`, `glyphs.json`, `manifest.json`,
-`timemap.json`, `meta.json`, `alternates.json`, `midi.json` e
-`pitchpos.json`.
+`timemap`, `meta`, `alternates`, `midi`, `pitchpos` e `music` são opcionais e
+seguem exatamente o conteúdo de `timemap.json`, `meta.json`, `alternates.json`,
+`midi.json`, `pitchpos.json` e `music.json`. O parser deve aceitar tanto a raiz
+única quanto os documentos individuais `scene.json`, `glyphs.json`,
+`manifest.json`, `timemap.json`, `meta.json`, `alternates.json`, `midi.json`,
+`pitchpos.json` e `music.json`.
 
 ### 2.3 `meta.json`
 
@@ -516,6 +525,234 @@ mínima.)
   (457 do Étude Op. 10 nº 9, cuja `<scoreDef>` não traz `key.sig`, só
   `accid.ges`; 16 em quatro peças, acidentes que o importador estende a
   outras oitavas ou notas sem acidente escrito).
+
+### 2.9 `music.json`
+
+A estrutura musical da partitura **notada**, sem geometria (M00,
+`docs/plano/M00-dados-musicais-para-o-aprendizado.md`): partes, compassos, fórmula,
+armadura e modo, casas, pautas, camadas e eventos, ornamentos, cifras, direções e
+andamentos. Tudo sai do `Doc` do Verovio (não do desenho), então o mesmo conteúdo
+serve ao `.vsb`, ao JSON único e, no M05, a uma chamada que não desenha página.
+
+Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrita no fim desta seção):
+
+```json
+{
+  "version": 1,
+  "parts": [ { "id": "P1", "name": "Piano", "staves": [1, 2] } ],
+  "measures": [
+    {
+      "id": "yy2zfkq", "index": 1, "n": "1",
+      "left": "rptstart", "right": null, "ending": null,
+      "meter": { "count": 3, "unit": 4, "sym": null },
+      "key": { "sig": "0", "fifths": 0, "mode": "major" },
+      "staves": [
+        { "n": 1, "layers": [
+          { "n": 1, "events": [
+            { "id": "orw55dt", "t": "n", "chord": null, "grace": "acc", "tuplet": null },
+            { "id": "r1c5f34m", "t": "n", "chord": null, "grace": false, "tuplet": { "num": 3, "numbase": 2 } }
+          ] }
+        ] }
+      ]
+    }
+  ],
+  "ornaments": [ { "id": "wg8qvcs", "kind": "trill", "startid": "vlc2j9p" } ],
+  "harmonies": [
+    { "id": "j97m9qh", "measure": 1, "staff": 1, "tstamp": 1,
+      "root": "C", "rootAlter": 0, "kind": "major-seventh", "kindText": null,
+      "bass": null, "bassAlter": null, "degrees": [], "numeral": null, "text": "CMaj7" }
+  ],
+  "directions": [ { "id": "hp9pij7", "measure": 4, "staff": 1, "tstamp": 1, "place": "above", "text": "chg" } ],
+  "tempi": [ { "id": "s2mypdb", "measure": 0, "bpm": 80, "text": "Andante" } ]
+}
+```
+
+**Regras normativas.**
+
+1. **Ordem e ids.** `measures` está na ordem do documento **notado**, sem
+   desdobrar repetições: as casas aparecem uma depois da outra, como estão
+   escritas. Entram a introdução (`n` como `"1i"`) e os compassos depois de uma
+   barra final, que o timemap não toca. `index` é a posição 0-based nessa lista
+   (a "ocorrência" do M00, base 1, menos 1). Todo `id` é um `xml:id` **notado**:
+   o da cena, o do `pitchpos.json` e o da primeira passagem do timemap. Este
+   arquivo não traz ids `-rend<N>`; quem precisa de uma ocorrência usa o timemap
+   (§2.4) e o tempo dela (D-MUSICA-Q).
+2. **`n`, `left`, `right`, `ending`.** `n` é o `@n` do compasso, sem
+   interpretação (`"1"`, `"1i"` na introdução, `"0"` na anacruse). `left` e
+   `right` são o `@left`/`@right` do MEI quando existem (`rptstart`, `rptend`,
+   `rptboth`, `end`, `dbl`...), senão `null`. `ending` é `null`, ou `{"n": ...}`
+   quando o compasso está dentro de uma casa (`<ending>`): o valor é o
+   `@number` da casa, **como o MEI o grava**, isto é, a lista de números
+   separada por vírgula (`"2,3,4"` no corpus medido; `"2, 3"` na fixture, com o
+   espaço da fonte). Não é o texto impresso (`"2. 3. e 4."`), que o importador
+   não guarda (`iomusxml.cpp` L428; M01). O leitor separa por vírgula e ignora
+   os espaços.
+3. **`meter` e `key`.** Todo compasso traz os dois, com os valores **vigentes no
+   começo dele** na primeira pauta, mesmo quando não mudam: o leitor não compara
+   com o compasso anterior. (A frase do M00, item 3, era ambígua
+   nesse ponto; esta é a leitura fechada.) `meter.count` e `meter.unit` são sempre inteiros (C =
+   4/4; C cortado = 2/2). `meter.sym` é `"common"` ou `"cut"` quando a fonte pede
+   `symbol` (`<time symbol>`), senão `null`. `key.sig` é o `@sig` do MEI
+   (`"0"`, `"2s"`, `"3f"`), `null` quando a armadura não tem nome padrão.
+   `key.fifths` é a soma das alterações (sustenido +1, bemol −1), também para
+   armadura fora do padrão. `key.mode` é o `@mode` do `keySig` (`"major"`,
+   `"minor"`, `"dorian"`...), ou `null` quando a fonte não traz `<mode>`: o
+   importador só lê `<mode>` no ramo `<fifths>` (M01).
+4. **`staves`, `layers` e `events`.** Cada compasso lista as pautas com eventos,
+   pelo `staff/@n` **global** da partitura (o `staffDef/@n` do MEI). Cada pauta
+   lista as camadas pelo `layer/@n`, que é o `<voice>` da fonte (M01: 0
+   divergências). Uma pauta pode ter várias camadas (fixture: camadas 5 e 6 na
+   pauta 2). Dentro de uma camada, os eventos estão na ordem do documento:
+   - `id`: o `xml:id` do evento (nota, pausa, `mRest` ou espaço);
+   - `t`: `"n"` nota, `"r"` pausa, `"mr"` pausa de compasso, `"s"` espaço
+     (`space`);
+   - `chord`: o `xml:id` do `<chord>` a que a nota pertence (todas as notas do
+     acorde trazem o mesmo id); `null` fora de acorde e em pausa;
+   - `grace`: `false`, ou `"acc"`/`"unacc"` como vem do `@grace` do MEI da nota
+     (ou do `<graceGrp>` pai); `false` em pausa. Ver a ressalva R1, que trata a
+     inversão desse valor no importador do MusicXML;
+   - `tuplet`: `{"num": n, "numbase": b}` da quiáltera **mais interna** que
+     contém o evento (`@num`/`@numbase` do MEI); `null` fora de quiáltera. A
+     razão composta fica fora (ver "Fica fora").
+   - **Pauta de um evento cruzado** (M01): uma nota que a fonte põe numa pauta e o
+     Verovio desenha em outra fica na pauta do próprio nó: o `@staff` do `note`
+     ou do `chord`, senão a pauta que o contém. A camada continua a que o Verovio
+     guarda (o `layer` de origem). Medido: 123 notas em Clair de Lune e 2 em
+     Nocturne.
+
+   Todo evento traz os cinco campos (`id`, `t`, `chord`, `grace`, `tuplet`); em
+   pausa, `chord` é `null` e `grace` é `false`. (O exemplo do M00 omitia esses
+   campos na pausa; a spec os fixa.)
+5. **`parts`.** Uma entrada por `<part>` da fonte (MusicXML) ou por `staffGrp` de
+   partes (MEI). `id` é o id da parte (`P1`, na fixture): o `xml:id` do
+   `staffDef` quando a parte tem uma pauta, ou do `staffGrp` quando tem várias
+   (M01: achado em todas as partes medidas). `name` é o `label` da parte, ou
+   `null`. `staves` são os `n` das pautas dela. Num MEI sem partes, uma entrada
+   só, com o `xml:id` do `staffGrp` mais externo e todas as pautas.
+6. **`ornaments`.** Os controles `trill`, `mordent` e `turn`. `kind` é o nome do
+   elemento. `startid` é o `@startid` do MEI **sem o `#`**: o id da nota, ou o do
+   `chord` quando a nota pertence a um acorde (medido na fixture: o trinado da nota
+   C4 do acorde aponta para o `chord`). Fermata e os demais controles ficam fora.
+7. **`harmonies`** (D-MUSICA-CIFRA): uma por `<harmony>` da fonte. Medido no M01 e
+   no M02: todo `<harmony>` chega ao MEI como `harm` (0 divergências nos arquivos
+   com fonte MusicXML).
+   - `id`: o `xml:id` do `harm`; `measure`: o `index` do compasso; `tstamp`: o
+     `@tstamp` do MEI (batida a partir de 1, na unidade do compasso).
+   - `staff`: a pauta da cifra é a **pauta da parte onde está o `<harmony>`**,
+     que é o `@staff` do `harm`. O MusicXML não traz pauta em `<harmony>` (nenhum
+     `<harmony>` do corpus tem `<staff>`). Medido: em todas as cifras dos arquivos
+     com fonte MusicXML do M01, a pauta do `harm` é a única pauta da parte. Em
+     parte de duas pautas, a regra não foi medida no corpus (ressalva R2).
+   - `root` e `rootAlter`: `root/root-step` e `root/root-alter` (inteiro; `0`
+     quando o elemento falta). `null` quando não há raiz (numeral, abaixo).
+   - `kind`: o texto de `<kind>`, **sem tradução** (`"major-seventh"`,
+     `"dominant"`); `null` se não houver. `kindText`: o atributo `kind/@text`, ou
+     `null`. Quando `kindText` existe (49% das cifras do corpus), é ele que o
+     desenho usa como qualidade.
+   - `bass` e `bassAlter`: `bass/bass-step` e `bass/bass-alter` (`0` quando o
+     elemento falta); `null` sem baixo.
+   - `degrees`: uma entrada por `<degree>`, na ordem da fonte: `{"value",
+     "alter", "type"}` de `degree-value`, `degree-alter` (`0` quando falta) e
+     `degree-type` (`add`, `alter` ou `subtract`).
+   - `numeral`: para numeração romana (sem `root`), `{"root", "alter"}`. `root` é
+     o texto do `numeral-root` como o importador o lê (o atributo `text`, se
+     houver, senão o conteúdo; ex.: `"V"`), e `alter` é o `numeral-alter` (`0`
+     quando falta). **Sem caso real no corpus medido** (M01): não há fixture
+     (ficam para o M07).
+   - `text`: o texto que o Verovio desenha (o `Harm` montado pelo importador;
+     ex.: `"CMaj7"`, `"G7(♭9)/B"`). Nunca vazio. Quando o `kind` não tem nome no
+     mapa do importador e não há `kind@text`, o texto sai sem o sufixo de
+     qualidade; o leitor deve consultar `kind` para não exibir uma cifra
+     incompleta (o M01 não encontrou esse caso no corpus).
+   - De um MEI, onde só há o texto, os campos estruturados saem `null` (com
+     `degrees: []`) e `text` vale.
+8. **`directions`**: uma por `<direction>` com `<words>` que o importador grava
+   como `dir`.
+   - `text`: o texto de `<words>` **cru** (sem formatação), concatenado na ordem do
+     documento, sem separador (como o desenho junta, `TextRendition`). Até o M04,
+     `<words>` com formatação (`rend`) pode sair partido no MEI: a regra do M04 é
+     que o texto chegue inteiro.
+   - `place`: `"above"` ou `"below"` (`@placement` da fonte); `null` sem ele.
+   - `staff`: a pauta que o importador dá ao `dir` (o `<staff>` da `<direction>`,
+     senão a primeira pauta da parte). `measure` e `tstamp` como nas cifras.
+   - **Fica fora:** a direção com `<sound tempo>` ou `<metronome>` (vai a
+     `tempi`, mesmo com `<words>`) e a de dinâmica (`dynam`, que o `midi.json` e
+     a cena já levam; G10). Medido no M01: dos 137 `<words>` do corpus, 39 viram
+     `dir`; os demais viram `tempo` ou `dynam`.
+9. **`tempi`**: uma entrada por `tempo` do MEI (de `<sound tempo>`, de
+   `<metronome>` ou de uma direção de andamento): `bpm` é o `@midi.bpm` (número) ou
+   `null`; `text` é o texto desenhado (ex.: `"Andante"`) ou `null`.
+
+`version` é `1`, o mesmo do manifest (§2.1); o leitor recusa valor maior (§9).
+
+**Fica fora deste arquivo:**
+
+- Layout, geometria e glifos (§5): nada disso entra em `music.json`.
+- Tempo da partitura notada (`q`, `ql`): fica fora (D-MUSICA-Q); o app recompõe
+  o tempo pelo timemap.
+- Altura, figura e ligadura por nota: estão no `pitchpos.json` (§2.8) e no
+  `midi.json` (§2.7); não se duplicam.
+- Dinâmica, pedal, cunha, ligadura de expressão e articulação: `midi.json` e
+  G10.
+- Quiáltera com razões compostas: `tuplet` leva só a mais interna.
+- Notação mensural, tablatura, percussão, e partes além da primeira (o app só
+  usa a primeira; `parts` as lista todas).
+
+**Ressalvas (abertas, medidas no M01 e no M02):**
+
+- **R1 — `grace` está invertido no importador do MusicXML.** `iomusxml.cpp`
+  (L3310-3345) grava `GRACE_unacc` quando o `<grace>` traz `slash="yes"`
+  (acciaccatura no MusicXML) e `GRACE_acc` quando não traz. A fixture grava esses
+  valores como o MEI os dá: apojatura sem barra → `"acc"`; acciaccatura com barra
+  → `"unacc"`. A barra vem em `stem.mod="1slash"` (medido), então o desenho está
+  certo. **Corrigir o importador muda o MEI e o `getMEI` do corpus; é decisão do
+  usuário** (manter o valor do MEI com a tradução no leitor, ou corrigir o
+  importador). Até lá, este arquivo segue o valor do MEI, como o M00 pede.
+- **R2 — pauta de cifra em parte de duas pautas.** Não medida no corpus (nenhum
+  `<harmony>` em parte de duas pautas). A fixture mostra o caso sintético: a
+  cifra sai na primeira pauta da parte.
+- **R3 — notas invisíveis** (`print-object="no"`) não entram no `Doc`, portanto
+  não entram no timemap nem aqui (M01). O M07 decide como o oráculo trata isso.
+- **R4 — `numeral`, `time symbol` e `orn`.** `time symbol` e `orn` (trinado) estão
+  na fixture; `numeral` não tem caso real no corpus e fica para o M07.
+- **R5 — `ending.n` com espaços.** Vem como a fonte o escreve (`"2, 3"`); o
+  leitor separa por vírgula e tira os espaços (§2.9, regra 2).
+
+**Fixture do M02.** `docs/formato/musica/m02-entrada.musicxml` (MusicXML 3.1
+sintético, duas partes, seis compassos, legível) e
+`docs/formato/musica/m02-esperado.json` (o `music.json` esperado). Foram escritos
+à mão e conferidos contra o MusicXML e contra o MEI do Verovio gerado com
+`verovio -x 42 -t mei` (semente fixa). Os `xml:id` da fixture são os que o
+Verovio dá com essa semente nesta versão do fork: o M03 precisa reproduzi-los
+para o teste. O schema é `$defs/musicDocument` em `schema-v1.json`.
+
+Cobertura (compasso = `index`, 0-based):
+
+| Item do aceite do M02 | Onde na fixture |
+| --- | --- |
+| Repetição com casas | barra de início no compasso 1 (`left` "rptstart"); compasso 2 dentro da casa 1 (`ending.n` "1") com `right` "rptend"; compasso 3 dentro da casa "2, 3" (`ending.n` "2, 3") |
+| Anacruse | compasso 0: `n` "0", `implicit="yes"` (MEI `metcon="false"`), 1 semínima em 3/4; é o `index` 0 |
+| Mudança de armadura | compasso 3: de Dó maior (`mode` "major") para Ré maior (`sig` "2s", `mode` null) |
+| Mudança de fórmula | compasso 4: 3/4 → 4/4 com `sym` "common"; compasso 5: → 2/2 com `sym` "cut" |
+| Apojatura | compasso 1: D5 sem barra antes de C5, `grace` "acc" (valor do MEI; R1) |
+| Acciaccatura | compasso 2: D5 com barra antes de E5, `grace` "unacc" (valor do MEI; R1) |
+| Quiáltera | compasso 1: E5-F5-G5 em 3:2, `tuplet` `{"num": 3, "numbase": 2}` |
+| Acorde | compasso 1: C4+E4, `chord` "vlc2j9p" nas duas notas |
+| Duas camadas numa pauta | compasso 1: pauta 2 com as camadas 5 e 6 (nos demais, a pauta 2 tem só a camada 5) |
+| Cifra com `kind`, `degree` e baixo | compasso 3: G, `kind` "dominant" com `kindText` "7", `degree` 9 alter −1 add, baixo B; `text` "G7(♭9)/B" |
+| Cifra sem `kindText` | compasso 1: C, `kind` "major-seventh", `text` "CMaj7" |
+| Direção `chg` | compasso 4, pauta 1, `place` "above" |
+| Pausa de compasso (`mr`) | compasso 4, pauta 2 |
+| Direção excluída (dinâmica `p`) | compasso 1: não entra em `directions` |
+| Andamento com texto | compasso 0: "Andante", 80 |
+| Trinado | compasso 1, na nota C4 do acorde: `startid` "vlc2j9p" (o `chord`) |
+| Partes | `P1` (pautas 1 e 2, "Piano"), `P2` (pauta 3, "Canto") |
+| Não coberto | `numeral` (R4; M07) |
+
+Conferência: `compare/out/m02/check_m02.py` (saída em `compare/out/`, não versionada)
+confere o schema (Draft 2020-12), os eventos por (compasso, pauta, camada)
+contra o MusicXML, os ids, as casas, as barras, as cifras, a alça do trinado e
+a fórmula e a armadura de cada compasso.
 
 ## 3. Unidades e ajuste de página
 
@@ -974,6 +1211,10 @@ explicitamente.
   Um leitor que conhece a §11 mas encontra um `pitchpos.json` sem `dur`, ou um
   dicionário sem as pausas reservadas, esconde as notas normalmente e **não
   desenha a pausa substituta** (regra 4 e 5).
+- Um leitor que não conhece `music` (versões anteriores a M02) o ignora: é uma
+  propriedade/arquivo aditivo a mais, como `midi`/`pitchpos`. Um leitor que
+  conhece `music` mas não encontra o arquivo/propriedade trata a peça como "sem
+  dados musicais estruturados" — o desenho e os outros arquivos não mudam.
 
 ## 10. Nota fantasma (normativo)
 
@@ -1521,3 +1762,4 @@ fermata ficam; nota ligada a um compasso visível continua visível lá.
 | 2026-11-04 | G08a (nota escondida, D-SUM-FIGURA = (a), decisão do usuário): **`pitchpos.json`** (§2.8) ganha `dur` e `dots` por nota e pausa — a figura escrita, não deduzida do timemap; **glifos reservados** (§4) passam a 16, com as pausas `E4E3`-`E4E9` e o ponto `E1E7`; **§11 Nota escondida e pausa substituta** (normativo; regras 1-7, "o que o host não deve fazer" e esqueleto de §11.1). A regra 1 trata o **acorde** (haste, colchete e pontos são filhos do nó `chord`, não da nota) e a regra 6 corrige a posição vertical da pausa de mínima e semibreve para a do Verovio; os pontos são um círculo (`View::DrawDot`), não o glifo `E1E7`. Regras 3 e dos pontos sujeitas a conferência em G08c. Aditivo: `version` continua `1`, leitor antigo ignora tudo. Schema e `exemplo-pitchpos.json` atualizados. |
 | 2026-11-04 | G08c (nota escondida, referência e prova): **§11** corrigida onde a medição contradisse o texto de G08a — regra 3 passa a contar a **pausa deslocada** entre as donas do traço (o traço fundido com o dela fica); regra 6 troca `dur ≥ 2` por `dur ≤ 2` (era numericamente trocado), declara `n ≠ 5` sem pausa, a largura do glifo no cálculo do ponto é **truncada** (o Verovio usa `int`) e o `x` da pausa é o da cabeça por definição; regra 2 registra o `beamSpan` como limitação; §11.1 preenchida com os dois exemplos do hino 010. Medido: 7 381 traços, 0 sem dona, 0 com donas de colunas diferentes (D-SUM-NATIVO: sem dado novo na cena); 855 pausas de verdade e 840 colunas trocadas por pausa dentro do Verovio, 0 divergências de glifo/`y`/escala/pontos. Referência `hide_ref.py`, varredura `g08c-sweep.py`, oráculo `hide_oracle.py`, 11 vetores em `docs/formato/sumico/vetores.json`. Sem mudança no formato (`version` continua `1`). |
 | 2026-11-04 | G11 (esconder um compasso inteiro, D-SUM-COMPASSO = campo no formato, decisão do usuário): **`measure.inner`** (§5.1) — `[x0, x1]`, a faixa em que o Verovio centra a pausa de compasso (`GetDrawingX() + GetLeftBarLineRight()` e `+ GetRightBarLineLeft()`), gravado em todo nó `measure` (aditivo, `version` continua `1`; leitor antigo ignora); **§11.2, regra 8** (normativa): pausa de compasso substituta (glifo `E4E3`, `x` do centro de `inner`, `y` da regra da semibreve, sem pontos), o que some com o compasso (notas, pausas de verdade em pauta que tem nota, tercina, ligaduras de prolongamento/expressão, arpejo e `beamSpan` pelo dono = compassos que tocam), o que fica, e a classificação por ocorrências em 70 partituras. Provado: 5 170 pausas desenhadas pelo Verovio com 0 divergências de `x`, `y`, glifo e escala; 124 páginas, 1 517 compassos escondidos, 0 vazamentos. Sem o campo, o `x` de um compasso com cabeçalho errava até 1,4 unidade (até 18 por pauta). Exige refazer a `libverovio` (Linux, Android, Web). Schema (`measure.inner`) e 15 casos novos em `vetores.json` (`casosCompasso`). |
+| 2026-11-08 | M02 (`music.json`, §2.9, novo; ver M00): arquivo opcional com a estrutura da partitura notada, sem geometria — partes, compassos (`n`, casas, barras, fórmula, armadura e modo), pautas, camadas e eventos (nota, pausa, `mr`, acorde, apojatura, quiáltera), ornamentos, cifras (`harmonies`), direções (`directions`) e andamentos (`tempi`). `manifest.files.music`, propriedade `music` no JSON único, `$defs/musicDocument` (e auxiliares) no schema. Aditivo: `version` continua `1`; leitor antigo ignora. §2.9 traz as ressalvas R1-R5; a R1 (a inversão de `grace` pelo importador do MusicXML) fica pendente de decisão do usuário. Fixture: `docs/formato/musica/` (`m02-entrada.musicxml` sintético + `m02-esperado.json`), conferida contra o MusicXML e o MEI com `-x 42`. |

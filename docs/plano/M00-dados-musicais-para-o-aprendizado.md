@@ -330,7 +330,7 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | --- | --- | --- | --- |
 | M01 | **Medir** os fatos (decisões já tomadas, ver "Decisões necessárias"): o que o `Doc` notado tem (`Harm`, `Dir`, `KeySig::mode`, `layer n` = voz, id da parte), custo de `RenderToMusicJson` sem layout | — | concluído com ressalva: células de Chopin e Debussy só parcialmente explicadas (notas invisíveis), ver "Notas de execução" |
 | M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (inversão de `grace` pelo importador, decisão do usuário pendente), ver "Notas de execução" |
-| M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | pendente |
+| M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | concluído com ressalva: R-PARTES e R-TRINADO (decisão do usuário), `score_bridge` sem teste (fonte fora do repositório), ver "Notas de execução" |
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | pendente |
 | M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | pendente |
 | M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | pendente |
@@ -661,3 +661,82 @@ repositório, em `compare/out/`), com `verovio -x 42 -t mei` para os ids.
 - R4: `numeral` sem caso real; fixture não cobre (M07).
 
 Os desvios e os números do M07 entram aqui quando o passo rodar.
+
+**2026-11-08: M03 executado (C++: `ReadBridgeMusic`, `music.json` no `.vsb` e no JSON único)**
+
+Entregas: `verovio/include/vrv/bridgemusic.h` e `verovio/src/bridgemusic.cpp`
+(`struct BridgeMusic`; `ReadBridgeMusic(Doc&)`, que só lê o `Doc`);
+`BridgeWriter::WriteMusic` (`bridgewriter.h/.cpp`), com `harmonies` e `directions`
+vazias até o M04 (o schema exige as chaves); `WriteManifest` ganhou `hasMusic` e
+`WriteSingleJson` ganhou `music` (depois de `pitchpos`); `Toolkit::RenderToBridgeJson`
+e `RenderToBridgeFile` (`toolkit.cpp`) leem o `music` logo depois do `pitchpos` e
+antes dos alternativos (que mudam o `Doc`). O `.vsb` ganha `music.json` e
+`manifest.files.music`.
+
+Linha de base e aceite (saídas git-ignoradas em `compare/out/m03-base/` e
+`compare/out/m03-after/`):
+
+- **Base** antes de editar C++: 72 arquivos, `corpus/mei` e `corpus/musicxml`, mais
+  `corpus/fantasma`, `ligaduras`, `repeticoes`, `sumico` e o fixture do M02 (cobertura
+  extra). Para cada um: getMEI, SVG de todas as páginas e os JSON do pacote. Duas
+  rodadas do binário anterior dão o mesmo resultado depois de normalizar `isodate`
+  do MEI e a string de versão (`6.3.0-<hash>[-dirty]`, que muda com o working tree).
+- **Depois**: 578 arquivos comparados (getMEI, SVG, `timemap`, `midi`, `pitchpos`,
+  `scene`, `glyphs`, `alternates`, `meta`): **0 diferenças**. O `manifest.json`
+  muda em 72 de 72 pacotes, e a única diferença é a entrada `music`.
+- **Build**: `cmake ../cmake && make -j4` sem aviso novo (os 6 avisos de
+  `stl_algobase.h` já existiam na base).
+- **Fixture** (`m02-entrada.musicxml`, `verovio -x 42`): `music.json` igual por valor a
+  `m02-esperado.json` em tudo, **exceto `harmonies` e `directions`**, que saem vazias
+  (são o M04). O aceite do M03 fala em "igual"; isso não se alcança sem o M04.
+- **Corpus** (72 `music.json`), conferido por scripts independentes:
+  - schema `$defs/musicDocument`: 72 de 72 válidos;
+  - compassos, notas, pausas, pausas de compasso e espaços contra o MEI notado (sem o
+    `<incip>` do cabeçalho, que é descrição da obra, não partitura): 0 divergências;
+  - partes contra `<score-part>` dos 6 MusicXML: 0 divergências (ids e nomes);
+  - compasso, armadura e modo contra o `<time>`, `<key>` e `<mode>` do MusicXML: 0
+    divergências em 330 compassos;
+  - casas contra o `<ending>` do MEI: 1037 compassos, 36 dentro de casa, 0 divergências;
+  - 14 733 eventos (acorde, apojatura, quiáltera, pauta e camada) contra o MEI: 0
+    divergências;
+  - 140 andamentos e os 5 ornamentos com `@startid` contra o MEI: 0 divergências.
+    Uma comparação mostrou um espaço inicial no texto de andamento do Clair de Lune
+    (`" morendo jusqu'à la fin"`); o texto é o `<rend>` do MEI, e o oráculo é que o
+    aparava. `music.json` guarda o texto como vem.
+
+Pontos técnicos para o M04:
+
+- Depois do layout, o `Doc` está em *cast-off*: os compassos saem do `Score` e vão
+  para `Page`/`System`, e o `scoreDef` inicial fica no `Score`, que a varredura a
+  partir do `Doc` não alcança. Por isso `ReadBridgeMusic` lê o `scoreDef` inicial por
+  `Doc::GetFirstScoreDef()` e varre o resto a partir do `Doc` (os compassos estão nas
+  páginas, e os `scoreDef` de seção também).
+- Depois do cast-off, a casa não é ancestral do compasso: o `ending` sai de
+  `Measure::GetDrawingEnding()`, que `PrepareMilestonesFunctor` preenche no
+  carregamento (antes do cast-off).
+- Armadura e fórmula em cada compasso: a regra 3 pede os valores do começo do
+  compasso. Mudanças no começo (camada antes de qualquer evento) valem para o
+  compasso; as do meio valem a partir do evento. O M04 deve ler `<harmony>` e
+  `<direction>` no mesmo percurso (são filhos do compasso, nas páginas).
+- `multiRest` não aparece no corpus e não gera evento.
+
+Desvios e ressalvas:
+
+- **Spec (§2.9)**: acrescentadas notas de implementação às regras 4, 5 e 6 (camada sem
+  nota; partes; trinado só com `@tstamp`). Nenhuma regra normativa mudou.
+- **R-PARTES (decisão do usuário)**: o MusicXML sai certo, com uma entrada por
+  `<part>`. Os 5 MEI de `corpus/mei/` têm pauta dupla num `staffGrp` sem grupo de
+  parte, e saem com 2 partes cada. A regra 5 manda uma entrada só nesse caso, mas a
+  estrutura não distingue esse MEI de duas partes de uma pauta cada num MusicXML (que
+  o fixture do M02 precisa). Mantive uma entrada por filho do `staffGrp` externo.
+- **R-TRINADO (decisão do usuário)**: 12 trinados do Scarlatti têm só `@tstamp`, sem
+  `@startid`. O schema exige `startid`, então ficam fora de `ornaments` (aviso no log:
+  `music: trill ... has no @startid`).
+- **R1 (pendente, mantida)**: `grace` invertido no importador do MusicXML. O
+  `music.json` segue o MEI (confirmado nos 14 733 eventos). O importador não foi tocado.
+- **R-SCORE_BRIDGE**: o `score_bridge` não está neste repositório. O `compare/pubspec.yaml`
+  aponta para `/home/mauricio/IdeaProjects/zywny/score_bridge`, que não existe (há só
+  `build/unit_test_assets/packages/score_bridge/fonts`). Não rodei `flutter test` e não
+  li o parser Dart: o campo extra `music` no pacote não foi verificado do lado do leitor.
+  Fechar quando o pacote estiver disponível.
+- **Camadas vazias**: 12 (2 no Clair de Lune, 10 na Gymnopédie), saem com `"events": []`.

@@ -22,6 +22,7 @@ namespace vrv {
 class RunningElement;
 struct MIDIEventLog;
 struct BridgePitchPos;
+struct BridgeMusic;
 
 //----------------------------------------------------------------------------
 // BridgeAlternateSequence
@@ -103,7 +104,14 @@ public:
      */
     static std::string WriteManifest(const std::string &generator, int pageCount, bool hasTimemap,
         bool hasMeta = false, bool hasAlternates = false, bool hasDebug = false, bool hasMidi = false,
-        bool hasPitchPos = false);
+        bool hasPitchPos = false, bool hasMusic = false);
+
+    /**
+     * Serializes music.json (§2.9, M03): parts, measures (meter, key, staves, layers, events), ornaments
+     * and tempi. harmonies and directions are written empty until M04. The caller omits the whole
+     * document when `music.IsEmpty()`.
+     */
+    static std::string WriteMusic(const BridgeMusic &music);
 
     /**
      * Serializes alternates.json (§2.5): one entry per sequence, `start` plus its own pages
@@ -148,7 +156,7 @@ public:
         const std::string &timemapJson = "", const BridgeMeta &meta = BridgeMeta(),
         const std::vector<BridgeAlternateSequence> &sequences = {}, const std::string &debugOptionsJson = "",
         const std::string &debugSource = "", const MIDIEventLog *midiLog = nullptr,
-        const BridgePitchPos *pitchPos = nullptr);
+        const BridgePitchPos *pitchPos = nullptr, const BridgeMusic *music = nullptr);
 };
 
 } // namespace vrv

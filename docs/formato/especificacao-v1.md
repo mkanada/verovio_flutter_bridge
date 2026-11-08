@@ -623,16 +623,32 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
    Todo evento traz os cinco campos (`id`, `t`, `chord`, `grace`, `tuplet`); em
    pausa, `chord` é `null` e `grace` é `false`. (O exemplo do M00 omitia esses
    campos na pausa; a spec os fixa.)
+   **Implementação (M03):** uma camada que o notado tem sem nenhuma nota ou
+   pausa sai com `"events": []` (12 casos no corpus: 2 no Clair de Lune e 10 na
+   Gymnopédie). Cada pauta sai com as camadas que o notado tem; no corpus medido
+   nenhuma pauta de compasso fica sem evento.
 5. **`parts`.** Uma entrada por `<part>` da fonte (MusicXML) ou por `staffGrp` de
    partes (MEI). `id` é o id da parte (`P1`, na fixture): o `xml:id` do
    `staffDef` quando a parte tem uma pauta, ou do `staffGrp` quando tem várias
    (M01: achado em todas as partes medidas). `name` é o `label` da parte, ou
    `null`. `staves` são os `n` das pautas dela. Num MEI sem partes, uma entrada
    só, com o `xml:id` do `staffGrp` mais externo e todas as pautas.
+   **Implementação (M03, pendente — R-PARTES):** o leitor toma cada filho do
+   `staffGrp` externo do primeiro `scoreDef` como uma parte (um `staffGrp` ou um
+   `staffDef`). Com isso o MusicXML sai certo (uma entrada por `<part>`, conferido
+   nas partituras do corpus). Um MEI de pauta dupla sem grupo de parte (um
+   `staffGrp` com duas `staffDef`, como Scarlatti e Chopin Étude do `corpus/mei/`)
+   sai com uma entrada por pauta, e não com a entrada única que o parágrafo acima
+   manda: a estrutura não distingue esse caso de duas partes de uma pauta cada.
+   Decisão do usuário pendente.
 6. **`ornaments`.** Os controles `trill`, `mordent` e `turn`. `kind` é o nome do
    elemento. `startid` é o `@startid` do MEI **sem o `#`**: o id da nota, ou o do
    `chord` quando a nota pertence a um acorde (medido na fixture: o trinado da nota
    C4 do acorde aponta para o `chord`). Fermata e os demais controles ficam fora.
+   **Implementação (M03, pendente — R-TRINADO):** um controle sem `@startid`
+   (posicionado só por `@tstamp`; 12 trinados no corpus, todos do Scarlatti) não
+   entra em `ornaments`, porque o schema exige `startid`. Como guardá-lo fica
+   para decidir.
 7. **`harmonies`** (D-MUSICA-CIFRA): uma por `<harmony>` da fonte. Medido no M01 e
    no M02: todo `<harmony>` chega ao MEI como `harm` (0 divergências nos arquivos
    com fonte MusicXML).

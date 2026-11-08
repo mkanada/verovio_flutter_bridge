@@ -20,6 +20,7 @@
 
 //----------------------------------------------------------------------------
 
+#include "bridgemusic.h"
 #include "bridgepitchpos.h"
 #include "csscolor.h"
 #include "midifunctor.h"
@@ -643,7 +644,7 @@ std::string BridgeWriter::WriteMeta(const BridgeMeta &meta)
 }
 
 std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCount, bool hasTimemap, bool hasMeta,
-    bool hasAlternates, bool hasDebug, bool hasMidi, bool hasPitchPos)
+    bool hasAlternates, bool hasDebug, bool hasMidi, bool hasPitchPos, bool hasMusic)
 {
     std::string out = "{\"format\":\"vsb\",\"version\":1,\"generator\":\"" + EscapeJsonString(generator) + "\"";
     // §2.1: pageCount is scene.pages only - alternates.json's pages are never counted here, even
@@ -664,6 +665,9 @@ std::string BridgeWriter::WriteManifest(const std::string &generator, int pageCo
     }
     if (hasPitchPos) {
         out += ",\"pitchpos\":\"pitchpos.json\"";
+    }
+    if (hasMusic) {
+        out += ",\"music\":\"music.json\"";
     }
     if (hasDebug) {
         out += ",\"debugOptions\":\"debug-options.json\",\"debugSource\":\"debug-source.txt\"";
@@ -861,24 +865,127 @@ std::string BridgeWriter::WriteMidi(const MIDIEventLog &log)
     return out;
 }
 
+namespace {
+
+    // A nullable string: null for "", else the escaped text in quotes
+    std::string NullableString(const std::string &s)
+    {
+        return s.empty() ? std::string("null") : "\"" + EscapeJsonString(s) + "\"";
+    }
+
+    void AppendEvent(std::string &out, const BridgeMusicEvent &event)
+    {
+        out += "{\"id\":\"" + EscapeJsonString(event.id) + "\"";
+        out += ",\"t\":\"" + event.t + "\"";
+        out += ",\"chord\":" + NullableString(event.chord);
+        out += ",\"grace\":" + (event.grace.empty() ? std::string("false") : NullableString(event.grace));
+        if (event.tuplet.num > 0) {
+            out += ",\"tuplet\":{\"num\":" + std::to_string(event.tuplet.num);
+            out += ",\"numbase\":" + std::to_string(event.tuplet.numbase) + "}";
+        }
+        else {
+            out += ",\"tuplet\":null";
+        }
+        out += '}';
+    }
+
+    void AppendMeasure(std::string &out, const BridgeMusicMeasure &measure)
+    {
+        out += "{\"id\":\"" + EscapeJsonString(measure.id) + "\"";
+        out += ",\"index\":" + std::to_string(measure.index);
+        out += ",\"n\":\"" + EscapeJsonString(measure.n) + "\"";
+        out += ",\"left\":" + NullableString(measure.left);
+        out += ",\"right\":" + NullableString(measure.right);
+        out += ",\"ending\":";
+        out += measure.ending.empty() ? std::string("null") : "{\"n\":\"" + EscapeJsonString(measure.ending) + "\"}";
+        out += ",\"meter\":{\"count\":" + std::to_string(measure.meter.count);
+        out += ",\"unit\":" + std::to_string(measure.meter.unit);
+        out += ",\"sym\":" + NullableString(measure.meter.sym) + "}";
+        out += ",\"key\":{\"sig\":" + NullableString(measure.key.sig);
+        out += ",\"fifths\":" + std::to_string(measure.key.fifths);
+        out += ",\"mode\":" + NullableString(measure.key.mode) + "}";
+        out += ",\"staves\":[";
+        for (std::size_t s = 0; s < measure.staves.size(); ++s) {
+            if (s) out += ',';
+            const BridgeMusicStaff &staff = measure.staves[s];
+            out += "{\"n\":" + std::to_string(staff.n) + ",\"layers\":[";
+            for (std::size_t l = 0; l < staff.layers.size(); ++l) {
+                if (l) out += ',';
+                const BridgeMusicLayer &layer = staff.layers[l];
+                out += "{\"n\":" + std::to_string(layer.n) + ",\"events\":[";
+                for (std::size_t e = 0; e < layer.events.size(); ++e) {
+                    if (e) out += ',';
+                    AppendEvent(out, layer.events[e]);
+                }
+                out += "]}";
+            }
+            out += "]}";
+        }
+        out += "]}";
+    }
+
+} // namespace
+
+std::string BridgeWriter::WriteMusic(const BridgeMusic &music)
+{
+    std::string out = "{\"version\":1,\"parts\":[";
+    for (std::size_t p = 0; p < music.parts.size(); ++p) {
+        if (p) out += ',';
+        const BridgeMusicPart &part = music.parts[p];
+        out += "{\"id\":\"" + EscapeJsonString(part.id) + "\",\"name\":" + NullableString(part.name);
+        out += ",\"staves\":[";
+        for (std::size_t s = 0; s < part.staves.size(); ++s) {
+            if (s) out += ',';
+            out += std::to_string(part.staves[s]);
+        }
+        out += "]}";
+    }
+    out += "],\"measures\":[";
+    for (std::size_t m = 0; m < music.measures.size(); ++m) {
+        if (m) out += ',';
+        AppendMeasure(out, music.measures[m]);
+    }
+    out += "],\"ornaments\":[";
+    for (std::size_t o = 0; o < music.ornaments.size(); ++o) {
+        if (o) out += ',';
+        const BridgeMusicOrnament &ornament = music.ornaments[o];
+        out += "{\"id\":\"" + EscapeJsonString(ornament.id) + "\"";
+        out += ",\"kind\":\"" + ornament.kind + "\"";
+        out += ",\"startid\":\"" + EscapeJsonString(ornament.startid) + "\"}";
+    }
+    // harmonies and directions come with M04; the schema requires the keys already
+    out += "],\"harmonies\":[],\"directions\":[],\"tempi\":[";
+    for (std::size_t t = 0; t < music.tempi.size(); ++t) {
+        if (t) out += ',';
+        const BridgeMusicTempo &tempo = music.tempi[t];
+        out += "{\"id\":\"" + EscapeJsonString(tempo.id) + "\"";
+        out += ",\"measure\":" + std::to_string(tempo.measure);
+        out += ",\"bpm\":" + (tempo.bpm > 0.0 ? FormatNumber(tempo.bpm) : std::string("null"));
+        out += ",\"text\":" + NullableString(tempo.text) + "}";
+    }
+    out += "]}";
+    return out;
+}
+
 std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> &pages,
     const std::map<std::string, BridgeGlyphDef> &glyphs, const std::string &generator, const std::string &timemapJson,
     const BridgeMeta &meta, const std::vector<BridgeAlternateSequence> &sequences,
     const std::string &debugOptionsJson, const std::string &debugSource, const MIDIEventLog *midiLog,
-    const BridgePitchPos *pitchPos)
+    const BridgePitchPos *pitchPos, const BridgeMusic *music)
 {
     const bool hasTimemap = !timemapJson.empty();
     const bool hasMeta = !meta.IsEmpty();
     const bool hasAlternates = !sequences.empty();
     const bool hasMidi = midiLog && !midiLog->events.empty();
     const bool hasPitchPos = pitchPos && !pitchPos->IsEmpty();
+    const bool hasMusic = music && !music->IsEmpty();
     const bool hasDebug = !debugOptionsJson.empty();
 
     std::string out;
     out.reserve(1 << 20);
     out += "{\"manifest\":";
-    out += WriteManifest(
-        generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi, hasPitchPos);
+    out += WriteManifest(generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug,
+        hasMidi, hasPitchPos, hasMusic);
     out += ",\"glyphs\":";
     out += WriteGlyphs(glyphs);
     out += ",\"scene\":";
@@ -902,6 +1009,10 @@ std::string BridgeWriter::WriteSingleJson(const std::vector<const BridgePage *> 
     if (hasPitchPos) {
         out += ",\"pitchpos\":";
         out += WritePitchPos(*pitchPos);
+    }
+    if (hasMusic) {
+        out += ",\"music\":";
+        out += WriteMusic(*music);
     }
     if (hasDebug) {
         out += ",\"debug\":{\"options\":";

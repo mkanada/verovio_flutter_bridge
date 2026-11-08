@@ -41,6 +41,7 @@
 #include "layer.h"
 #include "bridgealternates.h"
 #include "bridgedevicecontext.h"
+#include "bridgemusic.h"
 #include "bridgewriter.h"
 #include "measure.h"
 #include "midifunctor.h"
@@ -2120,6 +2121,9 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     // notation context (drawing loc, cross-staff pointers) is read from the normal layout.
     const BridgePitchPos pitchPos = this->RenderPitchPos(fromPage, toPage, midiLog);
 
+    // §2.9 (M03): the notated structure, read before the alternates for the same reason as the pitchpos
+    const BridgeMusic music = ReadBridgeMusic(m_doc);
+
     // §2.5/P02c: alternates only when the whole document was requested - a page range that isn't
     // "every normal page" wouldn't have "the rest of the piece" to build a sequence into, and
     // firstOfNormalPage (from ComputeAlternateStarts) is derived from the whole Doc regardless of
@@ -2142,7 +2146,7 @@ std::string Toolkit::RenderToBridgeJson(int fromPage, int toPage)
     const std::string debugOptionsJson = m_options->m_vsbDebug.GetValue() ? this->GetOptions() : "";
 
     std::string output = BridgeWriter::WriteSingleJson(pages, bridge.GetGlyphs(), generator, timemapJson, meta, sequences,
-        debugOptionsJson, m_debugSourceData, &midiLog, &pitchPos);
+        debugOptionsJson, m_debugSourceData, &midiLog, &pitchPos, &music);
 
     // P02b, debug-only (--debug-alternate-starts): splice a "_alternateStarts" key into the
     // vsb-json output, outside BridgeWriter on purpose - it is not part of the documented format
@@ -2470,6 +2474,10 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     const BridgePitchPos pitchPos = this->RenderPitchPos(1, -1, midiLog);
     const bool hasPitchPos = !pitchPos.IsEmpty();
 
+    // §2.9 (M03): the notated structure, read before the alternates for the same reason as the pitchpos
+    const BridgeMusic music = ReadBridgeMusic(m_doc);
+    const bool hasMusic = !music.IsEmpty();
+
     // P02c (§2.5): must run after the normal pages/timemap/meta are all done reading from the
     // unselected Doc, and must be the last thing to push pages into `bridge` - see
     // RenderAlternatesToBridge's own doc comment for why. Only after this returns is it safe to
@@ -2492,7 +2500,7 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     zip.AddFile("manifest.json",
         BridgeWriter::WriteManifest(
             generator, static_cast<int>(pages.size()), hasTimemap, hasMeta, hasAlternates, hasDebug, hasMidi,
-            hasPitchPos));
+            hasPitchPos, hasMusic));
     zip.AddFile("scene.json", BridgeWriter::WriteScene(pages));
     zip.AddFile("glyphs.json", BridgeWriter::WriteGlyphs(bridge.GetGlyphs()));
     if (hasTimemap) {
@@ -2509,6 +2517,9 @@ bool Toolkit::RenderToBridgeFile(const std::string &filename)
     }
     if (hasPitchPos) {
         zip.AddFile("pitchpos.json", BridgeWriter::WritePitchPos(pitchPos));
+    }
+    if (hasMusic) {
+        zip.AddFile("music.json", BridgeWriter::WriteMusic(music));
     }
     if (hasDebug) {
         zip.AddFile("debug-options.json", this->GetOptions());

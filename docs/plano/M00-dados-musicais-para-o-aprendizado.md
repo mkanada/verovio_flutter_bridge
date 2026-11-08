@@ -58,9 +58,11 @@ Além disso há custo e ergonomia:
   atributos de **todo** `measure`, `staff`, `layer` e `note` da cena (milhares de
   chamadas por hino).
 - Para ler a música, o app renderiza **todas as páginas** (`renderToBridgeJson`)
-  só para obter a cena e as outras três tabelas, que **não dependem de layout**.
-  Medido: ~50 ms numa peça de 8 compassos e ~0,5 s por hino na passada nos 600
-  hinos (a maior parte, o desenho).
+  só para obter a cena e as outras três tabelas. A cena precisa de layout; as
+  outras três (timemap, midi, pitchpos) precisam do layout só no caso do pitchpos
+  (ver acima), não do desenho. Medido no M01 (in-process, mediana de 5 cargas):
+  ~16 ms numa peça de 8 compassos (twinkle) e ~181 ms por hino na mediana de 20
+  hinos com `renderToBridgeJson` (números dos 600 hinos em "Notas de execução").
 - O binding Dart do `getElementAttr` tem **um argumento a mais** que a função C
   (`getElementAttr(String element, String attribute)` contra
   `vrvToolkit_getElementAttr(tk, xmlId)`): funciona por acaso na convenção de
@@ -76,7 +78,7 @@ Além disso há custo e ergonomia:
   `RenderPitchPos`, `bridgepitchpos.cpp`).
 - `verovio/src/toolkit.cpp`: `RenderToBridgeJson` (~L2094), `ReadBridgeMeta`
   (~L2334), `RenderToBridgeFile` (~L2440): onde as tabelas são juntadas.
-- `verovio/src/iomusxml.cpp`: `ReadMusicXmlHarmony` (~L2860: onde a cifra vira
+- `verovio/src/iomusxml.cpp`: `ReadMusicXmlHarmony` (L2858: onde a cifra vira
   texto e a estrutura se perde), a leitura de `<key>` com `<mode>` (~L4470), e a
   de `<words>`/`<direction>` (procure `ReadMusicXmlDirection`).
 - `verovio/tools/c_wrapper.{h,cpp}`, `verovio/bindings/dart/lib/src/`
@@ -130,12 +132,20 @@ que a cena desenha, tirada do `Doc` (não do desenho).
   texto, não número) e o da anacruse com `n="0"` e `metcon="false"`.
 - `Harm` guarda o `Text` já montado e `@type` (o do `<harmony type>`) e
   `@tstamp`; a raiz, a alteração, o `kind`, o `text` do `kind`, o baixo e os
-  graus **não são guardados**.
+  graus **não são guardados**. (Confirmado no M01, `ReadMusicXmlHarmony`, L2858.
+  Quando existe, o `kind@text` é que vira o texto do `Harm`: em 14 852 de 30 553
+  cifras dos 610 arquivos medidos.)
 - O timemap desdobra repetições e casas (ids `-rend<N>`); a primeira passada tem
   o id notado. Os compassos depois de uma barra final (`right="end"`) **não**
   entram no timemap (o hino 458 tem 9 deles).
-- `Toolkit::RenderToBridgeJson` já monta, nesta ordem e **sem** depender uns dos
-  outros: `scene` (precisa de layout), `timemap`, `meta`, `midi` e `pitchpos`.
+- `Toolkit::RenderToBridgeJson` monta, nesta ordem: `scene` (`RenderPagesToBridge`,
+  precisa de layout), `timemap` (`RenderToTimemap`), `meta`, `midi`
+  (`RenderMidiEventLog`) e `pitchpos` (`RenderPitchPos`, `toolkit.cpp` L2108-L2121).
+  O `pitchpos` lê o layout que a `scene` também usa, e por isso vem antes das
+  alternativas (que fazem `Select`/`RedoLayout`). O primeiro `RenderToTimemap` ou
+  `RenderMidiEventLog` de uma carga chama `SetMidiDoc()`, que reexporta o MEI e o
+  reimporta num `Doc` expandido (`toolkit.cpp` L288-L310): ~37 ms na 1ª chamada,
+  depois cacheado (ver M01).
 - O `midi.json` já dá, por nota, `s` (pauta), `l` (camada), `tied` (a cadeia da
   ligadura) e `orn`; o `pitchpos.json`, `pn`/`o`/`alt`/`dur`/`dots` e a
   armadura vigente (`key`). **Não** repita isso em `music.json`.
@@ -196,7 +206,10 @@ Regras normativas (a spec ganha uma §2.9 com isto; o M02 as escreve):
 2. **`n`** é o texto do `@n` do compasso, sem interpretação. **`left`/`right`**:
    `rptstart`, `rptend`, `rptboth`, `end`, `dbl`... (o valor do MEI), `null` se
    não há. **`ending`**: `{"n": "1"}` se o compasso está dentro de uma
-   `<ending>`, senão `null`.
+   `<ending>`, senão `null`. **Corrigido no M01:** o valor é o `@number` da casa,
+   que pode ser uma lista (`"2,3,4"`), e **não** o texto impresso (`"2. 3. e 4."`):
+   o importador perde o texto no `<ending type="stop">` (`iomusxml.cpp` L428). A
+   spec diz isso (lista separada por vírgula).
 3. **`meter`** e **`key`** são os **vigentes no começo do compasso** (herdados do
    `scoreDef`/`staffDef` anterior), da primeira pauta; um compasso novo só repete
    o que mudou se o leitor comparar com o anterior. `sym`: `"common"` ou `"cut"`
@@ -210,7 +223,12 @@ Regras normativas (a spec ganha uma §2.9 com isto; o M02 as escreve):
    `space` (`"s"`) da camada, **na ordem do documento**. Sem `q`/`ql` (D-MUSICA-Q): o tempo da
    nota sai do timemap, pelo mesmo id. `chord`: o id do `<chord>` a que a nota pertence
    (`null` fora de acorde). `grace`: `false`, `"acc"` ou `"unacc"` (`@grace` da
-   nota ou `<graceGrp>` pai). `tuplet`: `{"num": 3, "numbase": 2}` da quiáltera
+   nota ou `<graceGrp>` pai). **Pauta de cada evento (corrigido no M01):** uma nota cruzada (o `<staff>`
+   do MusicXML é diferente da pauta onde o Verovio a guarda) fica numa camada da
+   pauta de origem, mas o MEI traz o `@staff` do próprio nó (`note` ou `chord`).
+   Medido: 123 notas em `Clair_de_Lune` e 2 em `Nocturne`. A pauta do evento é o
+   `@staff` do nó quando existe, senão a da pauta que o contém (regra para a §2.9,
+   no M02). `tuplet`: `{"num": 3, "numbase": 2}` da quiáltera
    mais interna (a razão composta só se o MEI a tem; ver "Fica fora"), senão
    `null`. **Altura, figura e ligadura não se repetem aqui**: estão no
    `pitchpos.json` e no `midi.json`, pelo mesmo id.
@@ -242,10 +260,13 @@ Regras normativas (a spec ganha uma §2.9 com isto; o M02 as escreve):
 `timemap` (§2.4, com `includeMeasures` e `includeRests`, como no `.vsb`), `midi`
 (§2.7) e `pitchpos` (§2.8), **sem** `scene`, sem `glyphs` e **sem layout**.
 
-- O `pitchpos` hoje lê o desenho (`loc`, ponteiros cross-staff) e por isso
-  depende do layout da página 1; **medir** (M01) se dá para produzi-lo sem
-  desenhar (RedoLayout sem render, ou um layout reduzido), e se não, o campo
-  `loc` sai `null` nessa chamada e a spec diz isso. O app não usa o `loc`.
+- O `pitchpos` hoje lê o layout (`loc`, `GetDrawingLoc`, `GetDrawingAccid`,
+  ponteiros cross-staff) de **todas** as páginas do intervalo pedido
+  (`BridgePitchPosBuilder::Build` percorre `firstPage..lastPage`), não só da
+  página 1. O layout é calculado em `Page::LayOut` (`CalcAlignmentPitchPosFunctor`,
+  `page.cpp`), sem passar pelo `DeviceContext`: dá para produzi-lo sem desenhar.
+  Medido no M01 (ver "Notas de execução"): o layout custa ~22 ms por hino; o
+  `loc` não precisa sair `null`. O app não usa o `loc`.
 - Os ids são os mesmos de um `RenderToBridgeJson` **da mesma carga**.
 - Não mexe em estado (nada de `Select`, `RedoLayout` permanente).
 - Alvo (a medir no M01 e confirmar no M07): ≤ 50 ms por hino, contra ~0,5 s hoje.
@@ -307,7 +328,7 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 
 | Passo | O quê | Depende de | Estado |
 | --- | --- | --- | --- |
-| M01 | **Medir** os fatos (decisões já tomadas, ver "Decisões necessárias"): o que o `Doc` notado tem (`Harm`, `Dir`, `KeySig::mode`, `layer n` = voz, id da parte), custo de `RenderToMusicJson` sem layout | — | pendente |
+| M01 | **Medir** os fatos (decisões já tomadas, ver "Decisões necessárias"): o que o `Doc` notado tem (`Harm`, `Dir`, `KeySig::mode`, `layer n` = voz, id da parte), custo de `RenderToMusicJson` sem layout | — | concluído com ressalva: células de Chopin e Debussy só parcialmente explicadas (notas invisíveis), ver "Notas de execução" |
 | M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | pendente |
 | M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | pendente |
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | pendente |
@@ -324,7 +345,7 @@ Sem código de produção (scripts em `compare/scripts/`, saída em `compare/out
    aprendizado (`ode`, `intro`, `menor`, `recusa`, em
    `zywny-aprendizado/test/music_reading/fixtures/src/`), as de curso com cifra
    (`test/fixtures/cursos/lead-sheet/media/twinkle.musicxml`, `contrafato-1`,
-   `harmonia/media/folclore-1`) e uns 20 hinos do `Hymn_Grabber`
+   `harmonia/media/folclore-1`) e uns 20 hinos do `Hymn_Grabber` (**corrigido no M01:** `folclore-1` não tem `<harmony>` (0), e `folclore-2` tem só `chg`; as cifras de curso são `twinkle` (2 cópias) e `contrafato-1`. O caminho do `Hymn_Grabber` é `/home/mauricio/IdeaProjects/Hymn_Grabber/musicxml_simplificado` e não `../Hymn_Grabber`, que a partir da raiz deste repositório não existe)
    (`musicxml_simplificado/`: 001, 213, 248, 458, e os com repetição e casas):
    confirmar cada linha de "Fatos medidos" e registrar o que mudou.
 2. **Doc notado** (`scoreTime` saiu da lista pela D-MUSICA-Q): `layer n` é a voz do MusicXML em todos os casos? Onde o `Doc` guarda
@@ -409,7 +430,7 @@ fórmula e armadura (com modo) por compasso, `layer n` = `<voice>`, cada cifra
 (todos os campos), cada `chg`. Rodar:
 
 - no corpus e nas fixtures do aprendizado;
-- nos **600 hinos** (`../Hymn_Grabber/musicxml_simplificado`), com `just
+- nos **600 hinos** (`/home/mauricio/IdeaProjects/Hymn_Grabber/musicxml_simplificado`; corrigido no M01), com `just
   medidor` do aprendizado depois, como prova de ponta a ponta (os números da
   passada do LM14/LM15 não podem mudar: 149 passam o filtro 1, M2 25, M3 6, M4 7,
   M5 56, nenhum 506);
@@ -480,5 +501,91 @@ aprendizado (seção da regra) pode trocar a pendência do `readMelodyXml` por
 - **D-MUSICA-CIFRA:** `HarmData` ligado ao `Harm`, sem atributo MEI. A tabela lateral no `Doc` é o fallback, a confirmar no M01.
 - **D-MUSICA-Q:** sem `q`/`ql` no `music.json`. A decisão foi aplicada a **todos** os campos de tempo (compasso, evento, `harmonies`, `directions`, `tempi`), não só às notas. A posição dentro do compasso continua no `tstamp` das cifras e das direções. O M01 não mede `scoreTime`.
 - **M05, `getElementAttr`:** remover o segundo argumento, sem `@Deprecated`. **Quebra** para o `zywny`, que hoje chama com dois argumentos; a quebra vai na nota do M08.
+
+**2026-11-08: M01 executado (medição, sem código de produção)**
+
+Ferramentas: `compare/scripts/m01-medicoes.py` (oráculo em cima do MusicXML, lido
+direto; `-t mei` e `-t vsb-json` do próprio Verovio; modo `--levantamento` lê
+os 600 hinos e o corpus sem o Verovio) e `compare/out/m01/bench.c` (ligado à
+`libverovio.so` de `verovio/tools/build-library`, recompilada no início do passo).
+Saídas em `compare/out/m01/` (git-ignorado): `resumo.json`, `levantamento.json`,
+`bench-hinos.txt`, `bench-600.txt`. Os 38 arquivos medidos são: 4 de
+`test/music_reading/fixtures/src`, 5 de cursos e assets, 5 de `corpus/musicxml`
+(`.mxl`), 20 hinos (001, 213, 248, 458 e 16 com casa ou anacruse) e 2 sintéticos
+(twinkle com `<mode>` e troca de armadura no compasso 5, e a mesma sem `<mode>`).
+
+**Fato → confirmado ou corrigido**
+
+| Fato (M00) | Medido | Veredito |
+| --- | --- | --- |
+| Cena tem nós `measure`, `staff`, `layer`, `note`, `rest`, `chord`, `meterSig`, `keySig`, `harm`, `dir`, `tempo` com `id` | Classes na 1ª página de cada uma das 38 cenas (`vsb-json`) | Confirmado. `mordent`/`turn` não apareceram nas 38 (só `trill`, 1 vez); `graceGrp` não foi conferido. |
+| `getElementAttr` acha `measure` `{n,left,right,metcon}`, `staff` `{n}`, `layer` `{n}`, não o `meterSig` | `bench attr` em `intro.mei`: `measure` → `{"n":"1i"}`, `staff` → `{"n":"1"}`, `layer` → `{"n":"1"}`, `meterSig` da cena `b12odbi7` → `not found` | Confirmado |
+| `meterSig` do MEI tem `xml:id` diferente do nó da cena (cópia) | MEI `v1ombt22`, cena `b12odbi7` | Confirmado |
+| `layer n` = voz do MusicXML | 38 arquivos, 20 hinos: 0 células divergentes. Nas 38 há 65 células divergentes, todas de pauta ou nota invisível, não de voz (ver ressalvas) | Confirmado |
+| `1i`, `2i`... é o rótulo `n` da introdução; anacruse sai com `n="0"` e `metcon="false"` | `hymn-003`: `n="0" metcon="false" left="rptstart"`; `hymn-001`: `n="1i"`, `2i`, `3i` com `metcon="false"` | Confirmado |
+| `Harm` guarda só texto, `type` e `tstamp` | Código (`ReadMusicXmlHarmony`, L2858). Cifras no MEI: `harm` = `staff`, `tstamp`, texto | Confirmado |
+| Cifra estruturada se perde no importador | 30 553 `<harmony>` em 610 arquivos; 1173 de 1173 chegam ao MEI nos 38 | Confirmado (`harm` = `<harmony>` em número) |
+| Compassos após barra final (`right="end"`) fora do timemap; hino 458 tem 9 | 458: 9 compassos após `right="end"`, 9 fora do timemap; nenhum outro dos 38 | Confirmado |
+| Ordem de `RenderToBridgeJson` | `toolkit.cpp` L2094-L2121: scene, timemap, meta, midi, pitchpos, alternativas | Confirmado, com correção: pitchpos lê o layout (ver abaixo) |
+| `midi.json`: `s`, `l`, `tied`, `orn` | Notas: `id,on,off,p,s,l,v` (+`tied` em 846); `orn` (booleano, `bridgewriter.cpp` L845) não apareceu nos 38 | Confirmado; `orn` sem caso medido |
+| `pitchpos.json`: `pn`, `o`, `alt`, `dur`, `dots`, `key` | Chaves `t`, `co`, `key`, `pn`, `o`, `alt`, `loc`, `dur`, `dots` | Confirmado (faltavam `t`, `co`, `loc`, que não mudam nada) |
+| `pitchpos` depende do layout da página 1 | `BridgePitchPosBuilder::Build` percorre `firstPage..lastPage` e usa `GetDrawingLoc`, do layout (`page.cpp` L282/L370/L698), não do desenho | **Corrigido** |
+| Medido: ~50 ms por peça de 8 compassos e ~0,5 s por hino (600) | Ver "Custo" abaixo: twinkle 16 ms; 600 hinos 157 ms (mediana, in-process) | **Corrigido** |
+| Caminhos: `../Hymn_Grabber` | Não existe a partir da raiz; o certo é `/home/mauricio/IdeaProjects/Hymn_Grabber` | **Corrigido** (L327, L412) |
+| `folclore-1` é cifra de curso | 0 `<harmony>`; `folclore-2` tem `chg` (plano); cifras: `twinkle` (2 cópias) e `contrafato-1` | **Corrigido** |
+| `ending` (regra 2) é o texto da casa | `ending@n` no MEI é o `@number` da casa, lista como `"2,3,4"`, não `"2. 3. e 4."`: o texto se perde no `<ending type="stop">` (`iomusxml.cpp` L428). 30 casas no MEI = 30 em `part` 1 | **Corrigido** (regra 2) |
+| Pauta da nota = pauta onde o Verovio a guarda | Notas cruzadas: `@staff` do nó difere da pauta que o contém em 123 notas (`Clair_de_Lune`) e 2 (`Nocturne`) | **Corrigido** (regra 4): pauta = `@staff` do nó, senão a da pauta que o contém |
+| `ReadMusicXmlHarmony` ~L2860 | L2858 | Corrigido (linha) |
+
+**Perguntas do M01**
+
+1. Corpus e hinos: 38 arquivos medidos (ver acima); os 610 arquivos do levantamento
+   (600 hinos, 5 do corpus, 5 de cursos) em `levantamento.json`.
+2. **Doc notado.**
+   - `layer n` é o `<voice>` (default 1): `SelectLayer`, `iomusxml.cpp`.
+   - **Id da parte:** em parte de uma pauta, o `staffDef` leva `xml:id` = id da `<part>` (twinkle: `staffDef xml:id="P1"`, com `label` e `instrDef` filhos). Em parte de várias pautas, o `staffGrp` leva o id (`staffGrp xml:id="P1" bar.thru="true"`, intro). As partes de todos os 38 arquivos foram achadas.
+   - `KeySig::GetMode()` é `MODE_NONE` sem `<mode>` (`libmei/dist/atts_analytical.cpp` L197); o importador só lê `<mode>` no ramo `<fifths>` (`iomusxml.cpp` L4470). Nos 1302 `<key>` dos hinos não há `<mode>`; em `Clair_de_Lune`, 3 `<key>` sem `<mode>` → 0 `mode` no MEI; no sintético, `minor` na 1ª armadura e `major` no compasso 5 (`keySig mode`), e nenhum `mode` na versão sem `<mode>`.
+   - `<ending>`: o `Ending` é pai do `Measure` (MEI `<ending n=...>` envolve os compassos), 30 de 30 nos 38 arquivos.
+3. **Cifras e direções:**
+   - Chegada: 1173 de 1173 `<harmony>` nos 38 arquivos viram `harm`; nos 610 arquivos, `root` em 30 553, `bass` em 7 070, `degree` em 2 420, `numeral` em 0 (sem caso real).
+   - Tipos: 13 `kind` distintos no corpus e nos hinos, todos no `ConvertKindToText`; 0 perdidos. Fora do mapa, pelo código (comentários de `ConvertKindToText`): `none`, `other`, `neapolitan`, `italian`, `french`, `german`, `pedal`, `tristan`. Sem `kind@text` viram texto vazio; não aparecem no corpus medido.
+   - `kind@text` é usado em 14 852 de 30 553 cifras (49%), e é ele que vira o texto do `Harm`.
+   - Direções: 137 `<words>` não vazios nos 38 arquivos, **todos** aparecem em algum lugar do MEI (0 perdidos). Mas só 39 viram `dir`: os de direção com `<sound tempo>`/`<metronome>` vão para `tempo` e os com dinâmica para `dynam`. Formatação (`rend`): 65 direções (`Clair_de_Lune` 63, `Maple_Leaf` 2). Nos 600 hinos há 21 direções com `<words>`, nenhuma com várias `<words>`, nenhuma com formatação, nenhuma com tempo ou dinâmica. `chg` (folclore-2) sai como `dir`. Várias `<words>` numa direção, quando houver, viram `Text` seguidos, sem separador (`TextRendition`, L705).
+4. **Custo** (`bench`, cada operação numa carga nova; mediana):
+
+   | Operação | 20 hinos (N=3) | 600 hinos (N=1) | Twinkle 8 compassos (N=5) |
+   | --- | --- | --- | --- |
+   | `loadData` | 37,9 ms | 38,3 ms | 9,0 ms |
+   | `renderToTimemap` (1ª / 2ª chamada) | 39,6 / 2,6 ms | 44,3 / 2,8 ms | 5,8 ms |
+   | `renderToMIDI` (1ª / 2ª chamada) | 36,0 / 1,0 ms | 39,1 / 1,1 ms | 5,7 ms |
+   | `redoLayout` (só layout) | 22,0 ms | 19,4 ms | 4,0 ms |
+   | `renderToSVG` de todas as páginas | 30,5 ms | 27,8 ms | 3,3 ms |
+   | `renderToBridgeJson` (caminho atual) | 181,0 ms | 156,6 ms (média 174,7; p90 266,8; máx 687,8) | 16,3 ms |
+   | provisório `RenderToMusicJson` (timemap + midi + layout, uma carga) | 60,0 ms | 62,6 ms (média 65,5; p90 93,7) | 10,0 ms |
+
+   Na CLI (processo inteiro, mínimo de 3), o `--no-vsb-alternates` mostra quanto as alternativas pesam: 001 149 → 95 ms; 213 246 → 125 ms; 031 338 → 158 ms; 248 213 → 207 ms (sem casas; quase nenhuma diferença).
+
+   - **Alvo ≤ 50 ms não atingido: 63 ms de mediana.** Quase tudo é a primeira chamada de timemap ou MIDI na carga: `SetMidiDoc()` reexporta o MEI e o reimporta num `Doc` expandido (`toolkit.cpp` L288-L310), ~37 ms, cacheado depois (2ª chamada ~3 ms). O layout (~20 ms) é o que o `pitchpos` precisa. Para o M05/M07 vale a comparação 63 ms × 157 ms; se o alvo de 50 ms continua valendo, é a rever no M07 (o custo de `SetMidiDoc` é a alavanca).
+   - **Pitchpos sem desenho:** é possível pela leitura de código (o layout que o `loc` usa é `Page::LayOut`, sem `DeviceContext`). Não dá para provar empiricamente agora: não há entrada pública que faça layout e devolva o `pitchpos` sem desenhar. O M05 tem de provar que o `pitchpos` da rota sem desenho é igual ao da rota com desenho. O `loc` **não** sai `null`.
+   - **Corrigido:** "~0,5 s por hino" era o caminho do app; in-process na C API a mediana é 157 ms. O app (isolate, worker, JSON) acrescenta o que este número não mede.
+
+5. **Fallback do D-MUSICA-CIFRA:** `Harm` é classe escrita à mão (`include/vrv/harm.h`); o libmei só gera as classes de atributo (`AttLang`, `AttNNumberLike`). Um campo novo (ponteiro para `HarmData`) **não** mexe no libmei. Cuidado: `Harm::Clone()` é `new Harm(*this)` (cópia rasa), então o ponteiro deve ser `std::shared_ptr<const HarmData>` ou a tabela lateral deve existir. Se o M03/M04 preferir a tabela lateral: `include/vrv/doc.h`, junto de `pugi::xml_document m_header` (L601); limpa em `Doc::Reset()` (`src/doc.cpp` L110); preenchida em `MusicXmlInput::ReadMusicXmlHarmony` (`src/iomusxml.cpp` L2858), pelo `m_doc`; lida pelo `ReadBridgeMusic`, pelo id notado.
+
+**Decisões do usuário, registradas**
+
+- **D-MUSICA-FORMA:** mantida, arquivo novo `music.json`.
+- **D-MUSICA-CIFRA:** mantida. O caminho principal (`HarmData` por ponteiro no `Harm`) é viável sem libmei; a tabela lateral não é necessária. Ressalva: o ponteiro é `shared_ptr` por causa de `Clone()`.
+- **D-MUSICA-Q:** mantida. Nada medido sobre `scoreTime` (o próprio D-MUSICA-Q diz que o M01 não mede).
+
+**Ressalvas para o M02/M03/M07 (não bloqueiam; não são decisão de usuário)**
+
+- **Notas invisíveis** (`print-object="no"`) não entram no `Doc`, portanto não no timemap nem no `music.json`: Satie 10 pausas invisíveis = 10 células divergentes (explicado 100%); Chopin 14 e Debussy 113 notas invisíveis, só em parte explicado. O M07 decide como o oráculo trata isso.
+- **Notas cruzadas:** a pauta de um evento vem do `@staff` do nó (regra 4 corrigida).
+- **`time symbol`** (`common`, `cut`): nenhum no corpus medido. O campo `sym` não tem caso real; o M02 cria um vetor sintético.
+- **`numeral`**: 0 em 610 arquivos; o caminho existe (`ReadMusicXmlHarmony`) mas sem amostra. O M07 precisa de uma fixture.
+- **`harm@staff`** varia (`1` em 1018 cifras, `2` em 86 nos 20 hinos). Não usar o `staff` do `harm` como pauta do acorde sem checar.
+- **`orn`** nunca apareceu nos 38 arquivos.
+
+**Passo M01:** concluído com ressalva (ver acima: as células divergentes de Chopin e Debussy só estão parcialmente explicadas; o M07 é o lugar de fechar).
 
 Os desvios e os números do M07 entram aqui quando o passo rodar.

@@ -517,18 +517,20 @@ mínima.)
 - Notas ocultas (`visible="false"`) têm entrada como as demais — o host pode
   esperá-las —, mas o nó delas na cena é `hidden`. Uma nota sem `@pname`
   (dado de origem incompleto) não tem entrada.
-- **Sem layout (M05, §2.10).** `loc` e `acc` dependem do layout das páginas,
-  que existe no carregamento só quando o documento é cortado (`--breaks`
-  diferente de `none`, e não é MEI com layout codificado: `<pages>`). Em
-  `renderToMusicJson` de um documento sem esse corte, `acc` de todo elemento e
-  `loc` de toda nota saem `null`. O `.vsb` e o JSON único **nunca** trazem `null`:
-  são montados com o layout. Os demais campos não dependem de layout: medido, a
-  chamada sem nenhum layout de página dá `t`, `co`, `key`, `alt`, `pn`, `o`, `dur`
-  e `dots` iguais aos do `.vsb` em `--breaks` auto (72 arquivos do corpus) e em
-  line, smart e encoded (5 arquivos; em `line` a Mazurka não tem comparação, o HEAD
-  cai nela); com `none` (72 arquivos), só `loc` e `acc`
+- **Layout (M05, §2.10; M05-P).** `loc` e `acc` dependem do layout das páginas.
+  No carregamento, o layout só existe quando o documento é cortado (`--breaks`
+  diferente de `none`, e não é MEI com layout codificado: `<pages>`). Sem esse
+  corte, o `.vsb`, o JSON único e `renderToMusicJson` montam o layout antes de
+  ler o `pitchpos` (só `renderToMusicJson` não chega a desenhar), e `loc`/`acc` saem preenchidos e
+  iguais aos de `renderToBridgeJson` da mesma carga. Por isso, `loc` e `acc` **nunca**
+  saem `null` numa saída do formato. Os demais campos não dependem de layout:
+  medido no M05, a chamada sem nenhum layout de página dá `t`, `co`, `key`, `alt`,
+  `pn`, `o`, `dur` e `dots` iguais aos do `.vsb` em `--breaks` auto (72 arquivos do
+  corpus) e em line, smart e encoded (5 arquivos; em `line` a Mazurka não tem
+  comparação, o HEAD cai nela); com `none` (72 arquivos), só `loc` e `acc`
   diferem do `.vsb`; num MEI com `<pages>` (`-t mei-pb`), `loc` difere (5 de 6
-  notas no caso medido) e `co` é igual.
+  notas no caso medido) e `co` é igual. O layout que faltava era só o de `loc`
+  e `acc`, e é o que M05-P monta.
 - **Som e notação podem divergir na fonte.** `alt` é o que soa; `key`/`acc`
   são o que a notação escrita diz. Numa fonte fiel os dois concordam
   (`alt == acc[<letra><o>] ?? key[<letra>] ?? 0` para toda nota sem acidente
@@ -807,7 +809,7 @@ a fórmula e a armadura de cada compasso.
 
 `Toolkit::RenderToMusicJson()` (C: `vrvToolkit_renderToMusicJson(tk)`; Dart:
 `renderToMusicJson()`) devolve **um objeto JSON** com a estrutura do documento
-notado, sem desenho e sem layout:
+notado, sem desenho (o layout das páginas, quando falta, é montado sem desenhar: M05-P):
 
 ```json
 { "timemap": [ ... ], "midi": { ... }, "pitchpos": { ... }, "music": { ... } }
@@ -819,11 +821,12 @@ notado, sem desenho e sem layout:
 - Os ids são os da carga: na mesma carga, os corpos de `timemap`, `midi`,
   `pitchpos` e `music` são iguais aos de `renderToBridgeJson` (medido nos 72
   arquivos do corpus, nas duas ordens de chamada).
-- Não muda o estado do documento: não há `Select`, `RedoLayout` nem layout de
-  página. `getMEI`, `renderToTimemap` e `renderToSVG` dão o mesmo resultado
-  antes e depois da chamada.
-- `pitchpos` segue §2.8: `loc` e `acc` saem `null` quando o documento não foi
-  cortado no carregamento.
+- Não há `Select` nem `RedoLayout`. Quando o carregamento não cortou o documento
+  (`--breaks none`, MEI com `<pages>`), a chamada monta o layout das páginas
+  (`Toolkit::LayOutPagesWithoutDrawing`, M05-P) e não desenha nenhuma. `getMEI`,
+  `renderToTimemap` e `renderToSVG` dão o mesmo resultado antes e depois da chamada.
+- `pitchpos` segue §2.8: `loc` e `acc` saem preenchidos nos dois casos, iguais
+  aos de `renderToBridgeJson` da mesma carga (M05-P; antes saíam `null` sem corte).
 - Esquema: `$defs/musicJsonDocument` em `docs/formato/schema-v1.json`.
 
 ## 3. Unidades e ajuste de página
@@ -1838,3 +1841,4 @@ fermata ficam; nota ligada a um compasso visível continua visível lá.
 | 2026-11-08 | M04 (`music.json`, §2.9, regras 7 e 8; ver M00): `harmonies` e `directions` passam a sair preenchidos. A estrutura da `<harmony>` (raiz, alteração, `kind`, `kind@text`, baixo, graus, numeral) é guardada pelo importador MusicXML num `HarmData` ligado ao `harm` e lida por `ReadBridgeMusic`; o MEI não muda. `text` sai do `Doc`, então `<words>` com formatação chega inteiro. Figured bass (`fb`) fica fora de `harmonies`. Aditivo: `version` continua `1`; o schema não muda (já previa os campos). |
 | 2026-11-08 | M07 (oráculo do `music.json`, `compare/scripts/music_oracle.py`): R1 corrigida (refutada: o importador grava o valor do MEI, sem inversão); R3 atualizada com a medição; R6 (espaços de preenchimento `s`, gerados pelo importador) acrescentada. Vetores em `docs/formato/musica/vetores/` (oito `music.json` conferidos contra a fonte). Sem mudança de forma: `version` continua `1`. |
 | 2026-11-08 | M05 (API; §2.8 e §2.10, novo): `renderToMusicJson` (C e Dart) devolve `timemap`, `midi`, `pitchpos` e `music` sem desenho e sem layout, nos ids da carga. Em `pitchpos`, `loc` e `acc` passam a poder sair `null` nessa chamada quando o documento não foi cortado no carregamento (`--breaks none` ou MEI com `<pages>`); o `.vsb` e o JSON único não mudam. Esquema: `musicJsonDocument`; `loc` e `acc` aceitam `null`. |
+| 2026-11-08 | M05-P (correção do M05; §2.8 e §2.10): `renderToMusicJson` monta o layout das páginas, sem desenhar, quando o carregamento não cortou (`--breaks none`, MEI com `<pages>`), para `loc` e `acc` do `pitchpos` saírem preenchidos e iguais aos de `renderToBridgeJson` da mesma carga. Deixa de haver `null` em `loc` e `acc` nas saídas do formato (decisão do usuário, 2026-11-08). Aditivo: `version` continua `1`; o `.vsb`, o JSON único e as demais chaves de `renderToMusicJson` não mudam. O schema ainda aceita `null` nesses dois campos (não foi alterado). |

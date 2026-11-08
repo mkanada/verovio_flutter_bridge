@@ -2407,6 +2407,19 @@ BridgePitchPos Toolkit::RenderPitchPos(int firstPage, int lastPage, const MIDIEv
     return pitchPos;
 }
 
+void Toolkit::LayOutPagesWithoutDrawing()
+{
+    // The layout part of RenderToDeviceContext, for every page in document order: the page range
+    // (SetDrawingPage with withPageRange) and View::SetPage with doLayout. Nothing is drawn. The device
+    // context that RenderToDeviceContext sets up (size, user scale, origin) is only for drawing, so it is
+    // left out.
+    for (int p = 0; p < this->GetPageCount(); ++p) {
+        Page *page = m_doc.SetDrawingPage(p, true);
+        if (!page) return;
+        m_view.SetPage(page, true);
+    }
+}
+
 bool Toolkit::RenderToBridgeJsonFile(const std::string &filename, int fromPage, int toPage)
 {
     this->ResetLogBuffer();
@@ -2435,9 +2448,11 @@ std::string Toolkit::RenderToMusicJson()
     // document, not the pages).
     const MIDIEventLog midiLog = this->RenderMidiEventLog();
 
-    // §2.8 without drawing: loc and acc come from the layout, which the load already did when the
-    // document was cast off (m_layoutAtLoad); otherwise they are null. Nothing here lays out the pages.
-    const BridgePitchPos pitchPos = this->RenderPitchPos(1, -1, midiLog, m_layoutAtLoad);
+    // §2.8 without drawing: loc and acc come from the layout. The load already did it when the document
+    // was cast off (m_layoutAtLoad); otherwise it is done here, page by page, without drawing (M05-P).
+    // This is the only layout RenderToMusicJson does, and it runs before any pitchpos reads the pages.
+    if (!m_layoutAtLoad) this->LayOutPagesWithoutDrawing();
+    const BridgePitchPos pitchPos = this->RenderPitchPos(1, -1, midiLog);
 
     // §2.9 (M03): the notated structure, read from the Doc like RenderToBridgeJson does
     const BridgeMusic music = ReadBridgeMusic(m_doc);

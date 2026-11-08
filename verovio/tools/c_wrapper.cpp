@@ -339,7 +339,8 @@ bool vrvToolkit_renderToMIDIFile(void *tkPtr, const char *filename)
 
 /**
  * RenderToMusicJson (M05, §2.10): the notated structure of the document (music, timemap, midi and
- * pitchpos) as one JSON object, without layout. Same string lifetime rule as renderToBridgeJson.
+ * pitchpos) as one JSON object, without drawing (the pages are laid out first when the load did not
+ * cast them off, M05-P). Same string lifetime rule as renderToBridgeJson.
  */
 const char *vrvToolkit_renderToMusicJson(void *tkPtr)
 {

@@ -1,7 +1,7 @@
 # M00 — Os dados musicais que o `zywny-aprendizado` pede ao Verovio (`music.json`)
 
 **Depende de:** G01 e G04c (o `midi.json` e o `pitchpos.json` já existem) ·
-**Decisões:** **D-MUSICA-FORMA**, **D-MUSICA-CIFRA** e **D-MUSICA-Q** resolvidas pelo usuário em 2026-11-07 (abaixo); o `getElementAttr` do M05 também (ver "Notas de execução")
+**Decisões:** **D-MUSICA-FORMA**, **D-MUSICA-CIFRA** e **D-MUSICA-Q** resolvidas pelo usuário em 2026-11-07 (abaixo); o `getElementAttr` do M05 também (ver "Notas de execução"). **Correção (M05-P, 2026-11-08):** `renderToMusicJson` monta o layout quando o carregamento não cortou, e `loc`/`acc` do `pitchpos` saem completos também sem corte (decisão do usuário; ver o fim de "Notas de execução")
 
 > Pedido do `zywny-aprendizado` (regra de projeto no `CLAUDE.md` de lá:
 > *"toda informação musical que vem de um MusicXML ou de um MEI é extraída pelo
@@ -332,7 +332,7 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (inversão de `grace` pelo importador, decisão do usuário pendente), ver "Notas de execução" |
 | M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | concluído com ressalva: R-PARTES e R-TRINADO (decisão do usuário), `score_bridge` sem teste (fonte fora do repositório), ver "Notas de execução" |
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | concluído com ressalva: R2 (pauta de cifra em parte de duas pautas) sem caso no corpus; `numeral` só no caso sintético; alteração fracionária truncada (nenhuma no corpus); ver "Notas de execução" |
-| M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | concluído com ressalva: `loc` e `acc` saem `null` sem corte no carregamento (extensão de regra, ver notas); custo mediano de 43 ms, alvo de 50 ms não atingido em 5 de 20 hinos (`SetMidiDoc`), ver "Notas de execução" |
+| M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | concluído; **corrigido em M05-P** (2026-11-08): `loc` e `acc` saem completos também sem corte (o layout é montado sem desenhar). Custo mediano de 43 ms com corte, alvo de 50 ms não atingido em 5 de 20 hinos (`SetMidiDoc`); sem corte, ~70 ms de mediana em 10 hinos (ver "Notas de execução") |
 | M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | pendente |
 | M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | concluído com ressalva: `just medidor` não executado (o aprendizado chama `getElementAttr` com dois argumentos, quebra do M05; ver "Notas de execução", M07); causas R3 (notas invisíveis) e R-TRINADO |
 | M08 | Nota para o `zywny-aprendizado` (a execução Dart de lá fica lá) | M06, M07 | pendente |
@@ -821,7 +821,7 @@ carregamento já faz o trabalho, para todo documento que é cortado nele.
   diferente em 5 de 6 notas. Com o layout completo (controle), bate. Um passe só de
   `pitchpos` (`LayOutPitchPos`, sem o alinhamento horizontal) derrubou o processo (SIGSEGV),
   por isso não foi adotado.
-- **Decisão de implementação (para o usuário confirmar):** quando o corte não aconteceu no
+- **Decisão de implementação (resolvida pelo usuário em 2026-11-08: montar o layout, ver M05-P no fim):** quando o corte não aconteceu no
   carregamento, `loc` e `acc` saem `null`. A regra do plano cobria só `loc`; estendi a `acc`,
   porque um `acc` ausente sairia como "nenhum acidental em vigor", que é dado errado sem aviso.
   A alternativa é montar o layout nesses casos. Isso mudaria o "sem layout" da chamada e
@@ -885,8 +885,8 @@ faixa 102 a 303); `renderToMusicJson` **43,2** ms (44,1; faixa 25 a 60). Razão 
   com `timemap`/`midi`/`pitchpos`/`music` opcionais, `loc` e `acc` `null` sem corte) não foi
   testado aqui.
 
-**Passo M05:** concluído com ressalva (ver acima: `loc`/`acc` nulos sem corte, decisão de
-implementação a confirmar; alvo de 50 ms atingido na mediana e não em 5 de 20 hinos).
+**Passo M05:** concluído com ressalva (ver acima: alvo de 50 ms atingido na mediana e não em 5 de 20 hinos).
+**Corrigido em M05-P** (2026-11-08, ver o fim deste arquivo): `loc` e `acc` deixam de sair `null` sem corte.
 
 **2026-11-08: M07 executado (oráculo, varredura e vetores)**
 
@@ -1014,3 +1014,33 @@ O que o M08 precisa saber:
 - `tstamp` e `bpm` vêm com 6 algarismos significativos.
 - O `renderToMusicJson`/`getElementAttr` de 1 argumento (M05) quebra o medidor até o M08.
 - Trinados só com `@tstamp` (R-TRINADO) não aparecem em `ornaments`.
+
+**2026-11-08: M05-P (correção do M05: `pitchpos` completo também sem corte)**
+
+Decisão do usuário (2026-11-08): `renderToMusicJson` monta o layout quando o carregamento não cortou, em vez de deixar `loc` e `acc` `null` (a alternativa que o M05 registrou). Entregas:
+
+- `Toolkit::LayOutPagesWithoutDrawing()` (`toolkit.h`/`toolkit.cpp`, privado): para cada página, `m_doc.SetDrawingPage(p, true)` e `m_view.SetPage(page, true)`, o trecho de layout de `RenderToDeviceContext`, sem `DrawCurrentPage`. `RenderToMusicJson` chama essa função só quando `!m_layoutAtLoad`, e então `RenderPitchPos(1, -1, midiLog)` com `withLayout` padrão (`true`).
+- Nada mais muda no código: `music`, `timemap`, `midi`, `scene`, `glyphs`, `alternates`, manifest e os caminhos cortados (`-t vsb`, `-t vsb-json`, `renderToBridgeJson`) seguem os mesmos.
+- `withLayout = false` (e o ramo `layout = false` de `WritePitchPos`, que grava `null`) ficou **sem chamador**. Mantido de propósito, porque remover não fazia parte da correção; limpar é decisão à parte.
+- Documentação atualizada: §2.8 (o parágrafo "Sem layout" virou "Layout", sem o `null`), §2.10 (`null` retirado e função nova citada), histórico de revisões (linha M05-P; `version` continua `1`), comentários de `toolkit.h`, `bridgepitchpos.h`, `bridgewriter.cpp`, `c_wrapper.cpp` e o doc de `renderToMusicJson` no binding Dart.
+- Nota: §2.9 não citava `loc`/`acc` nulos; a frase estava em §2.8 e §2.10, e as duas foram corrigidas.
+
+Medição (linha de base no HEAD `cc16ed1`, `-x 42`, os 72 arquivos do corpus; saídas em `compare/out/m05p-base` e `compare/out/m05p-final`, scripts fora do repositório):
+
+- **`loc`/`acc` `null`:** sem corte, a base tinha 14 555 eventos de `pitchpos` com `acc` `null` e 13 624 com `loc` `null`. Agora são **0** em `renderToMusicJson`, nos dois modos (58 220 eventos somados).
+- **`pitchpos` de `renderToMusicJson` igual ao de `renderToBridgeJson` na mesma carga:** **288 de 288** pacotes (72 arquivos × automático e `--breaks none` × 2 ordens de chamada).
+- **Com corte (automático):** `pitchpos` de `renderToMusicJson` igual à base em 72 de 72.
+- **`timemap`, `midi` e `music`** de `renderToMusicJson` iguais à base em 144 de 144 (72 × 2 modos); `renderToBridgeJson` igual à base em 144 de 144.
+- **Estado:** `getMEI`, `renderToTimemap` e os SVGs de todas as páginas, antes e depois da chamada, iguais à base: 144 de 144 linhas de estado e 288 de 288 SVGs. Em 9 dos 72 arquivos, o SVG já difere entre "antes" e "depois" dentro da mesma carga, **também na base**, pelos `id` de `tspan` gerados a cada render (mesma ressalva do M05, anterior à chamada).
+- **Saídas da CLI** (`-t mei`, `-t svg -a`, `-t vsb-json`, `-t vsb` e os dois com `--breaks none`): **1 562** arquivos comparados com a base, **0** diferenças. Normalizados apenas `isodate` do MEI e a string de versão (`6.3.0-<hash>`).
+- **Fixture `m02`** (`docs/formato/musica/m02-entrada.musicxml`): está entre os 72 arquivos da varredura.
+- **Caso `mei-pb`** (`f04-cross-staff` gerado com `-t mei-pb`, `<pages>`, `LAYOUT_DONE`): a base tinha 6 de 6 eventos com `loc` e `acc` `null`; agora são 6 de 6 iguais ao `renderToBridgeJson`, nas duas ordens, sem `null`. **O SIGSEGV que o M05 relatou não reproduz com o layout completo.** Ele veio de um experimento que chamava só `LayOutPitchPos`, sem o `Page::LayOut` que `View::SetPage` faz; o caminho entregue não chama `LayOutPitchPos` sozinho.
+- **Custo de `renderToMusicJson` sem corte** (10 primeiros hinos da lista do M01, `n = 7`, mediana): mediana das medianas **47,5 ms → 69,9 ms** (+22,4 ms, que é o layout). Hino 248: 65 → 130 ms (remedido com `n = 15`: 66 → 128 e 133). `renderToBridgeJson` no mesmo tempo não muda, dentro do ruído. Não é alvo; só registro. O caminho com corte não muda (43 ms de mediana, como no M05).
+- **Build:** sem `warning:` nas compilações refeitas (CLI e `build-library`, `Release`).
+
+Pendências (não decididas aqui):
+
+- `docs/formato/schema-v1.json` ainda aceita `null` em `loc` e `acc` (acrescentado no M05). Não foi alterado: o pedido listava só a spec, e a spec agora diz que esses campos nunca são `null`. Decidir se o schema também tira o `null`.
+- A versão embutida na biblioteca vem do `git describe` congelado na configuração do CMake: a `build-library` mostrava `6.3.0-ec8a8a2` depois do commit `cc16ed1`. É cosmético, mas torna a comparação de saídas ruidosa; por isso a checagem normaliza a versão.
+
+Passo M05-P: **concluído** (correção do M05). O `music.json` não muda (é o que o M06 lê); só o `pitchpos` de `renderToMusicJson` sem corte passa a sair completo.

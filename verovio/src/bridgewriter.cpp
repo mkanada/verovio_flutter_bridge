@@ -782,7 +782,7 @@ std::string BridgeWriter::WritePitchPos(const BridgePitchPos &pitchPos)
             out += '}';
         }
         if (!pitchPos.layout) {
-            // M05: no layout, so the column accidentals are unknown (§2.8), not "none in force"
+            // No layout (no caller since M05-P): the column accidentals are unknown (§2.8), not "none in force"
             out += ",\"acc\":null";
         }
         else if (!event.acc.empty()) {

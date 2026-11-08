@@ -502,10 +502,10 @@ public:
     /**
      * Render the notated structure of the document without drawing it (`renderToMusicJson` in the
      * bindings, §2.10, M05): one JSON object with `timemap`, `midi`, `pitchpos` and `music`, the same
-     * bodies and ids as RenderToBridgeJson of the same load, and no layout. Nothing is laid out or
-     * selected: the Doc is read as it is after LoadData. `pitchpos` takes `loc` and `acc` from the layout,
-     * so they are written as null when the layout was not computed at load (`--breaks none`, page-based
-     * MEI); see §2.8.
+     * bodies and ids as RenderToBridgeJson of the same load, and no drawing. When the load did not cast
+     * the document off (`--breaks none`, page-based MEI) the pages are laid out here, without drawing
+     * (M05-P), so `pitchpos` gets `loc` and `acc` filled, as in RenderToBridgeJson; see §2.8 and §2.10.
+     * Nothing is Select()ed.
      *
      * @return The JSON object as a string
      */
@@ -959,10 +959,20 @@ private:
      * it right after RenderPagesToBridge, before RenderAlternatesToBridge. `midiLog` supplies the
      * shifts (RenderMidiEventLog). Empty when `--no-vsb-pitchpos`.
      *
-     * `withLayout` false (RenderToMusicJson, M05) leaves out `loc` and `acc`, the only fields the layout
-     * provides; the pages are not laid out for it.
+     * `withLayout` false leaves out `loc` and `acc`, the only fields the layout provides, and sets
+     * BridgePitchPos::layout to false. No caller passes it since M05-P: RenderToMusicJson lays the pages
+     * out first (LayOutPagesWithoutDrawing) when the load did not cast them off.
      */
     BridgePitchPos RenderPitchPos(int firstPage, int lastPage, const MIDIEventLog &midiLog, bool withLayout = true);
+
+    /**
+     * The layout of every page in document order, as RenderToDeviceContext does it before drawing
+     * (SetDrawingPage with the page range, then View::SetPage with doLayout), without drawing (M05-P).
+     * Used by RenderToMusicJson when the load did not cast the document off (`m_layoutAtLoad` false),
+     * so `loc` and `acc` of the pitchpos come out filled. Changes the layout state of the pages, not the
+     * notated data: getMEI, the timemap and the SVG are the same before and after (measured, M05-P).
+     */
+    void LayOutPagesWithoutDrawing();
 
     /**
      * Measure id -> 0-based position in document order (`m_doc.FindAllDescendantsByType(MEASURE,
@@ -1027,7 +1037,7 @@ private:
     /**
      * True when LoadData cast the document off (any `--breaks` but none, and not a page-based MEI), so
      * the pages already carry the layout that `pitchpos`'s `loc` and `acc` come from (M05). LoadData
-     * sets it at the cast-off decision.
+     * sets it at the cast-off decision. When false, RenderToMusicJson lays the pages out itself (M05-P).
      */
     bool m_layoutAtLoad;
 

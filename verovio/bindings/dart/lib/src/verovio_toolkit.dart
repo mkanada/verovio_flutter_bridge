@@ -253,10 +253,11 @@ class VerovioToolkit {
   bool renderToMIDIFile(String filename) => using((arena) =>
       _bindings.renderToMIDIFile(_tk, filename.toNativeUtf8(allocator: arena)));
 
-  /// The notated structure of the document as one JSON object, with no layout and no drawing:
-  /// `timemap`, `midi`, `pitchpos` and `music` (docs/formato/especificacao-v1.md §2.10). The ids are
-  /// the same as `renderToBridgeJson` gives for the same load. `loc` and `acc` of `pitchpos` are null
-  /// when the document was not cast off at load (`--breaks none`, a page-based MEI; §2.8).
+  /// The notated structure of the document as one JSON object, with no drawing: `timemap`, `midi`,
+  /// `pitchpos` and `music` (docs/formato/especificacao-v1.md §2.10). The ids are the same as
+  /// `renderToBridgeJson` gives for the same load. When the document was not cast off at load
+  /// (`--breaks none`, a page-based MEI) the pages are laid out here, without drawing, so `loc` and
+  /// `acc` of `pitchpos` are filled as well (§2.8).
   ///
   /// Call `setOutputTo('vsb-json')` before `loadFile`/`loadData`, as for `renderToBridgeJson`.
   String renderToMusicJson() => _fromUtf8(_bindings.renderToMusicJson(_tk));

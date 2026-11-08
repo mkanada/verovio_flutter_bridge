@@ -12,10 +12,12 @@ fonte. A fonte é o oráculo: o que está sendo verificado é o Verovio, não a 
 - MEI (`.mei`): não há MusicXML de origem (corpus nativo). Confere-se só o que o próprio MEI
   exportado traz: compassos (`n`, barras, casa), eventos por (compasso, pauta, camada) com o
   tipo, o acorde, a apojatura e a quiáltera, cifras (texto), direções (texto), andamentos e
-  ornamentos. Partes, fórmula e armadura não são conferidas no MEI (saem em `nao_conferido`).
+  ornamentos (com `measure`, `tstamp` e `startid` ou `null`, §2.9 regra 6). Partes, fórmula e
+  armadura não são conferidas no MEI (saem em `nao_conferido`): as partes saem da origem do
+  arquivo (§2.9 regra 5), e o oráculo só lê o MEI exportado.
 
 Causas conhecidas (M00; registradas, não corrigidas): R3 (nota invisível, `print-object="no"`),
-R-PARTES, R-TRINADO, R2 (pauta de cifra em parte de duas pautas), R4 (`numeral`).
+R2 (pauta de cifra em parte de duas pautas), R4 (`numeral`).
 
 Uso:
   music_oracle.py verificar FONTE MUSIC.json [--relatorio ARQ.json]
@@ -671,7 +673,9 @@ def esperado_mei(path):
     for name in ("trill", "mordent", "turn"):
         for o in cuerpo.iter(q(name)):
             sid = (o.get("startid") or "").lstrip("#")
-            orn.append({"kind": name, "startid": sid})
+            ts = o.get("tstamp")
+            orn.append({"kind": name, "startid": sid or None, "measure": mi_de(o),
+                        "tstamp": float(ts) if ts and float(ts) >= 1 else None})
     return {"version": 1, "parts": None, "measures": medidas_e, "harmonies": harm, "directions": dirs,
             "tempi": tempi, "ornaments": None, "_ornaments_mei": orn}
 
@@ -853,21 +857,23 @@ def verifica(exp, music, eh_mei, fonte, tm_ids=None):
         for o in music.get("ornaments", []):
             loc = loc_de_startid(music, o["startid"])
             orn_b.append((o["kind"], tuple(loc) if loc else ("?", o["startid"])))
+            # o compasso do controle é o do evento a que ele aponta
+            if loc and o.get("measure") != loc[0]:
+                dif("ornamento.compasso", "ornaments[%s].measure" % o["startid"], loc[0], o.get("measure"))
         conf["ornamentos"] = len(orn_e)
         if sorted(orn_e, key=str) != sorted(orn_b, key=str):
             dif("ornamento", "ornaments", sorted(orn_e, key=str), sorted(orn_b, key=str))
     else:
-        orn_e = sorted((o["kind"], o["startid"]) for o in exp["_ornaments_mei"] if o["startid"])
-        orn_b = sorted((o["kind"], o["startid"]) for o in music.get("ornaments", []))
-        # trinado só com @tstamp (sem @startid): fica fora de ornaments (R-TRINADO, M03)
-        sem_id = [o for o in exp["_ornaments_mei"] if not o["startid"]]
+        # chave: (kind, startid ou "", compasso, tstamp arredondado; None = null)
+        def chave_orn(kind, sid, mi, ts):
+            return (kind, sid or "", mi, None if ts is None else float("%.5g" % ts))
+        orn_e = sorted((chave_orn(o["kind"], o["startid"], o["measure"], o["tstamp"])
+                        for o in exp["_ornaments_mei"]), key=str)
+        orn_b = sorted((chave_orn(o["kind"], o.get("startid"), o["measure"], o.get("tstamp"))
+                        for o in music.get("ornaments", [])), key=str)
         conf["ornamentos"] = len(orn_e)
         if orn_e != orn_b:
             dif("ornamento", "ornaments (MEI)", orn_e, orn_b)
-        for o in sem_id:
-            causas["R-TRINADO (sem @startid)"] += 1
-        if sem_id:
-            conf["trinados_sem_startid_fora"] = len(sem_id)
 
     # cifras, direções, andamentos
     def ordena(lst, chaves):
@@ -940,7 +946,7 @@ def verifica(exp, music, eh_mei, fonte, tm_ids=None):
                 [b.get("measure"), b.get("bpm"), b.get("text")])
 
     return {"fonte": fonte, "conferidos": dict(conf), "divergencias": divs, "causas": dict(causas),
-            "nao_conferido": ["partes (R-PARTES: o MEI não traz a parte de origem)", "compasso.meter",
+            "nao_conferido": ["partes (regra por formato de origem, §2.9 regra 5)", "compasso.meter",
                               "compasso.key", "harmonies (estrutura: só o texto)"] if eh_mei else []}
 
 

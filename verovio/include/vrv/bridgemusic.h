@@ -22,6 +22,7 @@ class Doc;
 // Null convention: an empty string means null for the nullable text fields (left, right, ending,
 // chord, grace = "" is false, sym, mode, name, text, sig), and a zero count or zero bpm means null.
 
+// One part (§2.9, rule 5): a <part> of a MusicXML source, or a staffGrp of an MEI one.
 struct BridgeMusicPart {
     std::string id;
     std::string name; // "" = null
@@ -76,10 +77,13 @@ struct BridgeMusicMeasure {
     std::vector<BridgeMusicStaff> staves;
 };
 
+// One trill, mordent or turn (§2.9, rule 6). A control has @startid, @tstamp or both: the one it lacks is null.
 struct BridgeMusicOrnament {
     std::string id;
     std::string kind; // "trill", "mordent" or "turn"
-    std::string startid; // without the '#'
+    int measure = 0; // index of the measure
+    std::string startid; // without the '#'; "" = null
+    double tstamp = 0.0; // 0 = null
 };
 
 struct BridgeMusicTempo {

@@ -330,11 +330,11 @@ Resolvidas pelo usuário em 2026-11-07 (não dependiam de medição; o M01 só c
 | --- | --- | --- | --- |
 | M01 | **Medir** os fatos (decisões já tomadas, ver "Decisões necessárias"): o que o `Doc` notado tem (`Harm`, `Dir`, `KeySig::mode`, `layer n` = voz, id da parte), custo de `RenderToMusicJson` sem layout | — | concluído com ressalva: células de Chopin e Debussy só parcialmente explicadas (notas invisíveis), ver "Notas de execução" |
 | M02 | Especificação: §2.9 `music.json`, o schema JSON, uma fixture, histórico de revisões | M01 | concluído com ressalva: R1 (inversão de `grace` pelo importador, decisão do usuário pendente), ver "Notas de execução" |
-| M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | concluído com ressalva: R-PARTES e R-TRINADO (decisão do usuário), `score_bridge` sem teste (fonte fora do repositório), ver "Notas de execução" |
+| M03 | C++: `ReadBridgeMusic` (partes, compassos, fórmula, armadura e modo, notas/pausas, ornamentos, andamentos) e `music.json` no `.vsb` e no JSON único | M02 | concluído com ressalva: R-PARTES e R-TRINADO resolvidas em R2 (2026-11-08), `score_bridge` sem teste (fonte fora do repositório), ver "Notas de execução" |
 | M04 | C++: cifras e direções (a estrutura da `<harmony>` guardada no importador; texto de `<words>`) | M03 | concluído com ressalva: R2 (pauta de cifra em parte de duas pautas) sem caso no corpus; `numeral` só no caso sintético; alteração fracionária truncada (nenhuma no corpus); ver "Notas de execução" |
 | M05 | API: `RenderToMusicJson`, `c_wrapper`, binding Dart (e a correção do `getElementAttr`), `exports.txt` | M03, M04 | concluído; **corrigido em M05-P** (2026-11-08): `loc` e `acc` saem completos também sem corte (o layout é montado sem desenhar). Custo mediano de 43 ms com corte, alvo de 50 ms não atingido em 5 de 20 hinos (`SetMidiDoc`); sem corte, ~70 ms de mediana em 10 hinos (ver "Notas de execução") |
 | M06 | Dart (`score_bridge`): modelo `VsbMusic` e parser de `music.json` | M02, M05 | pendente |
-| M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | concluído com ressalva: `just medidor` não executado (o aprendizado chama `getElementAttr` com dois argumentos, quebra do M05; ver "Notas de execução", M07); causas R3 (notas invisíveis) e R-TRINADO |
+| M07 | Oráculo, varredura e vetores: `music.json` contra o MusicXML (lido por script), corpus, fixtures do aprendizado e os 600 hinos | M04, M05 | concluído com ressalva: `just medidor` não executado (o aprendizado chama `getElementAttr` com dois argumentos, quebra do M05; ver "Notas de execução", M07); causas R3 (notas invisíveis); R-TRINADO resolvida em R2 |
 | M08 | Nota para o `zywny-aprendizado` (a execução Dart de lá fica lá) | M06, M07 | pendente |
 
 ### M01 — Medir e decidir
@@ -724,12 +724,12 @@ Desvios e ressalvas:
 
 - **Spec (§2.9)**: acrescentadas notas de implementação às regras 4, 5 e 6 (camada sem
   nota; partes; trinado só com `@tstamp`). Nenhuma regra normativa mudou.
-- **R-PARTES (decisão do usuário)**: o MusicXML sai certo, com uma entrada por
+- **R-PARTES (decisão do usuário; resolvida em R2, ver o fim deste arquivo)**: o MusicXML sai certo, com uma entrada por
   `<part>`. Os 5 MEI de `corpus/mei/` têm pauta dupla num `staffGrp` sem grupo de
   parte, e saem com 2 partes cada. A regra 5 manda uma entrada só nesse caso, mas a
   estrutura não distingue esse MEI de duas partes de uma pauta cada num MusicXML (que
   o fixture do M02 precisa). Mantive uma entrada por filho do `staffGrp` externo.
-- **R-TRINADO (decisão do usuário)**: 12 trinados do Scarlatti têm só `@tstamp`, sem
+- **R-TRINADO (decisão do usuário; resolvida em R2)**: 12 trinados do Scarlatti têm só `@tstamp`, sem
   `@startid`. O schema exige `startid`, então ficam fora de `ornaments` (aviso no log:
   `music: trill ... has no @startid`).
 - **R1 (pendente, mantida)**: `grace` invertido no importador do MusicXML. O
@@ -959,7 +959,7 @@ Divergências explicadas (todas com causa; nenhuma nova):
   65 e 67, pauta 1, camada 1) em que a nota invisível não sai, e 4 quiálteras no compasso 22
   (pautas 1 e 2, camadas 2 e 7) em que notas invisíveis abrem ou fecham o colchete. As outras
   42 camadas com invisíveis saem com elas (o Verovio as mantém, com a invisibilidade perdida).
-- **R-TRINADO, 12 no corpus MEI** (trinados do Scarlatti só com `@tstamp`): fora de
+- **R-TRINADO, 12 no corpus MEI** (trinados do Scarlatti só com `@tstamp`; resolvida em R2, entram em `ornaments`): antes, fora de
   `ornaments`, como mapeado no M03.
 - **Arredondamento de 6 algarismos**: `tstamp` e `bpm` saem com 6 algarismos
   significativos (hinos 215 e 239: `1.16667` por `1.1666667`). Tolerância relativa de 5e-6;
@@ -1044,3 +1044,80 @@ Pendências (não decididas aqui):
 - A versão embutida na biblioteca vem do `git describe` congelado na configuração do CMake: a `build-library` mostrava `6.3.0-ec8a8a2` depois do commit `cc16ed1`. É cosmético, mas torna a comparação de saídas ruidosa; por isso a checagem normaliza a versão.
 
 Passo M05-P: **concluído** (correção do M05). O `music.json` não muda (é o que o M06 lê); só o `pitchpos` de `renderToMusicJson` sem corte passa a sair completo.
+
+**2026-11-08: R2 (R-PARTES, R-TRINADO e schema do `pitchpos`; decisões do usuário de 2026-11-08)**
+
+Decisões: **R-PARTES** pela opção (b), gravar o formato de origem no `Doc`; **R-TRINADO** pela
+relaxação do esquema; **`pitchpos`** sem `null` em `loc` e `acc` no esquema, como já dizia a spec.
+
+Entregas:
+
+- `Doc::GetSourceFormat()`/`SetSourceFormat()` (`doc.h`, `doc.cpp`): campo interno, gravado pelo
+  importador MusicXML (`MusicXmlInput::Import`, `MUSICXML`) e pelo MEI (`MEIInput::Import`, `MEI`), limpo
+  em `Doc::Reset()`. Não entra no MEI, no SVG nem no JSON: `getMEI` e SVG seguem idênticos à base.
+- `ReadBridgeMusic` (`bridgemusic.cpp`): `parts` por origem. MusicXML: como antes (uma entrada por
+  `<part>`). MEI: uma entrada por `staffGrp` do `scoreDef`; um `staffGrp` sem `staffGrp` filho é uma
+  parte só, com todas as pautas. Um `staffDef` solto num grupo que tem `staffGrp` filho continua sendo uma
+  entrada própria (caso que o corpus não tem).
+- `ornaments` (`bridgemusic.h`, `bridgewriter.cpp`): cada item ganha `measure` (índice do compasso) e
+  `tstamp` (número ou `null`); `startid` pode ser `null`. Um controle sem `@startid` nem `@tstamp`, ou
+  fora de compasso, sai com aviso.
+- Esquema (`schema-v1.json`): `musicOrnament` com `measure`, `tstamp` e `startid` ou `tstamp` não nulo
+  (`anyOf`); `pitchposEvent` com `loc` inteiro e `acc` sem `null`.
+- Spec (§2.9 regras 5 e 6; exemplo de `ornaments`; linha do trinado no M02; histórico, linha R2).
+- Oráculo (`compare/scripts/music_oracle.py`): o MEI passa a conferir `ornaments` com `measure` e
+  `tstamp` (e `startid` ou `null`); o caso R-TRINADO sai. Partes do MEI continuam sem conferência
+  (o oráculo só lê o MEI exportado).
+- Fixture `m02-esperado.json` e vetores `m02.music.json` e `recusa.music.json` (os dois trinados ganham
+  `measure` e `tstamp`); `vetores.json` não muda (o índice guarda só o `fonte_sha256`).
+
+Medição (linha de base `compare/out/r2-base` no HEAD `d693c07`; resultado em `compare/out/r2-new`;
+72 fontes, `-x 42`, com `--breaks` automático e `none`, 144 pacotes; fora do git):
+
+- **Só `music.json` mudou**: em `parts`, 20 arquivos MEI (40 pacotes); em `ornaments`, 3 arquivos
+  (6 pacotes). Nenhum MusicXML mudou em `parts`. Todo o resto é igual à base (`getMEI`, SVG de todas
+  as páginas, `pitchpos`, `scene`, `glyphs`, `timemap`, `midi`, `alternates`, `meta`, manifest e o JSON
+  único `-t vsb-json` sem o bloco `music`), depois de normalizar a versão (`-dirty`) e a data do `getMEI`.
+  A chamada `renderToMusicJson` da biblioteca não foi comparada diretamente (usa o mesmo `ReadBridgeMusic`).
+- **Partes, os 5 de `corpus/mei/`**: de 2 para 1 entrada, com as duas pautas (`staves` [1, 2]). Id:
+  o `xml:id` do `staffGrp`, ou o que o Verovio gera quando a fonte não traz (`buv5k6i` nos 8 arquivos
+  que trocaram de 2 para 1 entrada e em 7 dos 12 de 1 entrada; `a1sgk5cn` em `f05` e `s01`). Chopin Mazurka: o `staffGrp` tem `<label>1</label>`, então o nome
+  sai `"1"` (antes saía `"piano"`, de cada `staffDef`). Ver "Pendências".
+- **Partes, os outros 15 MEI** (mesma forma, mesma regra): fantasma `f04` e `f08` e sumico `g11` (de 2
+  para 1 entrada, com `staves` [1, 2]); e 12 arquivos que já tinham 1 entrada (fantasma `f01`, `f02`,
+  `f03`, `f05`, `f06`, `f07`; repetições `r02`, `r04`, `r07`, `r11`, `r12`; sumico `s01`), em que só o
+  `id` muda, para o do `staffGrp`.
+- **Ornamentos**: Scarlatti de 2 para 14 (os 12 com `@tstamp` só entram, `startid` `null`, `tstamp` 3;
+  os 2 com `@startid` ganham `measure` 3 e 5 e `tstamp` 3). Chopin Nocturne (2 trinados) e a fixture
+  `m02` (1) ganham `measure` e `tstamp: null`.
+- **Esquema**: 144 `music.json` gerados, 144 `pitchpos`, a fixture, os 8 vetores e os 3 exemplos validam
+  (Draft 2020-12). Negativos: os 7 do M02 continuam rejeitados; o novo (trinado sem `startid` e sem
+  `tstamp`) é rejeitado; `loc` e `acc` com `null` no `pitchpos` são rejeitados. Positivos: trinado só
+  com `tstamp` e trinado só com `startid` são aceitos. (Os negativos do M02 não estavam salvos no
+  repositório; foram refeitos num script fora dele.)
+- **Oráculo**: `verificar` da fixture `m02` com zero divergência (2 partes, 6 compassos, 42 eventos,
+  1 trinado). Nas fontes MusicXML, zero divergência em todas, exceto Clair de Lune (6) e Gymnopédie (10),
+  que são as 16 da R3 do M07 (notas invisíveis). **Varredura** (`compare/out/r2-varredura`, 617 fontes,
+  0 erros do Verovio): corpus MusicXML 16 divergências, todas R3 (como no M07); corpus MEI 0 (ornamentos
+  14, eram 2 no M07); hinos 0 (599 com 2 entradas em `parts`, 1 com 3, como antes); os demais grupos 0.
+- **Vetores**: regenerados com `music_oracle.py vetores` (zero divergência nos 8).
+
+Pendências (não decididas aqui):
+
+- **Nome da parte no Chopin Mazurka** (`"1"`): é o `<label>` do `staffGrp` externo, lido como está. Se o
+  app precisa do nome das pautas (`"piano"`), é uma decisão à parte (ler o `label` do `staffDef`, ou o do
+  grupo só quando houver).
+- **Partes do MEI sem conferência**: o oráculo não confere `parts` do MEI (só o MusicXML). A regra fica
+  só na implementação e na §2.9.
+- **MusicXML convertido por Humdrum** (`MUSICXML_DEFAULT_HUMDRUM`, fora do build padrão): chega como MEI e
+  segue a regra do MEI. Não medido.
+
+O que o M08 precisa saber:
+
+- `parts` de um MEI sem partes tem uma entrada com as duas pautas; o `staves` da entrada é a lista certa
+  para o app (não contar `parts`).
+- `ornaments[].startid` pode ser `null`, e `tstamp` pode ser `null`; cada item tem pelo menos um dos dois.
+  Um trinado do Scarlatti só com `tstamp` entra com `measure` e `tstamp`, e o app o localiza por compasso
+  e batida (não pelo id notado).
+- O `id` de uma parte de MEI sem `xml:id` no grupo é gerado pelo Verovio (estável para a mesma carga, não
+  para outro arquivo).

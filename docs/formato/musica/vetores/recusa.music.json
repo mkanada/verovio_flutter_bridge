@@ -183,7 +183,9 @@
   {
    "id": "b107zbnm",
    "kind": "trill",
-   "startid": "axzadr3"
+   "measure": 0,
+   "startid": "axzadr3",
+   "tstamp": null
   }
  ],
  "harmonies": [],

@@ -635,7 +635,9 @@
   {
    "id": "wg8qvcs",
    "kind": "trill",
-   "startid": "vlc2j9p"
+   "measure": 1,
+   "startid": "vlc2j9p",
+   "tstamp": null
   }
  ],
  "harmonies": [

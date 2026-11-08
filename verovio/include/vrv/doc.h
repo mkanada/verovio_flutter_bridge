@@ -524,6 +524,15 @@ public:
     bool IsCastOff() const { return m_isCastOff; }
 
     /**
+     * The format the document was read from: MUSICXML after the MusicXML importer, MEI after the MEI importer,
+     * UNKNOWN until one of them reads it. Set on load and cleared by Reset(). Not written to any output; the
+     * notated-structure reader uses it to tell a part of a MusicXML source from a staffGrp of an MEI one
+     * (docs/formato/especificacao-v1.md, §2.9, rule 5).
+     */
+    FileFormat GetSourceFormat() const { return m_sourceFormat; }
+    void SetSourceFormat(FileFormat format) { m_sourceFormat = format; }
+
+    /**
      * @name Methods for managing a selection.
      */
     ///@{
@@ -672,6 +681,11 @@ private:
      * A flag indicating if the document has been cast off or not.
      */
     bool m_isCastOff;
+
+    /**
+     * The format the document was read from (GetSourceFormat()).
+     */
+    FileFormat m_sourceFormat;
 
     /**
      * A flag indicating the focus status (unset, set, used)

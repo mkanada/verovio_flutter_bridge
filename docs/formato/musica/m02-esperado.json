@@ -171,7 +171,7 @@
     }
   ],
   "ornaments": [
-    { "id": "wg8qvcs", "kind": "trill", "startid": "vlc2j9p" }
+    { "id": "wg8qvcs", "kind": "trill", "measure": 1, "startid": "vlc2j9p", "tstamp": null }
   ],
   "harmonies": [
     {

@@ -126,6 +126,7 @@ bool MusicXmlInput::Import(const std::string &musicxml)
     try {
         m_doc->Reset();
         m_doc->SetType(Raw);
+        m_doc->SetSourceFormat(MUSICXML);
         pugi::xml_document xmlDoc;
         xmlDoc.load_string(musicxml.c_str());
         pugi::xml_node root = xmlDoc.first_child();

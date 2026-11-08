@@ -3744,6 +3744,7 @@ bool MEIInput::Import(const std::string &mei)
         else {
             m_doc->Reset();
             m_doc->SetType(Raw);
+            m_doc->SetSourceFormat(MEI);
             return this->ReadDoc(root);
         }
     }

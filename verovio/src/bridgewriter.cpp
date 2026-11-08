@@ -995,7 +995,10 @@ std::string BridgeWriter::WriteMusic(const BridgeMusic &music)
         const BridgeMusicOrnament &ornament = music.ornaments[o];
         out += "{\"id\":\"" + EscapeJsonString(ornament.id) + "\"";
         out += ",\"kind\":\"" + ornament.kind + "\"";
-        out += ",\"startid\":\"" + EscapeJsonString(ornament.startid) + "\"}";
+        out += ",\"measure\":" + std::to_string(ornament.measure);
+        out += ",\"startid\":" + NullableString(ornament.startid);
+        out += ",\"tstamp\":" + (ornament.tstamp == 0.0 ? std::string("null") : FormatNumber(ornament.tstamp));
+        out += "}";
     }
     out += "],\"harmonies\":[";
     for (std::size_t h = 0; h < music.harmonies.size(); ++h) {

@@ -119,6 +119,7 @@ void Doc::Reset()
     this->ResetToSerialization();
 
     m_isCastOff = false;
+    m_sourceFormat = UNKNOWN;
 }
 
 void Doc::ResetToSerialization()

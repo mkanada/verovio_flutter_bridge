@@ -570,7 +570,7 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
       ]
     }
   ],
-  "ornaments": [ { "id": "wg8qvcs", "kind": "trill", "startid": "vlc2j9p" } ],
+  "ornaments": [ { "id": "wg8qvcs", "kind": "trill", "measure": 1, "startid": "vlc2j9p", "tstamp": null } ],
   "harmonies": [
     { "id": "j97m9qh", "measure": 1, "staff": 1, "tstamp": 1,
       "root": "C", "rootAlter": 0, "kind": "major-seventh", "kindText": null,
@@ -641,28 +641,36 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
    pausa sai com `"events": []` (12 casos no corpus: 2 no Clair de Lune e 10 na
    Gymnopédie). Cada pauta sai com as camadas que o notado tem; no corpus medido
    nenhuma pauta de compasso fica sem evento.
-5. **`parts`.** Uma entrada por `<part>` da fonte (MusicXML) ou por `staffGrp` de
-   partes (MEI). `id` é o id da parte (`P1`, na fixture): o `xml:id` do
-   `staffDef` quando a parte tem uma pauta, ou do `staffGrp` quando tem várias
-   (M01: achado em todas as partes medidas). `name` é o `label` da parte, ou
-   `null`. `staves` são os `n` das pautas dela. Num MEI sem partes, uma entrada
-   só, com o `xml:id` do `staffGrp` mais externo e todas as pautas.
-   **Implementação (M03, pendente — R-PARTES):** o leitor toma cada filho do
-   `staffGrp` externo do primeiro `scoreDef` como uma parte (um `staffGrp` ou um
-   `staffDef`). Com isso o MusicXML sai certo (uma entrada por `<part>`, conferido
-   nas partituras do corpus). Um MEI de pauta dupla sem grupo de parte (um
-   `staffGrp` com duas `staffDef`, como Scarlatti e Chopin Étude do `corpus/mei/`)
-   sai com uma entrada por pauta, e não com a entrada única que o parágrafo acima
-   manda: a estrutura não distingue esse caso de duas partes de uma pauta cada.
-   Decisão do usuário pendente.
+5. **`parts`.** Uma entrada por parte, conforme o formato da fonte (o `Doc` guarda
+   o formato lido, `GetSourceFormat()`, que não sai em nenhuma saída):
+   - **MusicXML:** uma entrada por `<part>`. `id` é o id da parte (`P1`, na fixture):
+     o `xml:id` do `staffDef` quando a parte tem uma pauta, ou do `staffGrp` quando
+     tem várias (M01: achado em todas as partes medidas). `staves` são as pautas dela.
+   - **MEI:** uma entrada por `staffGrp` do primeiro `scoreDef`. Um `staffGrp` que
+     tem `staffGrp` filhos dá uma entrada por filho; um `staffDef` solto nele dá uma
+     entrada por `staffDef`. Um `staffGrp` **sem** `staffGrp` filho é uma entrada só,
+     com todas as pautas dele: é o MEI sem partes (pauta dupla de um piano, por
+     exemplo). `id` é o `xml:id` do `staffGrp` (ou do `staffDef`, sem grupo).
+   - `name` é o `label` da parte (do `staffGrp` ou do `staffDef`), ou `null`. Uma
+     entrada sem pauta não sai.
+   **Implementação (M03, R-PARTES resolvida em 2026-11-08 pela decisão de origem):**
+   o MusicXML sai como antes. No MEI, o `staffGrp` externo com duas `staffDef` (os 5
+   MEI de `corpus/mei/`) sai com **uma** entrada e as duas pautas. Um MusicXML
+   convertido por Humdrum (`MUSICXML_DEFAULT_HUMDRUM`) chega como MEI e segue a regra
+   do MEI.
 6. **`ornaments`.** Os controles `trill`, `mordent` e `turn`. `kind` é o nome do
-   elemento. `startid` é o `@startid` do MEI **sem o `#`**: o id da nota, ou o do
+   elemento. `measure` é o `index` do compasso que contém o controle (base 0, como em
+   `measures`). `startid` é o `@startid` do MEI **sem o `#`**: o id da nota, ou o do
    `chord` quando a nota pertence a um acorde (medido na fixture: o trinado da nota
-   C4 do acorde aponta para o `chord`). Fermata e os demais controles ficam fora.
-   **Implementação (M03, pendente — R-TRINADO):** um controle sem `@startid`
-   (posicionado só por `@tstamp`; 12 trinados no corpus, todos do Scarlatti) não
-   entra em `ornaments`, porque o schema exige `startid`. Como guardá-lo fica
-   para decidir.
+   C4 do acorde aponta para o `chord`), ou `null`. `tstamp` é o `@tstamp` do MEI
+   (batida a partir de 1, na unidade do compasso), ou `null`. **Cada item tem
+   `startid` ou `tstamp` não nulo** (pelo menos um dos dois; o esquema exige). Um
+   controle sem os dois, ou fora de compasso, sai com aviso. Fermata e os demais
+   controles ficam fora.
+   **Implementação (M03, R-TRINADO resolvida em 2026-11-08, usuário: relaxar o
+   esquema):** os 12 trinados do Scarlatti (só `@tstamp`, sem `@startid`) entram, com
+   `startid` `null`. Os 2 com `@startid` ganham `measure` e `tstamp` (`null` quando o
+   controle não tem `@tstamp`).
 7. **`harmonies`** (D-MUSICA-CIFRA): uma por `<harmony>` da fonte. Medido no M01 e
    no M02: todo `<harmony>` chega ao MEI como `harm` (0 divergências nos arquivos
    com fonte MusicXML).
@@ -796,7 +804,7 @@ Cobertura (compasso = `index`, 0-based):
 | Pausa de compasso (`mr`) | compasso 4, pauta 2 |
 | Direção excluída (dinâmica `p`) | compasso 1: não entra em `directions` |
 | Andamento com texto | compasso 0: "Andante", 80 |
-| Trinado | compasso 1, na nota C4 do acorde: `startid` "vlc2j9p" (o `chord`) |
+| Trinado | compasso 1, na nota C4 do acorde: `startid` "vlc2j9p" (o `chord`), `measure` 1, `tstamp` `null` |
 | Partes | `P1` (pautas 1 e 2, "Piano"), `P2` (pauta 3, "Canto") |
 | Não coberto | `numeral` (R4; M07) |
 
@@ -1842,3 +1850,4 @@ fermata ficam; nota ligada a um compasso visível continua visível lá.
 | 2026-11-08 | M07 (oráculo do `music.json`, `compare/scripts/music_oracle.py`): R1 corrigida (refutada: o importador grava o valor do MEI, sem inversão); R3 atualizada com a medição; R6 (espaços de preenchimento `s`, gerados pelo importador) acrescentada. Vetores em `docs/formato/musica/vetores/` (oito `music.json` conferidos contra a fonte). Sem mudança de forma: `version` continua `1`. |
 | 2026-11-08 | M05 (API; §2.8 e §2.10, novo): `renderToMusicJson` (C e Dart) devolve `timemap`, `midi`, `pitchpos` e `music` sem desenho e sem layout, nos ids da carga. Em `pitchpos`, `loc` e `acc` passam a poder sair `null` nessa chamada quando o documento não foi cortado no carregamento (`--breaks none` ou MEI com `<pages>`); o `.vsb` e o JSON único não mudam. Esquema: `musicJsonDocument`; `loc` e `acc` aceitam `null`. |
 | 2026-11-08 | M05-P (correção do M05; §2.8 e §2.10): `renderToMusicJson` monta o layout das páginas, sem desenhar, quando o carregamento não cortou (`--breaks none`, MEI com `<pages>`), para `loc` e `acc` do `pitchpos` saírem preenchidos e iguais aos de `renderToBridgeJson` da mesma carga. Deixa de haver `null` em `loc` e `acc` nas saídas do formato (decisão do usuário, 2026-11-08). Aditivo: `version` continua `1`; o `.vsb`, o JSON único e as demais chaves de `renderToMusicJson` não mudam. O schema ainda aceita `null` nesses dois campos (não foi alterado). |
+| 2026-11-08 | R2 (regras 5 e 6 da §2.9; decisões do usuário de 2026-11-08): **`parts`** passa a depender do formato da fonte (MusicXML: uma entrada por `<part>`; MEI: uma por `staffGrp`, e um `staffGrp` sem `staffGrp` filho é uma parte só, com todas as pautas). **`ornaments`** ganha `measure` e `tstamp`, e `startid` passa a poder ser `null`; cada item tem `startid` ou `tstamp` não nulo (os 12 trinados do Scarlatti, só com `@tstamp`, entram). **`pitchpos`** (esquema): `loc` e `acc` sem `null`, como já dizia §2.8 (M05-P). Mudança não aditiva para quem lê `ornaments`: `measure` e `tstamp` são campos novos e `startid` pode vir `null`; `version` continua `1`. O `.vsb`/JSON único não mudam fora de `music.json`. |

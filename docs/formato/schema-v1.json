@@ -548,11 +548,11 @@
         "co": { "type": "integer" },
         "sh": { "type": "integer" },
         "key": { "$ref": "#/$defs/pitchposAlterations" },
-        "acc": { "anyOf": [{ "$ref": "#/$defs/pitchposAlterations" }, { "type": "null" }] },
+        "acc": { "$ref": "#/$defs/pitchposAlterations" },
         "pn": { "enum": ["c", "d", "e", "f", "g", "a", "b"] },
         "o": { "type": "integer" },
         "alt": { "type": "integer", "minimum": -2, "maximum": 2 },
-        "loc": { "type": ["integer", "null"] },
+        "loc": { "type": "integer" },
         "dur": { "enum": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024] },
         "dots": { "type": "integer", "minimum": 0, "maximum": 4 }
       },
@@ -714,12 +714,18 @@
     },
     "musicOrnament": {
       "type": "object",
-      "required": ["id", "kind", "startid"],
+      "required": ["id", "kind", "measure", "startid", "tstamp"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "kind": { "enum": ["trill", "mordent", "turn"] },
-        "startid": { "type": "string", "minLength": 1 }
+        "measure": { "type": "integer", "minimum": 0 },
+        "startid": { "type": ["string", "null"], "minLength": 1 },
+        "tstamp": { "type": ["number", "null"], "minimum": 1 }
       },
+      "anyOf": [
+        { "properties": { "startid": { "type": "string" } }, "required": ["startid"] },
+        { "properties": { "tstamp": { "type": "number" } }, "required": ["tstamp"] }
+      ],
       "additionalProperties": false
     },
     "musicDegree": {

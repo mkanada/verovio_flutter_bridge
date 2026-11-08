@@ -383,9 +383,36 @@ namespace {
         return out;
     }
 
-    // Parts (§2.9, rule 5): the children of the scoreDef's staffGrps (a staffGrp of a part with several
-    // staves, a staffDef of a part with one) and the staffDefs that sit directly in the scoreDef.
-    std::vector<BridgeMusicPart> PartsOf(const Object *scoreDef)
+    // The part a candidate element stands for: its label, and the @n of its staffDef (or of every staffDef
+    // under a staffGrp). A candidate with no staff gives an empty staves list: the caller leaves it out.
+    BridgeMusicPart PartOf(const Object *candidate)
+    {
+        BridgeMusicPart part;
+        part.id = candidate->GetID();
+        for (int j = 0; j < candidate->GetChildCount(); ++j) {
+            const Object *child = candidate->GetChild(j);
+            if (child->Is(LABEL)) part.name = PlainText(child);
+        }
+        if (candidate->Is(STAFFDEF)) {
+            part.staves.push_back(vrv_cast<const StaffDef *>(candidate)->GetN());
+        }
+        else {
+            for (const Object *staffDef : candidate->FindAllDescendantsByType(STAFFDEF)) {
+                part.staves.push_back(vrv_cast<const StaffDef *>(staffDef)->GetN());
+            }
+        }
+        return part;
+    }
+
+    void AddPart(std::vector<BridgeMusicPart> &parts, const Object *candidate)
+    {
+        const BridgeMusicPart part = PartOf(candidate);
+        if (!part.staves.empty()) parts.push_back(part);
+    }
+
+    // Parts of a MusicXML source (§2.9, rule 5): each <part> is a staffGrp (several staves) or a staffDef (one
+    // staff) directly in the scoreDef's staffGrp.
+    std::vector<BridgeMusicPart> PartsOfMusicXml(const Object *scoreDef)
     {
         std::vector<const Object *> candidates;
         for (int i = 0; i < scoreDef->GetChildCount(); ++i) {
@@ -402,22 +429,35 @@ namespace {
         }
 
         std::vector<BridgeMusicPart> parts;
-        for (const Object *candidate : candidates) {
-            BridgeMusicPart part;
-            part.id = candidate->GetID();
-            for (int j = 0; j < candidate->GetChildCount(); ++j) {
-                const Object *child = candidate->GetChild(j);
-                if (child->Is(LABEL)) part.name = PlainText(child);
+        for (const Object *candidate : candidates) AddPart(parts, candidate);
+        return parts;
+    }
+
+    // Parts of an MEI source (§2.9, rule 5): each staffGrp of the scoreDef is a part, and so is each of its
+    // staffGrp children. A staffGrp with no staffGrp child is one part with all its staves (an MEI without
+    // parts). A staffDef that sits directly in a staffGrp which has staffGrp children is a part of its own.
+    std::vector<BridgeMusicPart> PartsOfMei(const Object *scoreDef)
+    {
+        std::vector<BridgeMusicPart> parts;
+        for (int i = 0; i < scoreDef->GetChildCount(); ++i) {
+            const Object *child = scoreDef->GetChild(i);
+            if (child->Is(STAFFDEF)) {
+                AddPart(parts, child);
             }
-            if (candidate->Is(STAFFDEF)) {
-                part.staves.push_back(vrv_cast<const StaffDef *>(candidate)->GetN());
-            }
-            else {
-                for (const Object *staffDef : candidate->FindAllDescendantsByType(STAFFDEF)) {
-                    part.staves.push_back(vrv_cast<const StaffDef *>(staffDef)->GetN());
+            else if (child->Is(STAFFGRP)) {
+                bool hasGroup = false;
+                for (int j = 0; j < child->GetChildCount(); ++j) {
+                    if (child->GetChild(j)->Is(STAFFGRP)) hasGroup = true;
+                }
+                if (!hasGroup) {
+                    AddPart(parts, child);
+                    continue;
+                }
+                for (int j = 0; j < child->GetChildCount(); ++j) {
+                    const Object *part = child->GetChild(j);
+                    if (part->Is(STAFFGRP) || part->Is(STAFFDEF)) AddPart(parts, part);
                 }
             }
-            parts.push_back(part);
         }
         return parts;
     }
@@ -516,7 +556,9 @@ BridgeMusic ReadBridgeMusic(Doc &doc)
     for (const Object *change : initial) {
         if (change->Is(KEYSIG) || change->Is(METERSIG)) ApplyChange(change, state);
     }
-    if (firstScoreDef) music.parts = PartsOf(firstScoreDef);
+    if (firstScoreDef) {
+        music.parts = (doc.GetSourceFormat() == MUSICXML) ? PartsOfMusicXml(firstScoreDef) : PartsOfMei(firstScoreDef);
+    }
 
     ClassIdsComparison changeComparison({ KEYSIG, METERSIG });
     std::map<const Object *, int> measureIndex;
@@ -540,15 +582,26 @@ BridgeMusic ReadBridgeMusic(Doc &doc)
         else if (object->Is(TRILL) || object->Is(MORDENT) || object->Is(TURN)) {
             const TimeSpanningInterface *span = object->GetTimeSpanningInterface();
             const std::string startid = span ? StartIdOf(span) : "";
-            if (startid.empty()) {
-                LogWarning("music: %s %s has no @startid, left out of music.json", object->GetClassName().c_str(),
-                    object->GetID().c_str());
+            const double tstamp = span ? span->GetTstamp() : 0.0;
+            // A control with neither @startid nor @tstamp has no place in the score: left out (§2.9, rule 6)
+            if (startid.empty() && (tstamp < 1.0)) {
+                LogWarning("music: %s %s has no @startid or @tstamp, left out of music.json",
+                    object->GetClassName().c_str(), object->GetID().c_str());
+                continue;
+            }
+            const Object *measureObject = object->GetFirstAncestor(MEASURE);
+            const auto indexIt = measureObject ? measureIndex.find(measureObject) : measureIndex.end();
+            if (indexIt == measureIndex.end()) {
+                LogWarning("music: %s %s is outside a measure, left out of music.json",
+                    object->GetClassName().c_str(), object->GetID().c_str());
                 continue;
             }
             BridgeMusicOrnament ornament;
             ornament.id = object->GetID();
             ornament.kind = object->Is(TRILL) ? "trill" : (object->Is(MORDENT) ? "mordent" : "turn");
+            ornament.measure = indexIt->second;
             ornament.startid = startid;
+            ornament.tstamp = (tstamp < 1.0) ? 0.0 : tstamp;
             music.ornaments.push_back(ornament);
         }
         else if (object->Is(TEMPO)) {

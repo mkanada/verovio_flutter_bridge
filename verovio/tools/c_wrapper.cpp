@@ -12,6 +12,25 @@
 using namespace std;
 using namespace vrv;
 
+#include <exception>
+
+// Uma exceção C++ que sai de uma função extern "C" encerra o processo (o app
+// fecha sem log). Estas macros a seguram na fronteira: registram e devolvem o
+// valor de falha.
+#define VRV_GUARD_BEGIN try {
+#define VRV_GUARD_END(name, failure)                                           \
+    }                                                                          \
+    catch (const std::exception &e)                                            \
+    {                                                                          \
+        LogError("%s: exception: %s", name, e.what());                         \
+        return failure;                                                        \
+    }                                                                          \
+    catch (...)                                                                \
+    {                                                                          \
+        LogError("%s: unknown exception", name);                               \
+        return failure;                                                        \
+    }
+
 extern "C" {
 
 void enableLog(bool value)
@@ -172,9 +191,11 @@ const char *vrvToolkit_getLog(void *tkPtr)
 
 const char *vrvToolkit_getMEI(void *tkPtr, const char *options)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     tk->SetCString(tk->GetMEI(options));
     return tk->GetCString();
+    VRV_GUARD_END("getMEI", "")
 }
 
 const char *vrvToolkit_getMIDIValuesForElement(void *tkPtr, const char *xmlId)
@@ -252,26 +273,34 @@ const char *vrvToolkit_getVersion(void *tkPtr)
 
 bool vrvToolkit_loadData(void *tkPtr, const char *data)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     return tk->LoadData(data);
+    VRV_GUARD_END("loadData", false)
 }
 
 bool vrvToolkit_loadFile(void *tkPtr, const char *filename)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     return tk->LoadFile(filename);
+    VRV_GUARD_END("loadFile", false)
 }
 
 bool vrvToolkit_loadZipDataBase64(void *tkPtr, const char *data)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     return tk->LoadZipDataBase64(data);
+    VRV_GUARD_END("loadZipDataBase64", false)
 }
 
 bool vrvToolkit_loadZipDataBuffer(void *tkPtr, const unsigned char *data, int length)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     return tk->LoadZipDataBuffer(data, length);
+    VRV_GUARD_END("loadZipDataBuffer", false)
 }
 
 void vrvToolkit_redoLayout(void *tkPtr, const char *c_options)
@@ -288,9 +317,11 @@ void vrvToolkit_redoPagePitchPosLayout(void *tkPtr)
 
 const char *vrvToolkit_renderData(void *tkPtr, const char *data, const char *options)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     tk->SetCString(tk->RenderData(data, options));
     return tk->GetCString();
+    VRV_GUARD_END("renderData", "")
 }
 
 bool vrvToolkit_renderToBridgeFile(void *tkPtr, const char *filename)
@@ -306,9 +337,11 @@ bool vrvToolkit_renderToBridgeFile(void *tkPtr, const char *filename)
  */
 const char *vrvToolkit_renderToBridgeJson(void *tkPtr)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     tk->SetCString(tk->RenderToBridgeJson());
     return tk->GetCString();
+    VRV_GUARD_END("renderToBridgeJson", "")
 }
 
 const char *vrvToolkit_renderToExpansionMap(void *tkPtr)
@@ -326,9 +359,11 @@ bool vrvToolkit_renderToExpansionMapFile(void *tkPtr, const char *filename)
 
 const char *vrvToolkit_renderToMIDI(void *tkPtr)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     tk->SetCString(tk->RenderToMIDI());
     return tk->GetCString();
+    VRV_GUARD_END("renderToMIDI", "")
 }
 
 bool vrvToolkit_renderToMIDIFile(void *tkPtr, const char *filename)
@@ -344,9 +379,11 @@ bool vrvToolkit_renderToMIDIFile(void *tkPtr, const char *filename)
  */
 const char *vrvToolkit_renderToMusicJson(void *tkPtr)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     tk->SetCString(tk->RenderToMusicJson());
     return tk->GetCString();
+    VRV_GUARD_END("renderToMusicJson", "")
 }
 
 const char *vrvToolkit_renderToPAE(void *tkPtr)
@@ -364,9 +401,11 @@ bool vrvToolkit_renderToPAEFile(void *tkPtr, const char *filename)
 
 const char *vrvToolkit_renderToSVG(void *tkPtr, int page_no, bool xmlDeclaration)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     tk->SetCString(tk->RenderToSVG(page_no, xmlDeclaration));
     return tk->GetCString();
+    VRV_GUARD_END("renderToSVG", "")
 }
 
 bool vrvToolkit_renderToSVGFile(void *tkPtr, const char *filename, int pageNo)
@@ -377,9 +416,11 @@ bool vrvToolkit_renderToSVGFile(void *tkPtr, const char *filename, int pageNo)
 
 const char *vrvToolkit_renderToTimemap(void *tkPtr, const char *c_options)
 {
+    VRV_GUARD_BEGIN
     Toolkit *tk = static_cast<Toolkit *>(tkPtr);
     tk->SetCString(tk->RenderToTimemap(c_options));
     return tk->GetCString();
+    VRV_GUARD_END("renderToTimemap", "")
 }
 
 bool vrvToolkit_renderToTimemapFile(void *tkPtr, const char *filename, const char *c_options)

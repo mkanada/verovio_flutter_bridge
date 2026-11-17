@@ -34,8 +34,9 @@ struct HarmDegree {
 };
 
 // The structure of a MusicXML <harmony> (D-MUSICA-CIFRA, docs/plano/M00-dados-musicais-para-o-aprendizado.md).
-// Only MusicXmlInput::ReadMusicXmlHarmony sets it; the drawn text does not read it, so the MEI export does
-// not change. "" means absent (for the strings) and 0 means absent (for the alterations).
+// MusicXmlInput::ReadMusicXmlHarmony sets it, and a transposition moves root and bass with the text
+// (TransposeFunctor::VisitHarm). The drawn text does not read it, so the MEI export does not change.
+// "" means absent (for the strings) and 0 means absent (for the alterations).
 struct HarmData {
     std::string root; // root-step
     int rootAlter = 0; // root-alter, in semitones

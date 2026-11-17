@@ -711,6 +711,12 @@ Trecho (um compasso e uma cifra; o arquivo completo é a fixture do M02, descrit
      fora de compasso sai com aviso, como o trinado sem `@startid`.
    - `text` sai do `Doc` (o `Harm` que o desenho usa), não do MEI, então é o texto
      exato que o Verovio desenha; o bemol sai como `♭` (U+266D).
+   - **Transposição (AC02 do `zywny-aprendizado`, 2026-11-17):** com a opção `transpose`
+     do Verovio, `root`, `rootAlter`, `bass` e `bassAlter` saem **transpostos**, na mesma
+     grafia do `text` (o `TransposeFunctor` move o `harm` e a sua estrutura com o mesmo
+     `Transposer`). `kind`, `kindText`, `degrees` e `numeral` não mudam: `degrees` são
+     intervalos sobre a fundamental, e o `numeral` é o grau da armadura. Sem transposição,
+     nada muda.
 8. **`directions`**: uma por `<direction>` com `<words>` que o importador grava
    como `dir`.
    - `text`: o texto de `<words>` **cru** (sem formatação), concatenado na ordem do
@@ -1852,3 +1858,4 @@ fermata ficam; nota ligada a um compasso visível continua visível lá.
 | 2026-11-08 | M05-P (correção do M05; §2.8 e §2.10): `renderToMusicJson` monta o layout das páginas, sem desenhar, quando o carregamento não cortou (`--breaks none`, MEI com `<pages>`), para `loc` e `acc` do `pitchpos` saírem preenchidos e iguais aos de `renderToBridgeJson` da mesma carga. Deixa de haver `null` em `loc` e `acc` nas saídas do formato (decisão do usuário, 2026-11-08). Aditivo: `version` continua `1`; o `.vsb`, o JSON único e as demais chaves de `renderToMusicJson` não mudam. O schema ainda aceita `null` nesses dois campos (não foi alterado). |
 | 2026-11-08 | R2 (regras 5 e 6 da §2.9; decisões do usuário de 2026-11-08): **`parts`** passa a depender do formato da fonte (MusicXML: uma entrada por `<part>`; MEI: uma por `staffGrp`, e um `staffGrp` sem `staffGrp` filho é uma parte só, com todas as pautas). **`ornaments`** ganha `measure` e `tstamp`, e `startid` passa a poder ser `null`; cada item tem `startid` ou `tstamp` não nulo (os 12 trinados do Scarlatti, só com `@tstamp`, entram). **`pitchpos`** (esquema): `loc` e `acc` sem `null`, como já dizia §2.8 (M05-P). Mudança não aditiva para quem lê `ornaments`: `measure` e `tstamp` são campos novos e `startid` pode vir `null`; `version` continua `1`. O `.vsb`/JSON único não mudam fora de `music.json`. |
 | 2026-11-08 | M08 (nota para o `zywny-aprendizado`, `docs/nota-para-zywny-musica.md`): sem mudança de forma, `version` continua `1`. Texto corrigido: a R1 (§2.9) e a linha do M07 deixam de tratar `grace` como trocado e dizem que a premissa foi refutada (o importador grava o valor do MEI). Nada mais muda na spec. |
+| 2026-11-17 | AC02 (§2.9, regra 7; pedido do `zywny-aprendizado`, plano AC00): com a opção `transpose`, `root`, `rootAlter`, `bass` e `bassAlter` de `harmonies` passam a sair transpostos, na grafia do `text`. Antes saíam na grafia escrita, enquanto o `text` e a armadura já vinham transpostos. Mudança de **valor** numa carga transposta (sem transposição a saída não muda); o esquema e `version` (continua `1`) não mudam. |

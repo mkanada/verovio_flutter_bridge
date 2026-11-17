@@ -101,7 +101,8 @@ struct BridgeMusicDegree {
 
 // One <harmony> (§2.9, rule 7). The structured fields come from the MusicXML (HarmData); a MEI source has
 // none of them, so they stay empty and `text` is the only one set. rootAlter is null when root is; bassAlter
-// is null when bass is.
+// is null when bass is. With a transposition, root and bass are the transposed ones, spelled as `text` is;
+// kind, degrees and the numeral are not transposed.
 struct BridgeMusicHarmony {
     std::string id;
     int measure = 0; // index of the measure

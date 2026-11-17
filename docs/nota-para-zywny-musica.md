@@ -106,7 +106,9 @@ custa ~22 ms a mais (70 ms de mediana, M05-P). Os números são do binário de
   usa em 49% das cifras do corpus medido), `bass`/`bassAlter`, `degrees`
   (`value`/`alter`/`type`) e `numeral` (`{"root", "alter"}`, sem `root`). **`text`** é o
   que o Verovio desenha, e nunca vazio. Cifra de **MEI** traz só `text`: os campos
-  estruturados saem `null` e `degrees` sai `[]`.
+  estruturados saem `null` e `degrees` sai `[]`. Numa carga com `transpose`, `root`,
+  `rootAlter`, `bass` e `bassAlter` saem transpostos, na grafia do `text` (AC02, 2026-11-17);
+  `kind`, `degrees` e `numeral` não mudam.
 - **`directions`** (regra 8). Uma por `<direction>` com `<words>`: `text` é o texto
   cru, concatenado sem separador (como o desenho junta); `place` (`above`/`below`/`null`),
   `measure`, `staff` e `tstamp`. Andamento (`<sound tempo>`, `<metronome>`) vai a

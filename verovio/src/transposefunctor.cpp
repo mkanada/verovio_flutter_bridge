@@ -9,6 +9,11 @@
 
 //----------------------------------------------------------------------------
 
+#include <memory>
+#include <string>
+
+//----------------------------------------------------------------------------
+
 #include "harm.h"
 #include "layer.h"
 #include "mdiv.h"
@@ -21,6 +26,27 @@
 //----------------------------------------------------------------------------
 
 namespace vrv {
+
+namespace {
+
+    //------------------------------------------------------------------------
+    // The structure of a harmony (HarmData) follows its text
+    //------------------------------------------------------------------------
+
+    // Moves a root-step or bass-step (a letter, with its alteration in semitones) by the transposition, spelled
+    // by the same Transposer as the text. An empty step (a numeral has no root, a harmony has no bass) stays.
+    void TransposeHarmStep(Transposer *transposer, std::string &step, int &alter)
+    {
+        if ((step.size() != 1) || (step[0] < 'A') || (step[0] > 'G')) return;
+        TransPitch pitch;
+        pitch.SetPitch((step[0] - 'C' + 7) % 7, alter, 4); // the pitch class as Harm::GetRootPitch reads it
+        transposer->Transpose(pitch);
+        // The letter as TransPitch::GetPitchString writes it
+        step = std::string(1, static_cast<char>((pitch.m_pname + ('C' - 'A')) % 7 + 'A'));
+        alter = pitch.m_accid;
+    }
+
+} // namespace
 
 //----------------------------------------------------------------------------
 // TransposeFunctor
@@ -44,6 +70,16 @@ FunctorCode TransposeFunctor::VisitHarm(Harm *harm)
     if (harm->GetBassPitch(pitch)) {
         m_transposer->Transpose(pitch);
         harm->SetBassPitch(pitch);
+    }
+
+    // The root and the bass of the MusicXML structure (music.json) move with the text, so they are spelled the
+    // same. A new HarmData replaces the shared one: Clone() shares it with the copies of the harmony. The degrees
+    // and the numeral stay: a degree is an interval over the root, and a numeral is a degree of the key.
+    if (const HarmData *data = harm->GetHarmData()) {
+        HarmData transposed = *data;
+        TransposeHarmStep(m_transposer, transposed.root, transposed.rootAlter);
+        TransposeHarmStep(m_transposer, transposed.bass, transposed.bassAlter);
+        harm->SetHarmData(std::make_shared<HarmData>(transposed));
     }
 
     return FUNCTOR_SIBLINGS;

@@ -53,7 +53,7 @@
 #include "pages.h"
 #include "pghead.h"
 #include "runtimeclock.h"
-#include "score.h"
+#include "scoreorpartelement.h"
 #include "slur.h"
 #include "staff.h"
 #include "svgdevicecontext.h"
@@ -882,7 +882,8 @@ bool Toolkit::LoadData(const std::string &data, bool resetLogBuffer)
     m_doc.InitSelectionDoc(m_docSelection, true);
 
     // Convert pseudo-measures into distinct segments based on barLine elements
-    if (m_doc.IsMensuralMusicOnly() && (m_options->m_mensuralResponsiveView.GetValue() != MENSURAL_RESP_none)) {
+    if (m_doc.IsMensuralMusicOnly() && (m_options->m_mensuralResponsiveView.GetValue() != MENSURAL_RESP_none)
+        && input->GetLayoutInformation() != LAYOUT_DONE) {
         if (m_options->m_mensuralScoreUp.GetValue()) {
             m_doc.ScoringUpDoc();
         }
@@ -906,19 +907,14 @@ bool Toolkit::LoadData(const std::string &data, bool resetLogBuffer)
     // When loading page-based MEI, the layout is marked as done
     // In this case, we do not cast-off the document (breaks is expected to be not set)
     if (input->GetLayoutInformation() == LAYOUT_DONE) {
-        if (breaks != BREAKS_auto) {
-            LogWarning("Requesting layout with specific breaks but the layout is already done");
-        }
         // We set it to 'none' for no cast-off process to be triggered
         breaks = BREAKS_none;
+        m_doc.MarkAsCastOff();
     }
-
-    // Always set breaks to 'none' with Facs rendering
-    if (m_doc.IsFacs()) breaks = BREAKS_none;
 
     // Always set breaks to 'none' or 'encoded' with Transcription rendering
     // rendering them differenty requires the MEI
-    if (m_doc.IsTranscription()) {
+    if (m_doc.IsFacTranscription()) {
         breaks = (m_doc.HasFacsimile()) ? BREAKS_encoded : BREAKS_none;
     }
 
@@ -960,7 +956,7 @@ bool Toolkit::LoadData(const std::string &data, bool resetLogBuffer)
         m_doc.ScoreDefSetCurrentDoc();
     }
 
-    if (m_doc.IsTranscription() && m_doc.HasFacsimile()) {
+    if (m_doc.IsFacTranscription() && m_doc.HasFacsimile()) {
         m_doc.SyncFromFacsimileDoc();
     }
 
@@ -1668,7 +1664,7 @@ void Toolkit::RedoLayout(const std::string &jsonOptions)
 
     this->ResetLogBuffer();
 
-    if ((this->GetPageCount() == 0) || m_doc.IsTranscription() || m_doc.IsFacs()) {
+    if ((this->GetPageCount() == 0) || m_doc.IsFacTranscription()) {
         LogWarning("No data to re-layout");
         return;
     }
@@ -1731,7 +1727,7 @@ bool Toolkit::RenderToDeviceContext(int pageNo, DeviceContext *deviceContext)
     if (adjustWidth || (breaks == BREAKS_none)) width = m_doc.GetAdjustedDrawingPageWidth();
     if (adjustHeight || (breaks == BREAKS_none)) height = m_doc.GetAdjustedDrawingPageHeight();
 
-    if (m_doc.IsTranscription()) {
+    if (m_doc.IsFacTranscription()) {
         width = m_doc.GetAdjustedDrawingPageWidth();
         height = m_doc.GetAdjustedDrawingPageHeight();
     }
@@ -1755,11 +1751,6 @@ bool Toolkit::RenderToDeviceContext(int pageNo, DeviceContext *deviceContext)
     deviceContext->SetHeight(height);
     deviceContext->SetViewBoxFactor(m_view.GetPPUFactor());
     deviceContext->SetLogicalOrigin(0, 0);
-
-    if (m_doc.IsFacs()) {
-        deviceContext->SetWidth(m_doc.GetFacsimile()->GetMaxX());
-        deviceContext->SetHeight(m_doc.GetFacsimile()->GetMaxY());
-    }
 
     // render the page
     m_view.DrawCurrentPage(deviceContext, false);
@@ -1793,10 +1784,6 @@ std::string Toolkit::RenderToSVG(int pageNo, bool xmlDeclaration)
 
     if (m_options->m_showHidden.GetValue()) {
         svg.SetShowHidden(true);
-    }
-
-    if (m_doc.IsFacs()) {
-        svg.SetFacsimile(true);
     }
 
     // set the option to use viewbox on svg root
@@ -2359,7 +2346,7 @@ BridgeMeta Toolkit::ReadBridgeMeta()
     // <pgHead func="first"> if the encoding has one, otherwise build a throwaway one the same way
     // Doc::GenerateHeader() would for `--header auto`. GenerateFromMEIHeader only reads the MEI
     // header tree, so this never touches layout.
-    std::list<Score *> scores = m_doc.GetVisibleScores();
+    std::list<ScoreOrPartElement *> scores = m_doc.GetVisibleScoresOrParts();
     if (!scores.empty()) {
         ScoreDef *scoreDef = scores.front()->GetScoreDef();
         assert(scoreDef);

@@ -22,7 +22,7 @@
 #include "measure.h"
 #include "plistinterface.h"
 #include "rdg.h"
-#include "score.h"
+#include "scoreorpartelement.h"
 #include "section.h"
 #include "timeinterface.h"
 #include "vrv.h"
@@ -375,11 +375,11 @@ void ExpansionMap::ToJson(std::string &output)
     output = expansionmap.json();
 }
 
-void ExpansionMap::GenerateExpansionFor(Score *score)
+void ExpansionMap::GenerateExpansionFor(ScoreOrPartElement *scoreOrPart)
 {
     m_isProcessed = true;
 
-    if (score->HasEditorialContent()) {
+    if (scoreOrPart->HasEditorialContent()) {
         LogWarning("An expansion cannot be generated with editorial content");
         return;
     }
@@ -391,7 +391,7 @@ void ExpansionMap::GenerateExpansionFor(Score *score)
     // starts exactly where a new one begins, as in the corpus) is still found. Nothing here
     // touches how many <section> elements exist in the drawn document - CreateSection() below
     // only ever adds a new child section, moving existing measures/endings into it.
-    ListOfObjects sectionChildren = score->FindAllDescendantsByType(SECTION);
+    ListOfObjects sectionChildren = scoreOrPart->FindAllDescendantsByType(SECTION);
     if (sectionChildren.empty()) return;
     std::vector<Section *> sections;
     for (Object *object : sectionChildren) sections.push_back(vrv_cast<Section *>(object));

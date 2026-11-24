@@ -32,7 +32,7 @@ o detalhamento (o que foi provado, o que travou, e o que foi reaproveitado).
 
 ## Estrutura do repositório
 
-- **`verovio/`** — o fork do Verovio vendorizado (6.3.0), onde vive o
+- **`verovio/`** — o fork do Verovio vendorizado (6.4.1), onde vive o
   exportador `.vsb` (`src/bridge*.cpp`, `include/vrv/bridge*.h`).
 - **`score_bridge/`** — pacote Flutter/Dart: parser do `.vsb`, `ScenePainter`,
   widget `ScorePageView` e `ScoreController` (cor/animação por nota).

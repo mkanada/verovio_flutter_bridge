@@ -74,7 +74,7 @@ peça sem nenhum compasso não tem o arquivo nem a entrada do manifest.
 {
   "format": "vsb",
   "version": 1,
-  "generator": "verovio 6.3.0 / bridge 1",
+  "generator": "verovio 6.4.1 / bridge 1",
   "pageCount": 4,
   "files": {
     "scene": "scene.json",
